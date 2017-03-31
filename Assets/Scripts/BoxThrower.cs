@@ -1,43 +1,55 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 public class BoxThrower : MonoBehaviour {
 
+	[Serializable]
+	public class Range {
+		public float minimum;
+		public float maximum;
+
+		public Range (float min, float max) {
+			minimum = min;
+			maximum = max;
+		}
+	}
+
 	public Box 			boxPrefab;
 	public float 		throwDelay;
+	public Range 		throwSpeeds = new Range(8.0f, 12.0f);
+	public Range 		throwAnglesDeg = new Range (30.0f, 150.0f);
+	public Range 		airTimes = new Range(0.5f, 3.0f);
 
 	private List<Box> 	allBoxes;		// TODO: move this to a singleton GameManager
+	private Animator 	animator;
 	private float 		nextThrowTime;
 
 	void Start() {
+		animator = GetComponent<Animator> ();
 		nextThrowTime = Time.time + throwDelay;
 		allBoxes = new List<Box>();
 	}
 
-	// 1) all transforms start equivalent to this boxThrower
-	// 2) the 3d rb is given a purely z-velocity
-	// 3) the 2d rb is given an equivalent muzzle velocity at an angle (such that it will hit a specific x,y position on the map)
-	// 4) 2d collision is disabled until the 3d rb reaches a set height (then the 2d collision box can hit robots and walls, etc) [in Box.cs]
-	// 5) 2d rb gravity.scale is zeroed as soon as the 3d rb makes contact (so the box doesn't slide to the bottom of the screen) [in Box.cs]
-
 	void Update () {
+
 		if (Time.time > nextThrowTime) {
 			nextThrowTime = Time.time + throwDelay;
+			animator.SetTrigger ("ThrowingBox");
 
-			float throwSpeed = Random.Range (8.0f, 12.0f);
-			float throwAngle = Random.Range (30.0f * Mathf.Deg2Rad, 150.0f * Mathf.Deg2Rad);
-			float airTime = Random.Range (0.5f, 2.0f);
-
-			// FIXME: non-zero parent is screwing with the calculations
-			Box thrownBox = Instantiate<Box>(boxPrefab, transform.position, Quaternion.identity);
+			// FIXME: non-zero parent is screwing with the calculations, create a globally visible parent for this and the dropShadow
+			Box thrownBox = Instantiate<Box> (boxPrefab, transform.position, Quaternion.identity);
 			allBoxes.Add (thrownBox);
-			thrownBox.airTime = airTime;
 
 			Rigidbody2D boxRB;
 			boxRB = thrownBox.GetComponent<Rigidbody2D> ();
-			boxRB.velocity = new Vector2(throwSpeed * Mathf.Cos(throwAngle), throwSpeed * Mathf.Sin(throwAngle));
+			float throwSpeed = Random.Range (throwSpeeds.minimum, throwSpeeds.maximum);
+			float throwAngle = Random.Range (throwAnglesDeg.minimum * Mathf.Deg2Rad, throwAnglesDeg.maximum * Mathf.Deg2Rad);
+			float airTime = Random.Range (airTimes.minimum, airTimes.maximum);
+			thrownBox.airTime = airTime;
+			boxRB.velocity = new Vector2 (throwSpeed * Mathf.Cos (throwAngle), throwSpeed * Mathf.Sin (throwAngle));
 		}
 	}
 }
