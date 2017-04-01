@@ -21,7 +21,6 @@ public class BoxThrower : MonoBehaviour {
 	public float 		throwDelay;
 	public Range 		throwSpeeds = new Range(8.0f, 12.0f);
 	public Range 		throwAnglesDeg = new Range (30.0f, 150.0f);
-	public Range 		airTimes = new Range(0.5f, 3.0f);
 
 	public static List<Box> 	allBoxes;		// TODO: move this to a singleton GameManager
 	private Animator 	animator;
@@ -47,8 +46,6 @@ public class BoxThrower : MonoBehaviour {
 			boxRB = thrownBox.GetComponent<Rigidbody2D> ();
 			float throwSpeed = Random.Range (throwSpeeds.minimum, throwSpeeds.maximum);
 			float throwAngle = Random.Range (throwAnglesDeg.minimum * Mathf.Deg2Rad, throwAnglesDeg.maximum * Mathf.Deg2Rad);
-			float airTime = Random.Range (airTimes.minimum, airTimes.maximum);
-			thrownBox.airTime = airTime;
 			boxRB.velocity = new Vector2 (throwSpeed * Mathf.Cos (throwAngle), throwSpeed * Mathf.Sin (throwAngle));
 		}
 	}
