@@ -6,7 +6,7 @@ public class Grid : MonoBehaviour {
 
 	public bool displayGridGizmos;
 
-	public string[] unwalkableLayerNames;
+	public LayerMask unwalkableMask;
 	public Vector2 gridWorldSize;
 	public float nodeRadius;
 
@@ -14,10 +14,8 @@ public class Grid : MonoBehaviour {
 	private float nodeDiameter;
 	private int numGridRows;
 	private int numGridCols;
-	private LayerMask unwalkableMask;
 
 	void Awake () {
-		unwalkableMask = LayerMask.GetMask (unwalkableLayerNames);
 		nodeDiameter = 2 * nodeRadius;
 		numGridRows = Mathf.RoundToInt (gridWorldSize.x / nodeDiameter);
 		numGridCols = Mathf.RoundToInt (gridWorldSize.y / nodeDiameter);
@@ -37,7 +35,7 @@ public class Grid : MonoBehaviour {
 		for (int row = 0; row < numGridRows; row++) {
 			for (int col = 0; col < numGridCols; col++) {
 				Vector3 worldPoint = worldBottomLeft + Vector3.right * (row * nodeDiameter + nodeRadius) + Vector3.up * (col * nodeDiameter + nodeRadius);
-				bool walkable = !Physics2D.BoxCast (worldPoint, Vector2.one * nodeDiameter, 0.0f, Vector2.zero, 0.0f, unwalkableMask);
+				bool walkable = Physics2D.BoxCast (worldPoint, Vector2.one * nodeDiameter, 0.0f, Vector2.zero, 0.0f, unwalkableMask).collider == null;
 				grid [row, col] = new GridNode (worldPoint, walkable, row, col);
 			}
 		}

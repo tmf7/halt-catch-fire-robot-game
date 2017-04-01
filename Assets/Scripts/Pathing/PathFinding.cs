@@ -23,8 +23,8 @@ public class PathFinding : MonoBehaviour {
 
 		GridNode startNode = grid.NodeFromWorldPoint (startPos);
 		GridNode targetNode = grid.NodeFromWorldPoint (targetPos);
-		if (startNode.walkable && targetNode.walkable) {
 
+		if (startNode.walkable && targetNode.walkable) {
 			BinaryHeap<GridNode> openSet = new BinaryHeap<GridNode> (grid.MaxSize);
 			HashSet<GridNode> closedSet = new HashSet<GridNode> ();
 			openSet.Add (startNode);
@@ -60,6 +60,7 @@ public class PathFinding : MonoBehaviour {
 
 		if (pathSuccess) {
 			waypoints = BuildPath (startNode, targetNode);
+			pathSuccess = waypoints.Length > 0;
 		}
 		pathRequestManager.FinishedProcessingPath (waypoints, pathSuccess);
 	}
@@ -86,7 +87,6 @@ public class PathFinding : MonoBehaviour {
 		return waypoints;
 	}
 
-	// TODO: possible optimization
 	Vector3[] SimplifyPath(List<GridNode> path) {
 		List<Vector3> waypoints = new List<Vector3> ();
 		Vector2 directionOld = Vector2.zero;
