@@ -16,6 +16,8 @@ public class Box : MonoBehaviour {
 	private GameObject		dropShadow;
 	private Vector3 		shadowVelocity;
 	private BoxCollider2D	shadowBox;
+	private ShadowController shadowController;
+
 	private BoxCollider2D	boxCollider;
 	private Rigidbody2D 	boxRB;
 	private float 			midPointTime;
@@ -30,10 +32,17 @@ public class Box : MonoBehaviour {
 	}
 
 	void Start () {
+		shadowController = GetComponentInChildren<ShadowController> ();
 		shadowBox = dropShadow.GetComponent<BoxCollider2D> ();
 		boxCollider = GetComponent<BoxCollider2D> ();
 		boxRB = GetComponent<Rigidbody2D> ();
-		CalculateShadowTrajectory ();
+
+
+//		CalculateShadowTrajectory ();
+		shadowController.SetVelocity(Vector3.forward * boxRB.velocity.y);
+		shadowController.Drop ();
+
+
 		strikeTime = Time.time + airTime;
 		midPointTime = strikeTime - (airTime * 0.5f);
 		grounded = false; 
@@ -43,12 +52,15 @@ public class Box : MonoBehaviour {
 		if (grounded)
 			return;
 
-		dropShadow.transform.position += shadowVelocity * Time.deltaTime;
-		airTime -= Time.deltaTime;
+		float shadowOffset = shadowController.GetShadowOffset ();
+		dropShadow.transform.position = transform.position - Vector3.up * shadowOffset;
 
-		Vector3 shadowToBox = transform.position - dropShadow.transform.position;
-		float heightSqr = shadowToBox.sqrMagnitude;
-		if (Time.time > midPointTime && !shadowBox.IsTouching(boxCollider) && heightSqr < strikeHeightSqr)
+//		dropShadow.transform.position += shadowVelocity * Time.deltaTime;
+//		airTime -= Time.deltaTime;
+
+//		Vector3 shadowToBox = transform.position - dropShadow.transform.position;
+//		float heightSqr = shadowToBox.sqrMagnitude;
+		if (Time.time > midPointTime && !shadowBox.IsTouching(boxCollider) && shadowOffset < strikeHeight)
 			gameObject.layer = LayerMask.NameToLayer ("DynamicCollision");
 
 		if (Time.time > strikeTime) {
@@ -90,6 +102,7 @@ public class Box : MonoBehaviour {
 
 	void RemoveBox() {
 		BoxThrower.allBoxes.Remove (this);		// FIXME: dont have BoxThrower manage the list of all boxes
+		Destroy(shadowController);				// FIXME: may also need to destroy its script instance (hopefully not)
 		Destroy(dropShadow);
 		Destroy(gameObject);
 		Destroy (this);

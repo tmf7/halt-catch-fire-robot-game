@@ -16,7 +16,6 @@ public class Robot : MonoBehaviour {
 	private const float minPathUpdateTime = 0.2f;
 	private const float stoppingThreshold = 0.01f;
 
-
 	void Start() {
 		StartCoroutine (UpdatePath ());
 	}
