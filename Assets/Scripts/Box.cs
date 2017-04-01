@@ -47,7 +47,7 @@ public class Box : MonoBehaviour {
 			grounded = true;
 			boxRB.gravityScale = 0;
 			boxRB.velocity = Vector2.zero;
-			boxRB.isKinematic = true;
+		//	boxRB.isKinematic = true;
 			dropShadow.SetActive(false);
 		}
 	}
