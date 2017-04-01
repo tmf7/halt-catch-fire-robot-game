@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Box : MonoBehaviour {
 
+	public LayerMask 		airStrikeMask;
+	public float 			groundedDrag = 10.0f;
 	public float 			strikeHeight;
 	public GameObject 		dropShadowPrefab;
 	public GameObject 		explosionPrefab;
@@ -13,7 +15,10 @@ public class Box : MonoBehaviour {
 
 	private GameObject		dropShadow;
 	private Vector3 		shadowVelocity;
+	private BoxCollider2D	shadowBox;
+	private BoxCollider2D	boxCollider;
 	private Rigidbody2D 	boxRB;
+	private float 			midPointTime;
 	private float			strikeTime;
 	private float 			strikeHeightSqr;
 	private bool 			grounded;
@@ -25,9 +30,12 @@ public class Box : MonoBehaviour {
 	}
 
 	void Start () {
+		shadowBox = dropShadow.GetComponent<BoxCollider2D> ();
+		boxCollider = GetComponent<BoxCollider2D> ();
 		boxRB = GetComponent<Rigidbody2D> ();
 		CalculateShadowTrajectory ();
 		strikeTime = Time.time + airTime;
+		midPointTime = strikeTime - (airTime * 0.5f);
 		grounded = false; 
 	}
 
@@ -40,22 +48,25 @@ public class Box : MonoBehaviour {
 
 		Vector3 shadowToBox = transform.position - dropShadow.transform.position;
 		float heightSqr = shadowToBox.sqrMagnitude;
-		if (boxRB.velocity.y <= 0.0f && heightSqr < strikeHeightSqr)
-			gameObject.layer = LayerMask.NameToLayer ("Collision");
+		if (Time.time > midPointTime && !shadowBox.IsTouching(boxCollider) && heightSqr < strikeHeightSqr)
+			gameObject.layer = LayerMask.NameToLayer ("DynamicCollision");
 
 		if (Time.time > strikeTime) {
 			grounded = true;
 			boxRB.gravityScale = 0;
+			boxRB.drag = groundedDrag;
 			boxRB.velocity = Vector2.zero;
-		//	boxRB.isKinematic = true;
 			dropShadow.SetActive(false);
 		}
 	}
 
+	void OnTriggerEnter2D(Collider2D collider) {
+//		print ("SHADOW FOUND");
+	}
+
 	void OnCollisionEnter2D(Collision2D collision) {
-		if (!grounded) {
-			Instantiate<GameObject> (explosionPrefab, transform.position, Quaternion.identity);
-			RemoveBox();
+		if (!grounded && collision.gameObject.layer == Mathf.Log(airStrikeMask.value,2)) {
+			ExplodeBox ();
 		}
 	}
 
@@ -72,7 +83,13 @@ public class Box : MonoBehaviour {
 		shadowVelocity = new Vector3 (shadowSpeed * shadowDir.x, shadowSpeed * shadowDir.y);
 	}
 
+	public void ExplodeBox() {
+		Instantiate<GameObject> (explosionPrefab, transform.position, Quaternion.identity);
+		RemoveBox();
+	}
+
 	void RemoveBox() {
+		BoxThrower.allBoxes.Remove (this);		// FIXME: dont have BoxThrower manage the list of all boxes
 		Destroy(dropShadow);
 		Destroy(gameObject);
 		Destroy (this);
