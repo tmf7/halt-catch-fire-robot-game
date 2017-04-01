@@ -23,7 +23,7 @@ public class BoxThrower : MonoBehaviour {
 	public Range 		throwAnglesDeg = new Range (30.0f, 150.0f);
 	public Range 		airTimes = new Range(0.5f, 3.0f);
 
-	private List<Box> 	allBoxes;		// TODO: move this to a singleton GameManager
+	public static List<Box> 	allBoxes;		// TODO: move this to a singleton GameManager
 	private Animator 	animator;
 	private float 		nextThrowTime;
 

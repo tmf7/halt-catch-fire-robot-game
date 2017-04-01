@@ -13,6 +13,7 @@ public class PathRequestManager : MonoBehaviour {
 	static PathRequestManager 	instance;
 
 	void Awake() {
+		// FIXME: re-enable this to enforce the singleton
 //		if (instance != this) {
 //			Destroy (this);
 //			return;

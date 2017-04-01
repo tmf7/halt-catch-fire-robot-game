@@ -4,9 +4,9 @@
 public class TargetDragScript : MonoBehaviour
 {
 
-
     public float damping = 1f;
     public float frequency = 5f;
+	private Robot grabbedRobot;
     private TargetJoint2D targetJoint;
 
     void Update()
@@ -29,12 +29,12 @@ public class TargetDragScript : MonoBehaviour
             if (!body)
                 return;
 
-            //change this to 'Robot' when using robot objects;
-            var tagNameToBePickedUp = "Box";
-            if (collider.tag != tagNameToBePickedUp)
-                return;
+			if (collider.gameObject.tag != "Robot")
+                return;          
 
-          
+			// stop the robot from pathfinding/following while grabbed
+			grabbedRobot = collider.gameObject.GetComponent<Robot> ();
+			grabbedRobot.grabbed = true;
 
             targetJoint = body.gameObject.AddComponent<TargetJoint2D>();
             targetJoint.dampingRatio = damping;
@@ -42,11 +42,14 @@ public class TargetDragScript : MonoBehaviour
 
             targetJoint.anchor = targetJoint.transform.InverseTransformPoint(worldPosition);
         }
-        else if (Input.GetMouseButtonUp(0))
+		else if (Input.GetMouseButtonUp(0))
         {
-            Destroy(targetJoint);
-            targetJoint = null;
-            return;
+		//	if (grabbedRobot != null) {
+				Destroy (targetJoint);
+				targetJoint = null;
+				grabbedRobot.grabbed = false;
+				return;
+		//	}
         }
 
         if (targetJoint)
