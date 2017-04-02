@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class Box : MonoBehaviour {
 
@@ -9,19 +10,25 @@ public class Box : MonoBehaviour {
 	public float 			strikeHeight;
 	public GameObject 		dropShadowPrefab;
 	public GameObject 		explosionPrefab;
-	
+	public AudioClip		grabBox1;
+	public AudioClip 		grabBox2;
+	public AudioClip		grabBox3;
+
 	[HideInInspector]
 	public float 			airTime;
 
 	private GameObject		dropShadow;
 	private Vector3 		shadowVelocity;
 	private BoxCollider2D	shadowBox;
+	private ShadowController shadowController;
+
 	private BoxCollider2D	boxCollider;
 	private Rigidbody2D 	boxRB;
 	private float 			midPointTime;
 	private float			strikeTime;
 	private float 			strikeHeightSqr;
 	private bool 			grounded;
+
 
 	void Awake() {
 		// FIXME: non-zero parent is screwing with the calculations (do not parent it to the box, it amplifies the velocity/movement)
@@ -30,10 +37,18 @@ public class Box : MonoBehaviour {
 	}
 
 	void Start () {
+		shadowController = GetComponentInChildren<ShadowController> ();
 		shadowBox = dropShadow.GetComponent<BoxCollider2D> ();
 		boxCollider = GetComponent<BoxCollider2D> ();
 		boxRB = GetComponent<Rigidbody2D> ();
-		CalculateShadowTrajectory ();
+
+
+
+//		CalculateShadowTrajectory ();
+		shadowController.SetVelocity(Vector3.forward * boxRB.velocity.y);
+		shadowController.Drop ();
+
+
 		strikeTime = Time.time + airTime;
 		midPointTime = strikeTime - (airTime * 0.5f);
 		grounded = false; 
@@ -43,12 +58,15 @@ public class Box : MonoBehaviour {
 		if (grounded)
 			return;
 
-		dropShadow.transform.position += shadowVelocity * Time.deltaTime;
-		airTime -= Time.deltaTime;
+		float shadowOffset = shadowController.GetShadowOffset ();
+		dropShadow.transform.position = transform.position - Vector3.up * shadowOffset;
 
-		Vector3 shadowToBox = transform.position - dropShadow.transform.position;
-		float heightSqr = shadowToBox.sqrMagnitude;
-		if (Time.time > midPointTime && !shadowBox.IsTouching(boxCollider) && heightSqr < strikeHeightSqr)
+//		dropShadow.transform.position += shadowVelocity * Time.deltaTime;
+//		airTime -= Time.deltaTime;
+
+//		Vector3 shadowToBox = transform.position - dropShadow.transform.position;
+//		float heightSqr = shadowToBox.sqrMagnitude;
+		if (Time.time > midPointTime && !shadowBox.IsTouching(boxCollider) && shadowOffset < strikeHeight)
 			gameObject.layer = LayerMask.NameToLayer ("DynamicCollision");
 
 		if (Time.time > strikeTime) {
@@ -66,6 +84,7 @@ public class Box : MonoBehaviour {
 
 	void OnCollisionEnter2D(Collision2D collision) {
 		if (!grounded && collision.gameObject.layer == Mathf.Log(airStrikeMask.value,2)) {
+			//Or play the sound here for touching a box. I think this might be better.
 			ExplodeBox ();
 		}
 	}
@@ -84,12 +103,14 @@ public class Box : MonoBehaviour {
 	}
 
 	public void ExplodeBox() {
+		SoundManager.instance.RandomizeSFx (grabBox1, grabBox2, grabBox3);
 		Instantiate<GameObject> (explosionPrefab, transform.position, Quaternion.identity);
 		RemoveBox();
 	}
 
 	void RemoveBox() {
 		BoxThrower.allBoxes.Remove (this);		// FIXME: dont have BoxThrower manage the list of all boxes
+		Destroy(shadowController);				// FIXME: may also need to destroy its script instance (hopefully not)
 		Destroy(dropShadow);
 		Destroy(gameObject);
 		Destroy (this);
