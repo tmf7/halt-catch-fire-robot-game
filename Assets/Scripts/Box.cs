@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class Box : MonoBehaviour {
 
@@ -9,7 +10,10 @@ public class Box : MonoBehaviour {
 	public float 			strikeHeight;
 	public GameObject 		dropShadowPrefab;
 	public GameObject 		explosionPrefab;
-	
+	public AudioClip		grabBox1;
+	public AudioClip 		grabBox2;
+	public AudioClip		grabBox3;
+
 	[HideInInspector]
 	public float 			airTime;
 
@@ -25,6 +29,7 @@ public class Box : MonoBehaviour {
 	private float 			strikeHeightSqr;
 	private bool 			grounded;
 
+
 	void Awake() {
 		// FIXME: non-zero parent is screwing with the calculations (do not parent it to the box, it amplifies the velocity/movement)
 		dropShadow = Instantiate<GameObject> (dropShadowPrefab, transform.position, Quaternion.identity);
@@ -36,8 +41,6 @@ public class Box : MonoBehaviour {
 		shadowBox = dropShadow.GetComponent<BoxCollider2D> ();
 		boxCollider = GetComponent<BoxCollider2D> ();
 		boxRB = GetComponent<Rigidbody2D> ();
-
-
 //		CalculateShadowTrajectory ();
 		shadowController.SetVelocity(Vector3.forward * boxRB.velocity.y);
 		shadowController.Drop ();
@@ -78,6 +81,7 @@ public class Box : MonoBehaviour {
 
 	void OnCollisionEnter2D(Collision2D collision) {
 		if (!grounded && collision.gameObject.layer == Mathf.Log(airStrikeMask.value,2)) {
+			//Or play the sound here for touching a box. I think this might be better.
 			ExplodeBox ();
 		}
 	}
@@ -96,6 +100,7 @@ public class Box : MonoBehaviour {
 	}
 
 	public void ExplodeBox() {
+		SoundManager.instance.RandomizeSFx (grabBox1, grabBox2, grabBox3);
 		Instantiate<GameObject> (explosionPrefab, transform.position, Quaternion.identity);
 		RemoveBox();
 	}
