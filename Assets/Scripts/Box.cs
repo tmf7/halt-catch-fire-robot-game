@@ -41,9 +41,6 @@ public class Box : MonoBehaviour {
 		shadowBox = dropShadow.GetComponent<BoxCollider2D> ();
 		boxCollider = GetComponent<BoxCollider2D> ();
 		boxRB = GetComponent<Rigidbody2D> ();
-
-
-
 //		CalculateShadowTrajectory ();
 		shadowController.SetVelocity(Vector3.forward * boxRB.velocity.y);
 		shadowController.Drop ();
