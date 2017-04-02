@@ -7,10 +7,11 @@ public class TargetDragScript : MonoBehaviour
     public float damping = 1f;
     public float frequency = 5f;
 	private Robot grabbedRobot;
-    private TargetJoint2D targetJoint;
+    private HingeJoint2D hingeJoint;
 
     void Update()
     {
+
         var mousePos = Input.mousePosition;
         mousePos.z = 10;
 
@@ -36,25 +37,26 @@ public class TargetDragScript : MonoBehaviour
 			grabbedRobot = collider.gameObject.GetComponent<Robot> ();
 			grabbedRobot.grabbed = true;
 
-            targetJoint = body.gameObject.AddComponent<TargetJoint2D>();
-            targetJoint.dampingRatio = damping;
-            targetJoint.frequency = frequency;
+			hingeJoint = body.gameObject.AddComponent<HingeJoint2D>();
+	//		hingeJoint.dampingRatio = damping;
+	//		hingeJoint.frequency = frequency;
 
-            targetJoint.anchor = targetJoint.transform.InverseTransformPoint(worldPosition);
+			hingeJoint.anchor = hingeJoint.transform.InverseTransformPoint(worldPosition);
         }
 		else if (Input.GetMouseButtonUp(0))
         {
 		//	if (grabbedRobot != null) {
-				Destroy (targetJoint);
-				targetJoint = null;
-				grabbedRobot.grabbed = false;
-				return;
+			Destroy (hingeJoint);
+			hingeJoint = null;
+			grabbedRobot.grabbed = false;
+			return;
 		//	}
         }
 
-        if (targetJoint)
+		if (hingeJoint)
         {
-            targetJoint.target = worldPosition;
+			hingeJoint.
+		//	hingeJoint.target = worldPosition;
         }
     }
 }

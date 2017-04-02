@@ -6,9 +6,6 @@ public class Box : Throwable {
 
 	public GameObject 		explosionPrefab;
 
-	[HideInInspector]
-	public float 			airTime;
-
 /*
 	public LayerMask 		airStrikeMask;
 	public LayerMask		groundStrikeMask;
@@ -66,6 +63,11 @@ public class Box : Throwable {
 //		print ("SHADOW FOUND");
 	}
 */
+
+	void Update () {
+		UpdateFlight ();	
+	}
+
 	void OnCollisionEnter2D(Collision2D collision) {
 		print ("HIT SOMETHING: " + collision.collider.tag);
 		if (!grounded && collision.gameObject.layer == Mathf.Log(airStrikeMask.value,2)) {

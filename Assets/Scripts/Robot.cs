@@ -3,18 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class Robot : MonoBehaviour {
+public class Robot : Throwable {
 
 	public bool 		grabbed;
 	public Transform 	target;
 	public float 		speed = 5.0f;
-	public float 		stoppingDistance = 10.0f;
+	public float 		targetSlowdownDistance = 10.0f;
+	public float 		grabHeight = 1.0f;
 
 	private Vector3[] 	path;
 	private int 		targetIndex;
 	private const float	pathUpdateMoveThreshold = 0.5f;
 	private const float minPathUpdateTime = 0.2f;
 	private const float stoppingThreshold = 0.01f;
+	private Vector3 	oldMousePosition;
+	private float 		mouseSpeed;
 
 	void Start() {
 		StartCoroutine (UpdatePath ());
@@ -30,11 +33,22 @@ public class Robot : MonoBehaviour {
 	}
 
 	void Update() {
+		mouseSpeed = Mathf.Abs(Input.mousePosition - oldMousePosition) / Time.deltaTime;
+		oldMousePosition = Input.mousePosition;
+
 		if (grabbed) {
 			target = null;
 			StopCoroutine ("FollowPath");
+			SetHeight (grabHeight);
+		} else if (!grounded) {
+			Input.mousePosition;
+			rb2D.velocity = new Vector2 (throwSpeed * Mathf.Cos (throwAngle), throwSpeed * Mathf.Sin (throwAngle));
+			Throw (0.0f, -1.0f);
+			// throw at a speed relative to the mouse velocity, maybe... the airTime would be 
+			// give it negative air time to avoid trajectory (due to the vertical drop
+		} else {
+			UpdateFlight ();
 		}
-
 	}
 
 	bool CheckTarget() {
@@ -73,7 +87,7 @@ public class Robot : MonoBehaviour {
 
 	IEnumerator FollowPath() {
 		Vector3 currentWaypoint = path [0];
-		float sqrStoppingDistance = stoppingDistance * stoppingDistance;
+		float sqrTargetSlowdownDistance= targetSlowdownDistance * targetSlowdownDistance;
 
 		while (true) {
 			if (transform.position == currentWaypoint) {
@@ -86,8 +100,8 @@ public class Robot : MonoBehaviour {
 
 			float percentSpeed = 1.0f;
 			float sqrRange = (path [path.Length - 1] - transform.position).sqrMagnitude;
-			if (sqrRange < sqrStoppingDistance) {
-				percentSpeed = Mathf.Clamp01 (Mathf.Sqrt (sqrRange) / stoppingDistance);
+			if (sqrRange < sqrTargetSlowdownDistance) {
+				percentSpeed = Mathf.Clamp01 (Mathf.Sqrt (sqrRange) / targetSlowdownDistance);
 				if (percentSpeed < stoppingThreshold)
 					yield break;
 			}

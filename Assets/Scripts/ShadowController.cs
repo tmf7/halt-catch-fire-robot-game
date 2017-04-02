@@ -68,6 +68,11 @@ public class ShadowController : MonoBehaviour {
 		
 	public void SetTrajectory(float airTime) {
 
+		if (airTime <= 0.0f) {
+			offsetSlope = 0.0f;
+			return;
+		}
+
 		// predicted landing point
 		float xFinal = rb3D.transform.position.x + (parentRB.velocity.x * airTime);
 		float yFinal = rb3D.transform.position.y + (parentRB.velocity.y * airTime) + (0.5f * Physics2D.gravity.y * airTime * airTime);

@@ -13,7 +13,6 @@ public class Throwable : MonoBehaviour {
 	protected GameObject		dropShadow;
 	protected ShadowController 	shadowController;
 	protected Rigidbody2D 		rb2D;
-	protected bool 				grounded;
 	protected float 			oldShadowOffset;
 
 	void Awake() {
@@ -25,19 +24,27 @@ public class Throwable : MonoBehaviour {
 		shadowController = GetComponentInChildren<ShadowController> ();
 	}
 
-	// TODO: use negative airTime... to ignore parbolic flight... maybe
-	public void Throw(float speed, float airTime) {
+	// TODO: use negative airTime to ignore trajectory
+	public void Throw(float verticalSpeed, float airTime) {
 		// specific to the box being thrown from the box thrower
 		// the grabbed and tossed robot will behave differently (ie set an held at a specific height, then dropped straight down, or tossed in some random direction, horizontally NOT FULL PARABOLIC)
 
-		shadowController.SetVelocity(Vector3.forward * speed);
+		shadowController.SetVelocity(Vector3.forward * verticalSpeed);
 		shadowController.SetKinematic (false);
 		shadowController.SetTrajectory (airTime);		// TODO: check for negative or zero airTime, maybe
-		grounded = false; 
 	}
 
-	void Update() {
-		grounded = shadowController.grounded;
+	public void SetHeight(float height) {
+		shadowController.SetHeight (height);
+	}
+
+	public bool grounded {
+		get {
+			return shadowController.grounded;
+		}
+	}
+
+	protected void UpdateFlight() {
 		if (!grounded) {
 			rb2D.gravityScale = 1.0f;
 			rb2D.drag = 0.0f;
@@ -53,12 +60,11 @@ public class Throwable : MonoBehaviour {
 				gameObject.layer = (int)Mathf.Log (groundStrikeMask, 2);
 
 			oldShadowOffset = shadowOffset;
-		} else {
+		} else if (rb2D.gravityScale != 0.0f) {
 			rb2D.gravityScale = 0.0f;
 			rb2D.drag = groundedDrag;
 			rb2D.velocity = Vector2.zero;
 			dropShadow.SetActive(false);
-			print ("HIT");
 		}
 	}
 }

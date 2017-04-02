@@ -46,8 +46,9 @@ public class BoxThrower : MonoBehaviour {
 			boxRB = thrownBox.GetComponent<Rigidbody2D> ();
 			float throwSpeed = Random.Range (throwSpeeds.minimum, throwSpeeds.maximum);
 			float throwAngle = Random.Range (throwAnglesDeg.minimum * Mathf.Deg2Rad, throwAnglesDeg.maximum * Mathf.Deg2Rad);
-			thrownBox.airTime = Random.Range (airTimes.minimum, airTimes.maximum);
+			float airTime = Random.Range (airTimes.minimum, airTimes.maximum);
 			boxRB.velocity = new Vector2 (throwSpeed * Mathf.Cos (throwAngle), throwSpeed * Mathf.Sin (throwAngle));
+			thrownBox.Throw (boxRB.velocity.y, airTime);
 		}
 	}
 }
