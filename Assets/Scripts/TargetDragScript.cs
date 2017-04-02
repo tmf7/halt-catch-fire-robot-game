@@ -47,7 +47,7 @@ public class TargetDragScript : MonoBehaviour
 		//	if (grabbedRobot != null) {
 				Destroy (targetJoint);
 				targetJoint = null;
-			grabbedRobot.grabbed = false;
+				grabbedRobot.grabbed = false;
 				return;
 		//	}
         }
