@@ -16,15 +16,16 @@ public class Robot : Throwable {
 	private const float	pathUpdateMoveThreshold = 0.5f;
 	private const float minPathUpdateTime = 0.2f;
 	private const float stoppingThreshold = 0.01f;
-	private Vector3 	oldMousePosition;
-	private float 		mouseSpeed;
+	private bool 		justReleased;
+//	private Vector3 	oldMousePosition;
+//	private float 		mouseSpeed;
 
 	void Start() {
 		StartCoroutine (UpdatePath ());
 	}
 
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful) {
-		if (pathSuccessful) {
+		if (!grabbed && pathSuccessful) {
 			path = newPath;
 			targetIndex = 0;
 			StopCoroutine ("FollowPath");
@@ -33,22 +34,34 @@ public class Robot : Throwable {
 	}
 
 	void Update() {
-		mouseSpeed = Mathf.Abs(Input.mousePosition - oldMousePosition) / Time.deltaTime;
-		oldMousePosition = Input.mousePosition;
+//		mouseSpeed = Mathf.Abs(Input.mousePosition - oldMousePosition) / Time.deltaTime;
+//		oldMousePosition = Input.mousePosition;
 
 		if (grabbed) {
+
+			print ("ROBOT GRABBED");
+			justReleased = false;
 			target = null;
 			StopCoroutine ("FollowPath");
+			StopCoroutine (UpdatePath ());
 			SetHeight (grabHeight);
-		} else if (!grounded) {
-			Input.mousePosition;
-			rb2D.velocity = new Vector2 (throwSpeed * Mathf.Cos (throwAngle), throwSpeed * Mathf.Sin (throwAngle));
+
+		} else if (!grounded && justReleased) {
+			justReleased = true;
+			Vector2 mouseDir = new Vector2 (Input.GetAxis ("Mouse X"), Input.GetAxis ("Mouse Y"));
+			float throwSpeed = mouseDir.magnitude;
+			mouseDir.Normalize();
+
+			rb2D.velocity = new Vector2 (throwSpeed * mouseDir.x, throwSpeed * mouseDir.y);
 			Throw (0.0f, -1.0f);
-			// throw at a speed relative to the mouse velocity, maybe... the airTime would be 
-			// give it negative air time to avoid trajectory (due to the vertical drop
-		} else {
-			UpdateFlight ();
-		}
+			// throw at a speed relative to the mouse velocity, maybe... the airTime would be ... hmm
+			// give it negative air time to avoid trajectory (due to the vertical drop)
+		} 
+
+		UpdateShadow ();
+		// TODO: double check how the path updates when the sprite moves when dragged/dropped
+		// StopCoroutine("FollowPath");
+		// StartCoRoutine("FollowPath");
 	}
 
 	bool CheckTarget() {
@@ -87,7 +100,7 @@ public class Robot : Throwable {
 
 	IEnumerator FollowPath() {
 		Vector3 currentWaypoint = path [0];
-		float sqrTargetSlowdownDistance= targetSlowdownDistance * targetSlowdownDistance;
+		float sqrTargetSlowdownDistance = targetSlowdownDistance * targetSlowdownDistance;
 
 		while (true) {
 			if (transform.position == currentWaypoint) {

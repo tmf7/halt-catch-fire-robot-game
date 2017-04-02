@@ -15,14 +15,14 @@ public class ShadowController : MonoBehaviour {
 	private float 			colliderHeight;
 
 	void Awake () { 
+		parentRB = GetComponentInParent<Rigidbody2D> ();
 		rb3D = GetComponent<Rigidbody> ();
 		boxCollider = GetComponent<BoxCollider> ();
-		rb3D.isKinematic = true;
 
-		// move the box origin/center to slightly above the plane so it can properly collide with the plane
+		// move the box origin/center to slightly above the x-y plane because
+		// the shadowOffset is calculated from the cube's bottom face's z-value
 		colliderHeight = boxCollider.size.z * 0.5f;
-		rb3D.transform.position += Vector3.forward * colliderHeight;
-		parentRB = GetComponentInParent<Rigidbody2D> ();
+		grounded = true;
 	}
 
 	// for thrown boxes use velocity == Vector3.forward * parentRB.velocity.y
@@ -49,11 +49,11 @@ public class ShadowController : MonoBehaviour {
 
 	public bool grounded {
 		get { 
-			return GetShadowOffset() < 0.0f;
+			return GetShadowOffset() <= 0.0f;
 		}
 		set {
 			rb3D.velocity = value ? Vector3.zero : rb3D.velocity;
-			rb3D.transform.position = value ? new Vector3(rb3D.transform.position.x, rb3D.transform.position.y, 0.0f) : rb3D.transform.position;
+			rb3D.transform.position = value ? new Vector3(parentRB.transform.position.x, parentRB.transform.position.y, colliderHeight) : rb3D.transform.position;
 			rb3D.isKinematic = value;
 			offsetSlope = 0.0f;
 			startPosX = rb3D.transform.position.x;

@@ -65,7 +65,7 @@ public class Box : Throwable {
 */
 
 	void Update () {
-		UpdateFlight ();	
+		UpdateShadow ();	
 	}
 
 	void OnCollisionEnter2D(Collision2D collision) {

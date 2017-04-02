@@ -5,7 +5,7 @@ using UnityEngine;
 public class Throwable : MonoBehaviour {
 
 	public LayerMask 			airStrikeMask;
-	public LayerMask			groundStrikeMask;
+	public LayerMask			groundedResetMask;
 	public float 				groundedDrag = 10.0f;
 	public float 				deadlyHeight;
 	public GameObject 			dropShadowPrefab;
@@ -13,15 +13,13 @@ public class Throwable : MonoBehaviour {
 	protected GameObject		dropShadow;
 	protected ShadowController 	shadowController;
 	protected Rigidbody2D 		rb2D;
-	protected float 			oldShadowOffset;
+	protected float 			oldShadowOffset = 0.0f;
+	protected bool 				justLanded;
 
 	void Awake() {
 		dropShadow = Instantiate<GameObject> (dropShadowPrefab, transform.position, Quaternion.identity);
-	}
-
-	void Start () {
-		rb2D = GetComponent<Rigidbody2D> ();
 		shadowController = GetComponentInChildren<ShadowController> ();
+		rb2D = GetComponent<Rigidbody2D> ();
 	}
 
 	// TODO: use negative airTime to ignore trajectory
@@ -31,7 +29,7 @@ public class Throwable : MonoBehaviour {
 
 		shadowController.SetVelocity(Vector3.forward * verticalSpeed);
 		shadowController.SetKinematic (false);
-		shadowController.SetTrajectory (airTime);		// TODO: check for negative or zero airTime, maybe
+		shadowController.SetTrajectory (airTime);
 	}
 
 	public void SetHeight(float height) {
@@ -44,11 +42,13 @@ public class Throwable : MonoBehaviour {
 		}
 	}
 
-	protected void UpdateFlight() {
+	protected void UpdateShadow() {
 		if (!grounded) {
+			justLanded = false;
 			rb2D.gravityScale = 1.0f;
 			rb2D.drag = 0.0f;
 			dropShadow.SetActive(true);
+			gameObject.layer = LayerMask.NameToLayer ("Flying");
 
 			float shadowOffset = shadowController.GetShadowOffset ();
 
@@ -57,10 +57,12 @@ public class Throwable : MonoBehaviour {
 
 			// coming in for a landing
 			if (shadowOffset < oldShadowOffset && shadowOffset < deadlyHeight)
-				gameObject.layer = (int)Mathf.Log (groundStrikeMask, 2);
+				gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
 
 			oldShadowOffset = shadowOffset;
-		} else if (rb2D.gravityScale != 0.0f) {
+		} else if (!justLanded) {
+			justLanded = true;
+			gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
 			rb2D.gravityScale = 0.0f;
 			rb2D.drag = groundedDrag;
 			rb2D.velocity = Vector2.zero;
