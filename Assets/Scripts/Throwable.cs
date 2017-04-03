@@ -12,13 +12,15 @@ public class Throwable : MonoBehaviour {
 
 	protected GameObject		dropShadow;
 	protected ShadowController 	shadowController;
+	protected SpriteRenderer	spriteRenderer;
 	protected Rigidbody2D 		rb2D;
 	protected float 			oldShadowOffset = 0.0f;
-	protected bool 				justLanded;
+	protected bool 				landingResolved;
 
 	void Awake() {
 		dropShadow = Instantiate<GameObject> (dropShadowPrefab, transform.position, Quaternion.identity);
 		shadowController = GetComponentInChildren<ShadowController> ();
+		spriteRenderer = GetComponent<SpriteRenderer> ();
 		rb2D = GetComponent<Rigidbody2D> ();
 	}
 
@@ -44,11 +46,12 @@ public class Throwable : MonoBehaviour {
 
 	protected void UpdateShadow() {
 		if (!grounded) {
-			justLanded = false;
+			landingResolved = false;
 			rb2D.gravityScale = 1.0f;
 			rb2D.drag = 0.0f;
 			dropShadow.SetActive(true);
 			gameObject.layer = LayerMask.NameToLayer ("Flying");
+			spriteRenderer.sortingLayerName = "Flying";
 
 			float shadowOffset = shadowController.GetShadowOffset ();
 
@@ -60,9 +63,10 @@ public class Throwable : MonoBehaviour {
 				gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
 
 			oldShadowOffset = shadowOffset;
-		} else if (!justLanded) {
-			justLanded = true;
+		} else if (!landingResolved) {
+			landingResolved = true;
 			gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
+			spriteRenderer.sortingLayerName = "Units";
 			rb2D.gravityScale = 0.0f;
 			rb2D.drag = groundedDrag;
 			rb2D.velocity = Vector2.zero;

@@ -69,7 +69,6 @@ public class Box : Throwable {
 	}
 
 	void OnCollisionEnter2D(Collision2D collision) {
-		print ("HIT SOMETHING: " + collision.collider.tag);
 		if (!grounded && collision.gameObject.layer == Mathf.Log(airStrikeMask.value,2)) {
 			ExplodeBox ();
 		}

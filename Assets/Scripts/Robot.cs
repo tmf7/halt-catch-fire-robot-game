@@ -5,11 +5,13 @@ using Random = UnityEngine.Random;
 
 public class Robot : Throwable {
 
-	public bool 		grabbed;
 	public Transform 	target;
 	public float 		speed = 5.0f;
 	public float 		targetSlowdownDistance = 10.0f;
 	public float 		grabHeight = 1.0f;
+
+	[HideInInspector]
+	public bool 		grabbed;
 
 	private Vector3[] 	path;
 	private int 		targetIndex;
@@ -17,10 +19,13 @@ public class Robot : Throwable {
 	private const float minPathUpdateTime = 0.2f;
 	private const float stoppingThreshold = 0.01f;
 	private bool 		justReleased;
-//	private Vector3 	oldMousePosition;
-//	private float 		mouseSpeed;
+
+	private Animator 	animator;
+	private Vector3 	oldMousePosition;
+	private float 		mouseSpeed;
 
 	void Start() {
+		animator = GetComponent<Animator> ();
 		StartCoroutine (UpdatePath ());
 	}
 
@@ -34,21 +39,21 @@ public class Robot : Throwable {
 	}
 
 	void Update() {
-//		mouseSpeed = Mathf.Abs(Input.mousePosition - oldMousePosition) / Time.deltaTime;
-//		oldMousePosition = Input.mousePosition;
+		mouseSpeed = (Input.mousePosition - oldMousePosition).magnitude / Time.deltaTime;
+		oldMousePosition = Input.mousePosition;
 
 		if (grabbed) {
 
-			print ("ROBOT GRABBED");
 			justReleased = false;
 			target = null;
 			StopCoroutine ("FollowPath");
 			StopCoroutine (UpdatePath ());
 			SetHeight (grabHeight);
 
-		} else if (!grounded && justReleased) {
+		} else if (!grounded && !justReleased) {
 			justReleased = true;
-			Vector2 mouseDir = new Vector2 (Input.GetAxis ("Mouse X"), Input.GetAxis ("Mouse Y"));
+			Vector2 mouseDir = Camera.main.ScreenToWorldPoint(Input.mousePosition) - transform.position;
+			print ("MOUSE DIR: " + mouseDir);
 			float throwSpeed = mouseDir.magnitude;
 			mouseDir.Normalize();
 
@@ -56,12 +61,13 @@ public class Robot : Throwable {
 			Throw (0.0f, -1.0f);
 			// throw at a speed relative to the mouse velocity, maybe... the airTime would be ... hmm
 			// give it negative air time to avoid trajectory (due to the vertical drop)
-		} 
-
+		} else if (grounded && !landingResolved) {
+			rb2D.transform.rotation = Quaternion.identity;
+			rb2D.constraints = RigidbodyConstraints2D.FreezeRotation;
+			StopCoroutine (UpdatePath());
+			StartCoroutine (UpdatePath ());
+		}
 		UpdateShadow ();
-		// TODO: double check how the path updates when the sprite moves when dragged/dropped
-		// StopCoroutine("FollowPath");
-		// StartCoRoutine("FollowPath");
 	}
 
 	bool CheckTarget() {
@@ -92,6 +98,7 @@ public class Robot : Throwable {
 		while (true) {
 			yield return new WaitForSeconds (minPathUpdateTime);
 			if (CheckTarget() && (target.position - targetPosOld).sqrMagnitude > sqrMoveThreshold) {
+				print ("UPDATING PATH");
 				PathRequestManager.RequestPath (transform.position, target.position, OnPathFound);
 				targetPosOld = target.position;
 			}
@@ -103,6 +110,7 @@ public class Robot : Throwable {
 		float sqrTargetSlowdownDistance = targetSlowdownDistance * targetSlowdownDistance;
 
 		while (true) {
+			print ("FOLLOWING PATH");
 			if (transform.position == currentWaypoint) {
 				targetIndex++;
 				if (targetIndex >= path.Length) {
@@ -119,7 +127,13 @@ public class Robot : Throwable {
 					yield break;
 			}
 				
+			Vector3 oldPosition = transform.position;
 			transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * percentSpeed * Time.deltaTime);
+			if ((transform.position - oldPosition).x < 0.0f)
+				animator.SetBool ("WalkLeft", true);
+			else
+				animator.SetBool ("WalkLeft", false);
+
 			yield return null;
 		}
 	}
