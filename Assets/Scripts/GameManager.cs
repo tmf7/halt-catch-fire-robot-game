@@ -10,7 +10,9 @@ public class GameManager : MonoBehaviour {
 /*	
 	public float levelStartDelay = 2f;						//Time to wait before starting level, in seconds.
 */	
-	public static GameManager instance = null;
+	public static GameManager 	instance = null;
+	public int 					maxRobots = 10;
+	public int					maxBoxes = 20;
 
 	// TODO: these hazards are already in the scene, not spawned, so just drag their object instances into the GameManager script inputs
 //	public GameObject furnace;	
@@ -19,11 +21,10 @@ public class GameManager : MonoBehaviour {
 //	public GameObject crusher;
 
 	// heierarchy organization
-	public Transform 		boxHolder;		
-	public Transform		robotHolder;
-
+	private Transform 		boxHolder;		
+	private Transform		robotHolder;
 	private List<Box> 		allBoxes;
-	private List<Robot> 	allRobots;		// some robots alreay exist in the scene, grab those and add them to the list, then add any that are spawned
+	private List<Robot> 	allRobots;
 /*
 	[HideInInspector] public bool playersTurn = true;		//Boolean to check if it's players turn, hidden in inspector but public.
 
@@ -44,6 +45,9 @@ public class GameManager : MonoBehaviour {
 		DontDestroyOnLoad(gameObject);
 		allBoxes = new List<Box>();
 		allRobots = new List<Robot> ();
+		boxHolder = new GameObject ("Boxes").transform;
+		robotHolder = new GameObject ("Robots").transform;
+
 		/*		
 		enemies = new List<Enemy>();
 		
@@ -56,12 +60,12 @@ public class GameManager : MonoBehaviour {
 	public void AddBox(Box newBox) {
 		newBox.transform.SetParent (boxHolder);
 		newBox.SetShadowParent (boxHolder);
-		// also set the shadows parent
 		allBoxes.Add (newBox);
 	}
 
 	public void AddRobot(Robot newRobot) {
 		newRobot.transform.SetParent (robotHolder);
+		newRobot.SetShadowParent (robotHolder);
 		allRobots.Add (newRobot);
 	}
 
@@ -79,6 +83,18 @@ public class GameManager : MonoBehaviour {
 
 	public Transform GetRandomRobotTarget () {
 		return allRobots.Count > 0 ? allRobots [Random.Range (0, allRobots.Count - 1)].transform : null;
+	}
+
+	public int robotCount {
+		get {
+			return allRobots.Count;
+		}
+	}
+		
+	public int boxCount {
+		get {
+			return allBoxes.Count;
+		}
 	}
 
 /*

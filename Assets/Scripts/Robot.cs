@@ -92,33 +92,31 @@ public class Robot : Throwable {
 	}
 
 	bool SearchForTarget() {
-		while (true) {
-			if (target != null || currentState == RobotStates.STATE_REPAIRING)
-				return true;
-		
-			// SEARCH for a box to pickup, not just a random box. (meaning do a box2d sweep, then path to a random valid cell if nothing is found) 
-			switch (currentState) {
-				case RobotStates.STATE_NORMAL:
-					target = GameManager.instance.GetRandomBoxTarget();
-					break;
-				case RobotStates.STATE_SUICIDAL:
-					// change the robot visual
-					// target a hazard (pit, furnace, crusher) and fall/fire/explode on contact with those
-					break;
-				case RobotStates.STATE_HOMICIDAL:
-					target = GameManager.instance.GetRandomRobotTarget ();
-					// target a random robot to deliver (as if a box), and again, and again
-					break;
-				case RobotStates.STATE_ONFIRE: 
-					// run around like a crazy person
-					break;
-			}
-
-			if (target == null) {
-				//SetStateRandom ();
-			}
-			return target != null;
+		if (target != null || currentState == RobotStates.STATE_REPAIRING)
+			return true;
+	
+		// SEARCH for a box to pickup, not just a random box. (meaning do a box2d sweep, then path to a random valid cell if nothing is found) 
+		switch (currentState) {
+			case RobotStates.STATE_NORMAL:
+				target = GameManager.instance.GetRandomBoxTarget();
+				break;
+			case RobotStates.STATE_SUICIDAL:
+				// change the robot visual
+				// target a hazard (pit, furnace, crusher) and fall/fire/explode on contact with those
+				break;
+			case RobotStates.STATE_HOMICIDAL:
+				target = GameManager.instance.GetRandomRobotTarget ();
+				// target a random robot to deliver (as if a box), and again, and again
+				break;
+			case RobotStates.STATE_ONFIRE: 
+				// run around like a crazy person
+				break;
 		}
+
+		if (target == null) {
+			//SetStateRandom ();
+		}
+		return target != null;
 	}
 
 	IEnumerator UpdatePath() {
