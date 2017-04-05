@@ -23,7 +23,7 @@ public class Box : Throwable {
 	}
 
 	void RemoveBox() {
-		GameManager.instance.allBoxes.Remove (this);
+		GameManager.instance.RemoveBox (this);
 		Destroy(shadowController);				// FIXME: may also need to destroy its script instance (hopefully not)
 		Destroy(dropShadow);
 		Destroy(gameObject);

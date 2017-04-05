@@ -5,6 +5,7 @@ using Random = UnityEngine.Random;
 
 public class Robot : Throwable {
 
+	public ParticleSystem robotBeamPrefab;
 	public AudioClip	robotLandingSound;
 	public Transform 	target;
 	public float 		speed = 2.0f;
@@ -12,6 +13,8 @@ public class Robot : Throwable {
 	public float 		grabHeight = 10.0f;
 
 	[HideInInspector]
+	public GameObject 	whoGrabbed;
+
 	public enum RobotStates {
 		STATE_NORMAL,
 		STATE_SUICIDAL,
@@ -28,6 +31,7 @@ public class Robot : Throwable {
 	private const float stoppingThreshold = 0.01f;
 	private bool 		justReleased;
 	private Throwable 	carriedItem;					// FIXME: make sure this starts null because of C#
+	private ParticleSystem robotBeam;
 	private RobotStates	currentState;
 
 	void Start() {
@@ -49,10 +53,17 @@ public class Robot : Throwable {
 		if (grabbed) {
 			// TODO: another robot can set the grabbed boolean
 			// picking up a grabbed robot keeps the two attached and drops/ungrabs all 
+
 			justReleased = false;
-			SetHeight (grabHeight);	// if another robot has grabbed this robot, then dont set hight, just generate a particle effect around this robot
+			if (whoGrabbed.tag == "Player") {
+				SetHeight (grabHeight);
+			}
+			if (robotBeam == null) {
+				robotBeam = Instantiate<ParticleSystem> (robotBeamPrefab, transform.position, Quaternion.identity, transform);
+			} 
 			target = null;
 		} else if (!grounded && !justReleased) {
+			Destroy (robotBeam);					//FIXME: this line is a test
 			justReleased = true;
 			rb2D.velocity = new Vector2(dropForce.x, dropForce.y);
 			Throw (0.0f, -1.0f);
@@ -85,20 +96,17 @@ public class Robot : Throwable {
 			if (target != null || currentState == RobotStates.STATE_REPAIRING)
 				return true;
 		
-			List<Box> boxes = GameManager.instance.allBoxes;
-			List<Robot> robots = GameManager.instance.allRobots;
-
 			// SEARCH for a box to pickup, not just a random box. (meaning do a box2d sweep, then path to a random valid cell if nothing is found) 
 			switch (currentState) {
 				case RobotStates.STATE_NORMAL:
-					target = boxes.Count > 0 ? boxes [Random.Range (0, boxes.Count - 1)].transform : null;
+					target = GameManager.instance.GetRandomBoxTarget();
 					break;
 				case RobotStates.STATE_SUICIDAL:
 					// change the robot visual
 					// target a hazard (pit, furnace, crusher) and fall/fire/explode on contact with those
 					break;
 				case RobotStates.STATE_HOMICIDAL:
-					target = robots.Count > 0 ? robots [Random.Range (0, robots.Count - 1)].transform : null;
+					target = GameManager.instance.GetRandomRobotTarget ();
 					// target a random robot to deliver (as if a box), and again, and again
 					break;
 				case RobotStates.STATE_ONFIRE: 
@@ -106,10 +114,7 @@ public class Robot : Throwable {
 					break;
 			}
 
-			if (target != null) {
-				StopCoroutine ("UpdatePath");
-				StartCoroutine ("UpdatePath");
-			} else {
+			if (target == null) {
 				//SetStateRandom ();
 			}
 			return target != null;

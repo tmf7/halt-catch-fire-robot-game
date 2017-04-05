@@ -38,6 +38,7 @@ public class RobotGrabber : MonoBehaviour {
 				// stop the robot from pathfinding/following while grabbed
 				grabbedRobot = collider.gameObject.GetComponent<Robot> ();
 				grabbedRobot.grabbed = true;
+				grabbedRobot.whoGrabbed = gameObject;
 
 				// create a hinge on the robot sprite at its top-center for a cleaner effect
 				joint = collider.gameObject.AddComponent<DistanceJoint2D> ();

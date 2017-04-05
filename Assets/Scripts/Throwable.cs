@@ -10,9 +10,10 @@ public abstract class Throwable : MonoBehaviour {
 	public float 				deadlyHeight;
 	public GameObject 			dropShadowPrefab;
 
+	[HideInInspector] 
+	public Vector3				dropForce;
 	[HideInInspector]
 	public bool 				grabbed = false;
-	public Vector3				dropForce;
 
 	protected GameObject		dropShadow;
 	protected ShadowController 	shadowController;
@@ -26,6 +27,10 @@ public abstract class Throwable : MonoBehaviour {
 		shadowController = GetComponentInChildren<ShadowController> ();
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 		rb2D = GetComponent<Rigidbody2D> ();
+	}
+
+	public void SetShadowParent(Transform parent) {
+		dropShadow.transform.SetParent (parent);
 	}
 
 	// TODO: use negative airTime to ignore trajectory

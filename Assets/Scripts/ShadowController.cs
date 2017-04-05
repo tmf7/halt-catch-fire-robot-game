@@ -49,7 +49,7 @@ public class ShadowController : MonoBehaviour {
 
 	public bool grounded {
 		get { 
-			return grounded = (GetShadowOffset() <= 0.0f);			// grounded =  ... FIXME: this may be the reason for the cross box thrower behavior, YES, also the 
+			return grounded = (GetShadowOffset() <= 0.0f);
 		}
 		set {
 			rb3D.velocity = value ? Vector3.zero : rb3D.velocity;

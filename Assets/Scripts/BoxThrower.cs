@@ -28,7 +28,6 @@ public class BoxThrower : MonoBehaviour {
 
 	void Start() {
 		nextThrowTime = Time.time + throwDelay;
-		GameManager.instance.allBoxes = new List<Box>();
 	}
 
 	void Update () {
@@ -38,7 +37,7 @@ public class BoxThrower : MonoBehaviour {
 
 			// FIXME: non-zero parent is screwing with the calculations, create a globally visible parent for this and the dropShadow
 			Box thrownBox = Instantiate<Box> (boxPrefab, transform.position, Quaternion.identity);
-			GameManager.instance.allBoxes.Add (thrownBox);
+			GameManager.instance.AddBox (thrownBox);
 
 			Rigidbody2D boxRB;
 			boxRB = thrownBox.GetComponent<Rigidbody2D> ();

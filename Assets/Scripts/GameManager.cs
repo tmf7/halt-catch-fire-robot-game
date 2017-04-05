@@ -4,6 +4,7 @@ using System.Collections;
 
 using System.Collections.Generic;
 using UnityEngine.UI;					//Allows us to use UI.
+using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour {
 /*	
@@ -17,9 +18,12 @@ public class GameManager : MonoBehaviour {
 //	public GameObject fence;
 //	public GameObject crusher;
 
-	[HideInInspector]
-	public List<Box> 	allBoxes;
-	public List<Robot> 	allRobots;		// some robots alreay exist in the scene, grab those and add them to the list, then add any that are spawned
+	// heierarchy organization
+	public Transform 		boxHolder;		
+	public Transform		robotHolder;
+
+	private List<Box> 		allBoxes;
+	private List<Robot> 	allRobots;		// some robots alreay exist in the scene, grab those and add them to the list, then add any that are spawned
 /*
 	[HideInInspector] public bool playersTurn = true;		//Boolean to check if it's players turn, hidden in inspector but public.
 
@@ -36,8 +40,11 @@ public class GameManager : MonoBehaviour {
             instance = this;
         else if (instance != this)
             Destroy(gameObject);	
-/*		
+
 		DontDestroyOnLoad(gameObject);
+		allBoxes = new List<Box>();
+		allRobots = new List<Robot> ();
+		/*		
 		enemies = new List<Enemy>();
 		
 		//Get a component reference to the attached BoardManager script
@@ -45,6 +52,35 @@ public class GameManager : MonoBehaviour {
 		InitGame();
 */
 	}
+
+	public void AddBox(Box newBox) {
+		newBox.transform.SetParent (boxHolder);
+		newBox.SetShadowParent (boxHolder);
+		// also set the shadows parent
+		allBoxes.Add (newBox);
+	}
+
+	public void AddRobot(Robot newRobot) {
+		newRobot.transform.SetParent (robotHolder);
+		allRobots.Add (newRobot);
+	}
+
+	public void RemoveBox(Box oldBox) {
+		allBoxes.Remove (oldBox);
+	}
+
+	public void RemoveRobot(Robot oldRobot) {
+		allRobots.Remove (oldRobot);
+	}
+
+	public Transform GetRandomBoxTarget() {
+		return allBoxes.Count > 0 ? allBoxes [Random.Range (0, allBoxes.Count - 1)].transform : null;
+	}
+
+	public Transform GetRandomRobotTarget () {
+		return allRobots.Count > 0 ? allRobots [Random.Range (0, allRobots.Count - 1)].transform : null;
+	}
+
 /*
     //this is called only once, and the paramter tell it to be called only after the scene was loaded
     //(otherwise, our Scene Load callback would be called the very first load, and we don't want that)
