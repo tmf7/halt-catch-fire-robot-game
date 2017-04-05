@@ -31,7 +31,7 @@ public class ShadowController : MonoBehaviour {
 	}
 
 	public void SetHeight (float height) {
-		rb3D.transform.position = Vector3.forward * height + (Vector3.forward * colliderHeight);	
+		rb3D.transform.position = parentRB.transform.position + Vector3.forward * height + (Vector3.forward * colliderHeight);	
 	}
 
 	public void SetKinematic(bool isKinematic) {
@@ -49,14 +49,14 @@ public class ShadowController : MonoBehaviour {
 
 	public bool grounded {
 		get { 
-			return GetShadowOffset() <= 0.0f;
+			return grounded = (GetShadowOffset() <= 0.0f);			// grounded =  ... FIXME: this may be the reason for the cross box thrower behavior, YES, also the 
 		}
 		set {
 			rb3D.velocity = value ? Vector3.zero : rb3D.velocity;
-			rb3D.transform.position = value ? new Vector3(parentRB.transform.position.x, parentRB.transform.position.y, colliderHeight) : rb3D.transform.position;
+			rb3D.transform.position = value ? parentRB.transform.position + Vector3.forward * colliderHeight : rb3D.transform.position;
 			rb3D.isKinematic = value;
-			offsetSlope = 0.0f;
-			startPosX = rb3D.transform.position.x;
+			offsetSlope = value ? 0.0f : offsetSlope;
+			startPosX = value ? rb3D.transform.position.x : startPosX;
 		}
 	}
 

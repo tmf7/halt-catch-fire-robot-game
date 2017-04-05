@@ -2,13 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Throwable : MonoBehaviour {
+public abstract class Throwable : MonoBehaviour {
 
 	public LayerMask 			airStrikeMask;
 	public LayerMask			groundedResetMask;
 	public float 				groundedDrag = 10.0f;
 	public float 				deadlyHeight;
 	public GameObject 			dropShadowPrefab;
+
+	[HideInInspector]
+	public bool 				grabbed = false;
+	public Vector3				dropForce;
 
 	protected GameObject		dropShadow;
 	protected ShadowController 	shadowController;
@@ -44,6 +48,9 @@ public class Throwable : MonoBehaviour {
 		}
 	}
 
+	// must be defined by inherited classes Robot and Box
+	protected abstract void OnLanding ();
+
 	protected void UpdateShadow() {
 		if (!grounded) {
 			landingResolved = false;
@@ -67,10 +74,13 @@ public class Throwable : MonoBehaviour {
 			landingResolved = true;
 			gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
 			spriteRenderer.sortingLayerName = "Units";
+			rb2D.transform.rotation = Quaternion.identity;
+			rb2D.constraints = RigidbodyConstraints2D.FreezeRotation;
 			rb2D.gravityScale = 0.0f;
 			rb2D.drag = groundedDrag;
 			rb2D.velocity = Vector2.zero;
 			dropShadow.SetActive(false);
+			OnLanding ();
 		}
 	}
 }
