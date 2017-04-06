@@ -1,6 +1,19 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+using Random = UnityEngine.Random;
+
+[Serializable]
+public class Range {
+	public float minimum;
+	public float maximum;
+
+	public Range (float min, float max) {
+		minimum = min;
+		maximum = max;
+	}
+}
 
 public abstract class Throwable : MonoBehaviour {
 
@@ -9,6 +22,10 @@ public abstract class Throwable : MonoBehaviour {
 	public float 				groundedDrag = 10.0f;
 	public float 				deadlyHeight;
 	public GameObject 			dropShadowPrefab;
+	public GameObject 			explosionPrefab;
+	public Range 				throwSpeeds = new Range(8.0f, 12.0f);
+	public Range 				throwAnglesDeg = new Range (30.0f, 150.0f);
+	public Range				airTimes = new Range(0.5f, 2.0f);
 
 	[HideInInspector] 
 	public Vector3				dropForce;
@@ -33,14 +50,20 @@ public abstract class Throwable : MonoBehaviour {
 		dropShadow.transform.SetParent (parent);
 	}
 
-	// TODO: use negative airTime to ignore trajectory
+	// negative airTime to ignores trajectory of a parabola
 	public void Throw(float verticalSpeed, float airTime) {
-		// specific to the box being thrown from the box thrower
-		// the grabbed and tossed robot will behave differently (ie set an held at a specific height, then dropped straight down, or tossed in some random direction, horizontally NOT FULL PARABOLIC)
-
 		shadowController.SetVelocity(Vector3.forward * verticalSpeed);
 		shadowController.SetKinematic (false);
 		shadowController.SetTrajectory (airTime);
+	}
+
+	public void RandomThrow() {
+		float throwSpeed = Random.Range (throwSpeeds.minimum, throwSpeeds.maximum);
+		float throwAngle = Random.Range (throwAnglesDeg.minimum * Mathf.Deg2Rad, throwAnglesDeg.maximum * Mathf.Deg2Rad);
+		float airTime = Random.Range (airTimes.minimum, airTimes.maximum);
+		rb2D.velocity = new Vector2 (throwSpeed * Mathf.Cos (throwAngle), throwSpeed * Mathf.Sin (throwAngle));
+		SetHeight (2.0f * deadlyHeight);
+		Throw (rb2D.velocity.y, airTime);
 	}
 
 	public void SetHeight(float height) {
@@ -86,6 +109,26 @@ public abstract class Throwable : MonoBehaviour {
 			rb2D.velocity = Vector2.zero;
 			dropShadow.SetActive(false);
 			OnLanding ();
+		}
+	}
+
+	public void Explode() {
+		Instantiate<GameObject> (explosionPrefab, transform.position, Quaternion.identity);
+		Remove();
+	}
+
+	protected void Remove() {
+		GameManager.instance.Remove (this);
+		Destroy(shadowController);				// FIXME: may also need to destroy its script instance (hopefully not)
+		Destroy(dropShadow);
+		Destroy(gameObject);
+		Destroy (this);
+	}
+
+	void OnTriggerEnter2D(Collider2D collider) {
+		print ("EXIT HIT");
+		if (collider.tag == "Finish") {
+			RandomThrow ();
 		}
 	}
 }

@@ -4,8 +4,13 @@ using UnityEngine;
 
 public class Box : Throwable {
 
-	public GameObject 		explosionPrefab;
 	public AudioClip[]		boxLandingSounds;
+
+	[HideInInspector]
+	public bool 		willExit = false;
+
+	private float 		exitTime;
+	private float 		exitDelay = 1.0f;
 
 	void Update () {
 		UpdateShadow ();	
@@ -13,21 +18,8 @@ public class Box : Throwable {
 
 	void OnCollisionEnter2D(Collision2D collision) {
 		if (!grounded && collision.gameObject.layer == Mathf.Log(airStrikeMask.value,2)) {
-			ExplodeBox ();
+			Explode ();
 		}
-	}
-
-	public void ExplodeBox() {
-		Instantiate<GameObject> (explosionPrefab, transform.position, Quaternion.identity);
-		RemoveBox();
-	}
-
-	void RemoveBox() {
-		GameManager.instance.RemoveBox (this);
-		Destroy(shadowController);				// FIXME: may also need to destroy its script instance (hopefully not)
-		Destroy(dropShadow);
-		Destroy(gameObject);
-		Destroy (this);
 	}
 
 	protected override void OnLanding () {

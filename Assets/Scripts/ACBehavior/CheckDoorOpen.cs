@@ -4,31 +4,35 @@ using UnityEngine;
 
 public class CheckDoorOpen : StateMachineBehaviour {
 
-	public RobotSpawner spawner;
+	public Robot 	robotPrefab;
+	public float	doorCloseDelay = 1.0f;
+	public bool 	spawnEnabled = true;
 
-	 // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
-	override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-		spawner = GameObject.FindGameObjectWithTag ("Respawn").GetComponent<RobotSpawner>();
-	}
+	private float	doorCloseTime;
+	private bool 	spawnOn;
+	private bool	hasSpawned = false;
+	private bool	doorOpened;
 
-	// OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
 	override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-		if (stateInfo.normalizedTime > 1.0f)
-			spawner.doorOpened = true;
+		spawnOn = spawnEnabled && (GameManager.instance.robotCount <= GameManager.instance.maxRobots);
+
+		if (stateInfo.normalizedTime > 1.0f) {
+			doorOpened = true;
+		} else {
+			doorOpened = false;
+			hasSpawned = false;
+		}
+			
+		if (spawnOn && doorOpened && !hasSpawned) {
+			doorCloseTime = Time.time + doorCloseDelay;
+			// the next spawnTime should be set after the door is determined to be fully closed
+			Robot spawnedRobot = Instantiate<Robot> (robotPrefab, animator.transform.position, Quaternion.identity);
+			GameManager.instance.AddRobot (spawnedRobot);
+			hasSpawned = true;
+		}
+
+		if (spawnOn && doorOpened && Time.time > doorCloseTime) {
+			animator.SetTrigger ("CloseDoor");
+		}
 	}
-
-	// OnStateExit is called when a transition ends and the state machine finishes evaluating this state
-	//override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-	//
-	//}
-
-	// OnStateMove is called right after Animator.OnAnimatorMove(). Code that processes and affects root motion should be implemented here
-	//override public void OnStateMove(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-	//
-	//}
-
-	// OnStateIK is called right after Animator.OnAnimatorIK(). Code that sets up animation IK (inverse kinematics) should be implemented here.
-	//override public void OnStateIK(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-	//
-	//}
 }

@@ -5,15 +5,39 @@ using Random = UnityEngine.Random;
 
 public class Robot : Throwable {
 
-	public ParticleSystem robotBeamPrefab;
+	public ParticleSystem 	firePrefab;
+	public ParticleSystem 	robotBeamPrefab;
 	public AudioClip	robotLandingSound;
 	public Transform 	target;
 	public float 		speed = 2.0f;
 	public float 		slowdownDistance = 2.0f;
 	public float 		grabHeight = 10.0f;
+	public float		damageRate = 9.0f;
+	public float		healRate = 10.0f;
+	public float		maxHealth = 100.0f;
 
 	[HideInInspector]
-	public GameObject 	whoGrabbed;
+	public GameObject	whoGrabbed;
+	[HideInInspector]
+	public float 		health = 100;
+	[HideInInspector]
+	public bool 		onHealing = false;
+	[HideInInspector]
+	public ParticleSystem fireReference;
+
+
+	[HideInInspector]
+	public bool onFire {
+		get { 
+			return fireReference != null;
+		} set { 
+			if (value)
+				fireReference = Instantiate (firePrefab, transform.position, Quaternion.identity, transform);
+			else
+				Destroy (fireReference);
+		}
+	}
+
 
 	public enum RobotStates {
 		STATE_NORMAL,
@@ -68,6 +92,24 @@ public class Robot : Throwable {
 			rb2D.velocity = new Vector2(dropForce.x, dropForce.y);
 			Throw (0.0f, -1.0f);
 		} 
+
+		if (onFire)
+			health -= Time.deltaTime * damageRate;
+
+		if (onHealing) {
+			onFire = false;
+
+			currentState = RobotStates.STATE_REPAIRING;
+			health += Time.deltaTime * healRate;
+			if (health > maxHealth) {
+				health = maxHealth;
+				onHealing = false;
+			}
+		}
+
+		if (health <= 0) 
+			Explode();
+		
 		UpdateShadow ();
 	}
 
@@ -183,12 +225,28 @@ public class Robot : Throwable {
 
 	void OnCollisionEnter2D(Collision2D collision) {
 		if (collision.collider.tag == "Box") { // AND the box is the target box...or just pickup the first box you hit, its all the same
-			Box hit = collision.collider.gameObject.GetComponent<Box> ();
-			hit.ExplodeBox ();
+			Box hitBox = collision.collider.gameObject.GetComponent<Box> ();
+			hitBox.Explode ();
 		}
 		// if the robot has collided with its target (and its a box~)
 		// then pick the box up (shift its y a little up)
 		// and start moving with the box (give the Box object a posseser, or assign a gameobject to a private variable in Robot, or both)
+
+
+		if (collision.collider.tag == "Furnace") {
+			if (!onFire)
+				onFire = true;
+		}
+
+		if (collision.collider.tag == "Robot") {
+			if (!onFire && collision.collider.GetComponent<Robot> ().onFire)
+				onFire = true;
+		}
+	}
+
+	void OnTriggerEnter2D(Collider2D collider) {
+		if (collider.tag == "HealZone")
+			onHealing = true;
 	}
 
 	// Debug Drawing

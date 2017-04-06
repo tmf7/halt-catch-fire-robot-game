@@ -4,31 +4,27 @@ using UnityEngine;
 
 public class CheckDoorClosed : StateMachineBehaviour {
 
-	public RobotSpawner spawner;
+	public float 	spawnDelay = 3.0f;
 
-	 // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
-	override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-		spawner = GameObject.FindGameObjectWithTag ("Respawn").GetComponent<RobotSpawner>();
-	}
+	private float	nextSpawnTime;
+	private bool	doorClosed;
+	private bool	waitSpawn;
 
-	// OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
 	override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-		if (stateInfo.normalizedTime > 1.0f)
-			spawner.doorClosed = true;
+		if (stateInfo.normalizedTime > 1.0f) {
+			doorClosed = true;
+		} else {
+			doorClosed = false;
+		}
+
+		if (doorClosed && !waitSpawn) {
+			waitSpawn = true;
+			nextSpawnTime = Time.time + spawnDelay;
+		}
+
+		if (doorClosed && Time.time > nextSpawnTime) {
+			// doorClosed = false;
+			animator.SetTrigger ("OpenDoor");
+		}
 	}
-
-	// OnStateExit is called when a transition ends and the state machine finishes evaluating this state
-	//override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-	//
-	//}
-
-	// OnStateMove is called right after Animator.OnAnimatorMove(). Code that processes and affects root motion should be implemented here
-	//override public void OnStateMove(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-	//
-	//}
-
-	// OnStateIK is called right after Animator.OnAnimatorIK(). Code that sets up animation IK (inverse kinematics) should be implemented here.
-	//override public void OnStateIK(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) {
-	//
-	//}
 }

@@ -69,12 +69,12 @@ public class GameManager : MonoBehaviour {
 		allRobots.Add (newRobot);
 	}
 
-	public void RemoveBox(Box oldBox) {
-		allBoxes.Remove (oldBox);
-	}
-
-	public void RemoveRobot(Robot oldRobot) {
-		allRobots.Remove (oldRobot);
+	public void Remove(Throwable item) {
+		if (item is Box) {
+			allBoxes.Remove (item as Box);
+		} else if (item is Robot) {
+			allRobots.Remove (item as Robot);
+		}
 	}
 
 	public Transform GetRandomBoxTarget() {
