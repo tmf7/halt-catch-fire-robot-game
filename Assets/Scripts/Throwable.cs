@@ -76,8 +76,6 @@ public abstract class Throwable : MonoBehaviour {
 		}
 	}
 
-	// must be defined by inherited classes Robot and Box
-	protected abstract void OnLanding ();
 
 	protected void UpdateShadow() {
 		if (!grounded) {
@@ -126,9 +124,10 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	void OnTriggerEnter2D(Collider2D collider) {
-		print ("EXIT HIT");
-		if (collider.tag == "Finish") {
-			RandomThrow ();
-		}
+		HitTrigger2D (collider);
 	}
+
+	// these must be defined by inherited classes Robot and Box
+	protected abstract void OnLanding ();
+	protected abstract void HitTrigger2D (Collider2D collider);
 }

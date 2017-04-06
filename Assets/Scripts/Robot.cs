@@ -37,8 +37,7 @@ public class Robot : Throwable {
 				Destroy (fireReference);
 		}
 	}
-
-
+		
 	public enum RobotStates {
 		STATE_NORMAL,
 		STATE_SUICIDAL,
@@ -77,12 +76,12 @@ public class Robot : Throwable {
 		if (grabbed) {
 			// TODO: another robot can set the grabbed boolean
 			// picking up a grabbed robot keeps the two attached and drops/ungrabs all 
+			// picking up a grabbing robot makes it drop its carried item
 
 			justReleased = false;
 			if (whoGrabbed.tag == "Player") {
 				SetHeight (grabHeight);
-			}
-			if (robotBeam == null) {
+			} else if (whoGrabbed.tag == "Robot" && robotBeam == null) {
 				robotBeam = Instantiate<ParticleSystem> (robotBeamPrefab, transform.position, Quaternion.identity, transform);
 			} 
 			target = null;
@@ -134,7 +133,11 @@ public class Robot : Throwable {
 	}
 
 	bool SearchForTarget() {
-		if (target != null || currentState == RobotStates.STATE_REPAIRING)
+
+		if (currentState == RobotStates.STATE_REPAIRING)
+			return false;
+
+		if (target != null)
 			return true;
 	
 		// SEARCH for a box to pickup, not just a random box. (meaning do a box2d sweep, then path to a random valid cell if nothing is found) 
@@ -174,8 +177,9 @@ public class Robot : Throwable {
 		Vector3 targetPosOld = target.position;
 
 		while (true) {
+			Vector3 oldPosition = transform.position;
 			yield return new WaitForSeconds (minWaitTime);
-			if (grounded && SearchForTarget() && (target.position - targetPosOld).sqrMagnitude > pathUpdateMoveThreshold) {
+			if (grounded && SearchForTarget() && (((target.position - targetPosOld).sqrMagnitude > pathUpdateMoveThreshold) || transform.position == oldPosition)) {	// !followingPath
 				PathRequestManager.RequestPath (transform.position, target.position, OnPathFound);
 				targetPosOld = target.position;
 			}
@@ -224,9 +228,19 @@ public class Robot : Throwable {
 	}
 
 	void OnCollisionEnter2D(Collision2D collision) {
-		if (collision.collider.tag == "Box") { // AND the box is the target box...or just pickup the first box you hit, its all the same
-			Box hitBox = collision.collider.gameObject.GetComponent<Box> ();
-			hitBox.Explode ();
+		if (carriedItem == null) {
+			if (currentState == RobotStates.STATE_NORMAL && collision.collider.tag == "Box") { // AND the box is the target box...or just pickup the first box you hit, its all the same
+				Box hitBox = collision.collider.gameObject.GetComponent<Box> ();
+				hitBox.transform.SetParent (transform);
+				hitBox.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
+				carriedItem = hitBox;
+				// then set its transform.position x/y (z=0) relative to the robots current intended movement along path
+			} else if (currentState == RobotStates.STATE_HOMICIDAL && collision.collider.tag == "Robot") {
+				Robot hitRobot = collision.collider.gameObject.GetComponent<Box> ();
+				hitRobot.transform.SetParent (transform);
+				hitRobot.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
+				carriedItem = hitRobot;
+			}
 		}
 		// if the robot has collided with its target (and its a box~)
 		// then pick the box up (shift its y a little up)
@@ -244,7 +258,10 @@ public class Robot : Throwable {
 		}
 	}
 
-	void OnTriggerEnter2D(Collider2D collider) {
+	protected override void HitTrigger2D (Collider2D collider) {
+		if (collider.tag == "Finish") {
+			RandomThrow ();
+		}
 		if (collider.tag == "HealZone")
 			onHealing = true;
 	}

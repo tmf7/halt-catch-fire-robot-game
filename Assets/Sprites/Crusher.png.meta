@@ -1,6 +1,6 @@
 fileFormatVersion: 2
-guid: 4896460068091c242b82ee82fc838660
-timeCreated: 1491378204
+guid: 64d759e12ca1b0f40b40369074299de7
+timeCreated: 1491464081
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
@@ -119,10 +119,10 @@ TextureImporter:
       name: Crusher_0
       rect:
         serializedVersion: 2
-        x: 12
-        y: 0
+        x: 16
+        y: 4
         width: 102
-        height: 256
+        height: 240
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -132,10 +132,10 @@ TextureImporter:
       name: Crusher_1
       rect:
         serializedVersion: 2
-        x: 137
-        y: 0
+        x: 140
+        y: 5
         width: 102
-        height: 256
+        height: 240
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -148,7 +148,7 @@ TextureImporter:
         x: 256
         y: 0
         width: 128
-        height: 256
+        height: 240
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -161,7 +161,7 @@ TextureImporter:
         x: 256
         y: 0
         width: 128
-        height: 256
+        height: 240
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -171,10 +171,10 @@ TextureImporter:
       name: Crusher_4
       rect:
         serializedVersion: 2
-        x: 137
-        y: 0
+        x: 140
+        y: 5
         width: 102
-        height: 256
+        height: 240
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -184,10 +184,10 @@ TextureImporter:
       name: Crusher_5
       rect:
         serializedVersion: 2
-        x: 12
-        y: 0
+        x: 16
+        y: 4
         width: 102
-        height: 256
+        height: 240
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
