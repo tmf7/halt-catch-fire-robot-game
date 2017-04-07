@@ -5,7 +5,6 @@ using UnityEngine;
 public class BoxThrower : MonoBehaviour {
 
 	public Box 			boxPrefab;
-	public AudioClip[]	throwBoxSounds;
 	public float 		throwDelay;
 
 	private float 		nextThrowTime;
@@ -22,7 +21,6 @@ public class BoxThrower : MonoBehaviour {
 			Box thrownBox = Instantiate<Box> (boxPrefab, transform.position, Quaternion.identity);
 			GameManager.instance.AddBox (thrownBox);
 			thrownBox.RandomThrow ();
-			SoundManager.instance.PlayRandomSoundFx (throwBoxSounds);
 		}
 	}
 }

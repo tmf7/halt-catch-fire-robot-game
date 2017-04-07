@@ -7,7 +7,8 @@ public class Robot : Throwable {
 
 	public ParticleSystem 	firePrefab;
 	public ParticleSystem 	robotBeamPrefab;
-	public AudioClip	robotLandingSound;
+	public AudioClip 		repairingSound;
+
 	public Transform 	target;
 	public float 		speed = 2.0f;
 	public float 		slowdownDistance = 2.0f;
@@ -16,6 +17,8 @@ public class Robot : Throwable {
 	public float		healRate = 10.0f;
 	public float		maxHealth = 100.0f;
 
+
+	// state machine
 	[HideInInspector]
 	public GameObject	whoGrabbed;
 	[HideInInspector]
@@ -39,36 +42,40 @@ public class Robot : Throwable {
 	}
 		
 	public enum RobotStates {
-		STATE_NORMAL,
+		STATE_FINDBOX,
 		STATE_SUICIDAL,
 		STATE_HOMICIDAL,
 		STATE_ONFIRE,
+		STATE_DELIVERING,
 		STATE_REPAIRING
 	};
 
-	private Animator 	animator;
+	// pathing
 	private Vector3[] 	path;
 	private int 		targetIndex;
+	private Vector3 	currentWaypoint;
+	private Vector3		targetLastKnownPosition;
+	private float 		sqrTargetSlowdownDistance;
 	private const float	pathUpdateMoveThreshold = 0.25f;
 	private const float minWaitTime = 0.2f;
 	private const float stoppingThreshold = 0.01f;
+
+	// state machine
 	private bool 		justReleased;
-	private Throwable 	carriedItem;					// FIXME: make sure this starts null because of C#
+	private Throwable 	carriedItem;
 	private ParticleSystem robotBeam;
 	private RobotStates	currentState;
 
 	void Start() {
-		animator = GetComponent<Animator> ();
-		currentState = RobotStates.STATE_NORMAL;
-		StartCoroutine ("UpdatePath");
+		currentState = RobotStates.STATE_FINDBOX;
+		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
 	}
 
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful) {
-		if (grounded && pathSuccessful) {
+		if (pathSuccessful) {
 			path = newPath;
 			targetIndex = 0;
-			StopCoroutine ("FollowPath");
-			StartCoroutine ("FollowPath");
+			currentWaypoint = path [targetIndex];
 		}
 	}
 
@@ -84,13 +91,15 @@ public class Robot : Throwable {
 			} else if (whoGrabbed.tag == "Robot" && robotBeam == null) {
 				robotBeam = Instantiate<ParticleSystem> (robotBeamPrefab, transform.position, Quaternion.identity, transform);
 			} 
-			target = null;
+			StopMoving ();
 		} else if (!grounded && !justReleased) {
 			Destroy (robotBeam);					//FIXME: this line is a test
 			justReleased = true;
-			rb2D.velocity = new Vector2(dropForce.x, dropForce.y);
+			rb2D.velocity = new Vector2 (dropForce.x, dropForce.y);
 			Throw (0.0f, -1.0f);
-		} 
+		} else if (grounded) {
+			SearchForTarget ();
+		}
 
 		if (onFire)
 			health -= Time.deltaTime * damageRate;
@@ -99,6 +108,7 @@ public class Robot : Throwable {
 			onFire = false;
 
 			currentState = RobotStates.STATE_REPAIRING;
+
 			health += Time.deltaTime * healRate;
 			if (health > maxHealth) {
 				health = maxHealth;
@@ -114,13 +124,13 @@ public class Robot : Throwable {
 
 	public void SetState(RobotStates newState) {
 		currentState = newState;
-		target = null;				// allows SearchForTarget to start fresh
+		StopMoving ();
 	}
 
 	public void SetStateRandom() {
 		switch (Random.Range (0, 3)) {
 			case 0:
-				currentState = RobotStates.STATE_NORMAL;
+				currentState = RobotStates.STATE_FINDBOX;
 				break;
 			case 1:
 				currentState = RobotStates.STATE_SUICIDAL;
@@ -129,20 +139,24 @@ public class Robot : Throwable {
 				currentState = RobotStates.STATE_HOMICIDAL;
 				break;
 		}
-		target = null;			// allows SearchForTarget to start fresh
+		StopMoving ();
 	}
 
-	bool SearchForTarget() {
+	void SearchForTarget() {
 
-		if (currentState == RobotStates.STATE_REPAIRING)
-			return false;
-
-		if (target != null)
-			return true;
+		if (currentState == RobotStates.STATE_REPAIRING) {
+			StopMoving ();
+			return;
+		}
+			
+		if (target != null) {
+			FollowPath ();
+			return;
+		}
 	
 		// SEARCH for a box to pickup, not just a random box. (meaning do a box2d sweep, then path to a random valid cell if nothing is found) 
 		switch (currentState) {
-			case RobotStates.STATE_NORMAL:
+			case RobotStates.STATE_FINDBOX:
 				target = GameManager.instance.GetRandomBoxTarget();
 				break;
 			case RobotStates.STATE_SUICIDAL:
@@ -161,85 +175,65 @@ public class Robot : Throwable {
 		if (target == null) {
 			//SetStateRandom ();
 		}
-		return target != null;
 	}
 
-	IEnumerator UpdatePath() {
-		// prevents large Time.deltaTime values when the game first starts up
-		if (Time.timeSinceLevelLoad < minWaitTime) {
-			yield return new WaitForSeconds (minWaitTime);
-		}
-
-		while (!SearchForTarget ()) {
-			yield return null;
-		}
-
-		Vector3 targetPosOld = target.position;
-
-		while (true) {
-			Vector3 oldPosition = transform.position;
-			yield return new WaitForSeconds (minWaitTime);
-			if (grounded && SearchForTarget() && (((target.position - targetPosOld).sqrMagnitude > pathUpdateMoveThreshold) || transform.position == oldPosition)) {	// !followingPath
-				PathRequestManager.RequestPath (transform.position, target.position, OnPathFound);
-				targetPosOld = target.position;
-			}
+	void UpdatePath(bool freshStart) {
+		if (freshStart || (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold) {	// grounded && SearchForTarget() && !followingPath
+			PathRequestManager.RequestPath (transform.position, target.position, OnPathFound);
+			targetLastKnownPosition = target.position;
 		}
 	}
 
-	IEnumerator FollowPath() {
-		Vector3 currentWaypoint = path [0];
-		float sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
-		Vector3 oldPosition = transform.position;
+	void FollowPath() {
 
-		while (true) {
-			if (!grounded)
-				yield return null;
+		UpdatePath (path == null);
 
-			if (transform.position == currentWaypoint) {
-				targetIndex++;
-				if (targetIndex >= path.Length) {
-					// path = null;
-					//target = null;
-					yield break;
-				}
-				currentWaypoint = path [targetIndex];
+		if (path == null)
+			return;
+
+		if (transform.position == currentWaypoint) {
+			targetIndex++;
+			if (targetIndex >= path.Length) {
+				StopMoving ();
+				return;
 			}
-
-			float percentSpeed = 1.0f;
-			float sqrRange = (path [path.Length - 1] - transform.position).sqrMagnitude;
-			if (sqrRange < sqrTargetSlowdownDistance) {
-				percentSpeed = Mathf.Clamp01 (Mathf.Sqrt (sqrRange) / slowdownDistance);
-				if (percentSpeed < stoppingThreshold) {
-					//target = null;
-					yield break;
-				}
-			}
-				
-			transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * percentSpeed * Time.deltaTime);
-			if (transform.position.x - oldPosition.x < 0.0f)
-				animator.SetBool ("WalkLeft", true);
-			else
-				animator.SetBool ("WalkLeft", false);
-
-			oldPosition = transform.position;
-
-			yield return null;
+			currentWaypoint = path [targetIndex];
 		}
+
+		float percentSpeed = 1.0f;
+		float sqrRange = (path [path.Length - 1] - transform.position).sqrMagnitude;
+		if (sqrRange < sqrTargetSlowdownDistance) {
+			percentSpeed = Mathf.Clamp01 (Mathf.Sqrt (sqrRange) / slowdownDistance);
+			if (percentSpeed < stoppingThreshold) {
+				StopMoving ();
+				return;
+			}
+		}
+			
+		transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * percentSpeed * Time.deltaTime);
+	}
+
+	void StopMoving() {
+		path = null;
+		target = null;
+		targetIndex = 0;
+	//	currentWaypoint = null;
 	}
 
 	void OnCollisionEnter2D(Collision2D collision) {
 		if (carriedItem == null) {
-			if (currentState == RobotStates.STATE_NORMAL && collision.collider.tag == "Box") { // AND the box is the target box...or just pickup the first box you hit, its all the same
+			if (currentState == RobotStates.STATE_FINDBOX && collision.collider.tag == "Box") { // AND the box is the target box...or just pickup the first box you hit, its all the same
 				Box hitBox = collision.collider.gameObject.GetComponent<Box> ();
-				hitBox.transform.SetParent (transform);
-				hitBox.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
-				carriedItem = hitBox;
+				hitBox.Explode ();
+			//	hitBox.transform.SetParent (transform);
+			//	hitBox.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
+			//	carriedItem = hitBox;
 				// then set its transform.position x/y (z=0) relative to the robots current intended movement along path
 			} else if (currentState == RobotStates.STATE_HOMICIDAL && collision.collider.tag == "Robot") {
-				Robot hitRobot = collision.collider.gameObject.GetComponent<Box> ();
-				hitRobot.transform.SetParent (transform);
-				hitRobot.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
-				carriedItem = hitRobot;
+			//	Robot hitRobot = collision.collider.gameObject.GetComponent<Robot> ();
+			//	hitRobot.transform.SetParent (transform);
+			//	hitRobot.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
+			//	carriedItem = hitRobot;
 			}
 		}
 		// if the robot has collided with its target (and its a box~)
@@ -262,8 +256,10 @@ public class Robot : Throwable {
 		if (collider.tag == "Finish") {
 			RandomThrow ();
 		}
-		if (collider.tag == "HealZone")
+		if (collider.tag == "HealZone") {
 			onHealing = true;
+			PlaySingleSoundFx (repairingSound);
+		}
 	}
 
 	// Debug Drawing
@@ -283,6 +279,7 @@ public class Robot : Throwable {
 	}
 
 	protected override void OnLanding () {
-		SoundManager.instance.PlayRandomSoundFx (robotLandingSound);
+		base.OnLanding ();
+		// do robot landing stuff
 	}
 }

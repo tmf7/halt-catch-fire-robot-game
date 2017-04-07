@@ -17,6 +17,11 @@ public class Range {
 
 public abstract class Throwable : MonoBehaviour {
 
+	public AudioSource 			efxSource;
+	public AudioClip[]			thrownSounds;
+	public AudioClip[]			landingSounds;
+	public AudioClip[]			explodeSounds;
+
 	public LayerMask 			airStrikeMask;
 	public LayerMask			groundedResetMask;
 	public float 				groundedDrag = 10.0f;
@@ -40,6 +45,7 @@ public abstract class Throwable : MonoBehaviour {
 	protected bool 				landingResolved;
 
 	void Awake() {
+		efxSource = GetComponent<AudioSource> ();
 		dropShadow = Instantiate<GameObject> (dropShadowPrefab, transform.position, Quaternion.identity);
 		shadowController = GetComponentInChildren<ShadowController> ();
 		spriteRenderer = GetComponent<SpriteRenderer> ();
@@ -55,6 +61,7 @@ public abstract class Throwable : MonoBehaviour {
 		shadowController.SetVelocity(Vector3.forward * verticalSpeed);
 		shadowController.SetKinematic (false);
 		shadowController.SetTrajectory (airTime);
+		PlayRandomSoundFx (thrownSounds);
 	}
 
 	public void RandomThrow() {
@@ -75,8 +82,7 @@ public abstract class Throwable : MonoBehaviour {
 			return shadowController.grounded;
 		}
 	}
-
-
+		
 	protected void UpdateShadow() {
 		if (!grounded) {
 			landingResolved = false;
@@ -98,14 +104,6 @@ public abstract class Throwable : MonoBehaviour {
 			oldShadowOffset = shadowOffset;
 		} else if (!landingResolved) {
 			landingResolved = true;
-			gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
-			spriteRenderer.sortingLayerName = "Units";
-			rb2D.transform.rotation = Quaternion.identity;
-			rb2D.constraints = RigidbodyConstraints2D.FreezeRotation;
-			rb2D.gravityScale = 0.0f;
-			rb2D.drag = groundedDrag;
-			rb2D.velocity = Vector2.zero;
-			dropShadow.SetActive(false);
 			OnLanding ();
 		}
 	}
@@ -127,7 +125,29 @@ public abstract class Throwable : MonoBehaviour {
 		HitTrigger2D (collider);
 	}
 
+	protected void PlaySingleSoundFx (AudioClip clip) {
+		efxSource.clip = clip;
+		efxSource.Play ();
+	}
+
+	protected void PlayRandomSoundFx(params AudioClip [] clips) {
+		int randomIndex = Random.Range (0, clips.Length - 1);
+		efxSource.clip = clips [randomIndex];
+		efxSource.Play ();
+	}
+
 	// these must be defined by inherited classes Robot and Box
-	protected abstract void OnLanding ();
+	protected virtual void OnLanding () {
+		gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
+		spriteRenderer.sortingLayerName = "Units";
+		rb2D.transform.rotation = Quaternion.identity;
+		rb2D.constraints = RigidbodyConstraints2D.FreezeRotation;
+		rb2D.gravityScale = 0.0f;
+		rb2D.drag = groundedDrag;
+		rb2D.velocity = Vector2.zero;
+		dropShadow.SetActive(false);
+		PlayRandomSoundFx (landingSounds);
+	}
+
 	protected abstract void HitTrigger2D (Collider2D collider);
 }

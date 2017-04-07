@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class Box : Throwable {
 
-	public AudioClip[]	boxLandingSounds;
 	public float 		exitSpeed = 10;
 	public float 		exitDelay = 1.0f;
 
@@ -26,7 +25,8 @@ public class Box : Throwable {
 	}
 
 	protected override void OnLanding () {
-		SoundManager.instance.PlayRandomSoundFx (boxLandingSounds);
+		base.OnLanding ();
+		// do box landing stuff
 	}
 
 	protected override void HitTrigger2D (Collider2D collider) {

@@ -10,15 +10,14 @@ public class PathRequestManager : MonoBehaviour {
 	private PathFinding 		pathfinding;
 	private bool 				processingPath;
 
-	static PathRequestManager 	instance;
+	static PathRequestManager 	instance = null;
 
 	void Awake() {
-		// FIXME: re-enable this to enforce the singleton
-//		if (instance != this) {
-//			Destroy (this);
-//			return;
-//		}
-		instance = this;
+		if (instance == null)
+			instance = this;
+		else if (instance != this)
+			Destroy(gameObject);	
+
 		pathfinding = GetComponent<PathFinding> ();
 	}
 
