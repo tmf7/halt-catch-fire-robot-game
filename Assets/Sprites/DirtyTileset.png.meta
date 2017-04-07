@@ -1,25 +1,33 @@
 fileFormatVersion: 2
-guid: 9e45b12082a7e9c42b0f7ed73ae1950f
-timeCreated: 1491198394
+guid: 3741dd4524ac67747a5aa5bca4a2ef2a
+timeCreated: 1491598166
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
-    21300000: dungeon_sheet-edited2_18
-    21300002: dungeon_sheet-edited2_19
-    21300004: dungeon_sheet-edited2_37
-    21300006: dungeon_sheet-edited2_38
-    21300008: dungeon_sheet-edited2_39
-    21300010: light0
-    21300012: light1
-    21300014: light2
-    21300016: blink0
-    21300018: blink1
-    21300020: door0
-    21300022: door1
-    21300024: door2
-    21300026: door3
-    21300028: door4
-    21300030: box
+    21300000: DirtyMap32a_36
+    21300002: DirtyMap32a_0
+    21300004: DirtyMap32a_1
+    21300006: DirtyMap32a_2
+    21300008: DirtyMap32a_3
+    21300010: DirtyMap32a_4
+    21300012: DirtyMap32a_5
+    21300014: DirtyMap32a_6
+    21300016: DirtyMap32a_7
+    21300018: DirtyMap32a_8
+    21300020: DirtyMap32a_9
+    21300022: Blink1
+    21300024: Blink0
+    21300026: _PitTest
+    21300028: Box
+    21300030: switch_0
+    21300032: switch_1
+    21300034: switch_2
+    21300036: switch_3
+    21300038: switch_4
+    21300040: switch_5
+    21300042: switch_6
+    21300044: boxShadow
+    21300046: BoxShadow
   serializedVersion: 4
   mipmaps:
     mipMapMode: 0
@@ -126,72 +134,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: light0
-      rect:
-        serializedVersion: 2
-        x: 264
-        y: 98
-        width: 16
-        height: 26
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: light1
-      rect:
-        serializedVersion: 2
-        x: 296
-        y: 98
-        width: 16
-        height: 26
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: light2
-      rect:
-        serializedVersion: 2
-        x: 328
-        y: 98
-        width: 16
-        height: 26
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: blink0
-      rect:
-        serializedVersion: 2
-        x: 42
-        y: 79
-        width: 14
-        height: 12
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: blink1
-      rect:
-        serializedVersion: 2
-        x: 72
-        y: 78
-        width: 16
-        height: 14
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: door0
+      name: DirtyMap32a_0
       rect:
         serializedVersion: 2
         x: 0
@@ -204,7 +147,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: door1
+      name: DirtyMap32a_1
       rect:
         serializedVersion: 2
         x: 96
@@ -217,7 +160,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: door2
+      name: DirtyMap32a_2
       rect:
         serializedVersion: 2
         x: 192
@@ -230,7 +173,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: door3
+      name: DirtyMap32a_3
       rect:
         serializedVersion: 2
         x: 288
@@ -243,7 +186,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: door4
+      name: DirtyMap32a_4
       rect:
         serializedVersion: 2
         x: 384
@@ -256,13 +199,117 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: box
+      name: DirtyMap32a_5
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 2
+        width: 96
+        height: 61
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: DirtyMap32a_6
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 2
+        width: 96
+        height: 61
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: DirtyMap32a_7
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 2
+        width: 96
+        height: 61
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: DirtyMap32a_8
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 2
+        width: 96
+        height: 61
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: DirtyMap32a_9
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 2
+        width: 96
+        height: 61
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: Blink1
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 78
+        width: 16
+        height: 14
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: Blink0
+      rect:
+        serializedVersion: 2
+        x: 40
+        y: 78
+        width: 16
+        height: 14
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: Box
       rect:
         serializedVersion: 2
         x: 454
         y: 64
         width: 20
         height: 28
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: BoxShadow
+      rect:
+        serializedVersion: 2
+        x: 37
+        y: 261
+        width: 20
+        height: 20
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}

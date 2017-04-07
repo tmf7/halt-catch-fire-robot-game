@@ -25,13 +25,11 @@ public class RobotGrabber : MonoBehaviour {
 		worldPosition.z = 0.0f;
 
         if (Input.GetMouseButtonDown(0)) {
-
 			if (joint == null) {
 				RaycastHit2D rayHit = Physics2D.GetRayIntersection (Camera.main.ScreenPointToRay (Input.mousePosition));
 
-
 				collider = rayHit.collider;
-				if (!collider || !collider.attachedRigidbody || collider.gameObject.tag != "Robot")
+				if (!collider || collider.tag != "Robot")
 					return;
   
 				// stop the robot from pathfinding/following while grabbed

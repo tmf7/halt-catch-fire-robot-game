@@ -26,18 +26,18 @@ public class Robot : Throwable {
 	[HideInInspector]
 	public bool 		onHealing = false;
 	[HideInInspector]
-	public ParticleSystem fireReference;
+	public ParticleSystem fireInstance;
 
 
 	[HideInInspector]
 	public bool onFire {
 		get { 
-			return fireReference != null;
+			return fireInstance != null;
 		} set { 
-			if (value)
-				fireReference = Instantiate (firePrefab, transform.position, Quaternion.identity, transform);
-			else
-				Destroy (fireReference);
+			if (!onFire && value)
+				fireInstance = Instantiate<ParticleSystem> (firePrefab, transform.position, Quaternion.identity, transform);
+			else if (onFire)
+				Destroy (fireInstance.gameObject);
 		}
 	}
 		

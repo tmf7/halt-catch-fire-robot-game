@@ -17,7 +17,6 @@ public class Range {
 
 public abstract class Throwable : MonoBehaviour {
 
-	public AudioSource 			efxSource;
 	public AudioClip[]			thrownSounds;
 	public AudioClip[]			landingSounds;
 	public AudioClip[]			explodeSounds;
@@ -37,6 +36,7 @@ public abstract class Throwable : MonoBehaviour {
 	[HideInInspector]
 	public bool 				grabbed = false;
 
+	protected AudioSource 		efxSource;
 	protected GameObject		dropShadow;
 	protected ShadowController 	shadowController;
 	protected SpriteRenderer	spriteRenderer;

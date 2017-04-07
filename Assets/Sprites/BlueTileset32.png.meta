@@ -1,23 +1,16 @@
 fileFormatVersion: 2
-guid: 3741dd4524ac67747a5aa5bca4a2ef2a
-timeCreated: 1491441603
+guid: ced2b60388a893c4a9f195da3f6b4567
+timeCreated: 1491586144
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
-    21300000: DirtyMap32a_36
-    21300002: DirtyMap32a_0
-    21300004: DirtyMap32a_1
-    21300006: DirtyMap32a_2
-    21300008: DirtyMap32a_3
-    21300010: DirtyMap32a_4
-    21300012: DirtyMap32a_5
-    21300014: DirtyMap32a_6
-    21300016: DirtyMap32a_7
-    21300018: DirtyMap32a_8
-    21300020: DirtyMap32a_9
-    21300022: Blink1
-    21300024: Blink0
-    21300026: _PitTest
+    21300000: switch_0
+    21300002: switch_1
+    21300004: switch_2
+    21300006: switch_3
+    21300008: switch_4
+    21300010: switch_5
+    21300012: switch_6
   serializedVersion: 4
   mipmaps:
     mipMapMode: 0
@@ -124,169 +117,91 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: DirtyMap32a_0
+      name: switch_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 2
-        width: 96
-        height: 61
+        y: 130
+        width: 28
+        height: 26
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: DirtyMap32a_1
+      name: switch_1
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 130
+        width: 28
+        height: 26
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: switch_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 130
+        width: 28
+        height: 26
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: switch_3
       rect:
         serializedVersion: 2
         x: 96
-        y: 2
-        width: 96
-        height: 61
+        y: 130
+        width: 28
+        height: 26
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: DirtyMap32a_2
+      name: switch_4
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 130
+        width: 28
+        height: 26
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: switch_5
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 130
+        width: 28
+        height: 26
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: switch_6
       rect:
         serializedVersion: 2
         x: 192
-        y: 2
-        width: 96
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: DirtyMap32a_3
-      rect:
-        serializedVersion: 2
-        x: 288
-        y: 2
-        width: 96
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: DirtyMap32a_4
-      rect:
-        serializedVersion: 2
-        x: 384
-        y: 2
-        width: 96
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: DirtyMap32a_5
-      rect:
-        serializedVersion: 2
-        x: 384
-        y: 2
-        width: 96
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: DirtyMap32a_6
-      rect:
-        serializedVersion: 2
-        x: 288
-        y: 2
-        width: 96
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: DirtyMap32a_7
-      rect:
-        serializedVersion: 2
-        x: 192
-        y: 2
-        width: 96
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: DirtyMap32a_8
-      rect:
-        serializedVersion: 2
-        x: 96
-        y: 2
-        width: 96
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: DirtyMap32a_9
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 2
-        width: 96
-        height: 61
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: Blink1
-      rect:
-        serializedVersion: 2
-        x: 72
-        y: 78
-        width: 16
-        height: 14
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: Blink0
-      rect:
-        serializedVersion: 2
-        x: 40
-        y: 78
-        width: 16
-        height: 14
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: _PitTest
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 224
-        width: 96
-        height: 96
+        y: 130
+        width: 28
+        height: 26
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
