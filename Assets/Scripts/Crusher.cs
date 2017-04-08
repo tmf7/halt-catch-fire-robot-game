@@ -9,10 +9,12 @@ public class Crusher : MonoBehaviour {
 
 	private AudioSource source;
 	private Animator animator;
+	private ParticleSystem smashParticles;
 
 	void Awake() {
 		source = GetComponent<AudioSource> ();
 		animator = GetComponent<Animator> ();
+		smashParticles = GetComponentInChildren<ParticleSystem> ();
 	}
 
 	private void EnableCollider() {
@@ -24,6 +26,7 @@ public class Crusher : MonoBehaviour {
 	}
 
 	private void PlaySmashSound() {
+		smashParticles.Play ();
 		source.clip = smashSound;
 		source.Play ();
 	}

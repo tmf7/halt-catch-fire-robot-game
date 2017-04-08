@@ -113,6 +113,7 @@ public class Robot : Throwable {
 			if (health > maxHealth) {
 				health = maxHealth;
 				onHealing = false;
+				currentState = RobotStates.STATE_FINDBOX;
 			}
 		}
 

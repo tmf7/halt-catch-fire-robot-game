@@ -3,11 +3,11 @@
 
 public class RobotGrabber : MonoBehaviour {
 
-	public static RobotGrabber instance = null;
+	public static RobotGrabber 	instance = null;
 
-	private Robot grabbedRobot;
-    private DistanceJoint2D joint;
-	private Collider2D collider;
+	private Robot 				grabbedRobot;
+    private DistanceJoint2D 	joint;
+	private Collider2D 			collider;
 
 
 	void Awake () {
@@ -15,8 +15,6 @@ public class RobotGrabber : MonoBehaviour {
 			instance = this;
 		else if (instance != null)
 			Destroy (gameObject);
-
-		DontDestroyOnLoad (gameObject);
 	}
 
     void Update() {

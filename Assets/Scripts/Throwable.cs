@@ -36,6 +36,7 @@ public abstract class Throwable : MonoBehaviour {
 	[HideInInspector]
 	public bool 				grabbed = false;
 
+	protected ParticleSystem	landingParticles;
 	protected AudioSource 		efxSource;
 	protected GameObject		dropShadow;
 	protected ShadowController 	shadowController;
@@ -50,6 +51,7 @@ public abstract class Throwable : MonoBehaviour {
 		shadowController = GetComponentInChildren<ShadowController> ();
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 		rb2D = GetComponent<Rigidbody2D> ();
+		landingParticles = GetComponentInChildren<ParticleSystem> ();		// the landing particle system must be the first child of the throwable gameobject for this to work
 	}
 
 	public void SetShadowParent(Transform parent) {
@@ -147,6 +149,7 @@ public abstract class Throwable : MonoBehaviour {
 		rb2D.velocity = Vector2.zero;
 		dropShadow.SetActive(false);
 		PlayRandomSoundFx (landingSounds);
+		landingParticles.Play ();
 	}
 
 	protected abstract void HitTrigger2D (Collider2D collider);
