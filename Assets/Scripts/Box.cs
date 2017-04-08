@@ -18,25 +18,8 @@ public class Box : Throwable {
 	}
 
 	protected override void OnLanding () {
-	/*
-		var velocity = landingPuff.velocityOverLifetime;
-		velocity.enabled = true;
-		velocity.space = ParticleSystemSimulationSpace.Local;
-
-		AnimationCurve curve = new AnimationCurve();
-		curve.AddKey(0.0f, -rb2D.velocity.x);
-		curve.AddKey(1.0f, 0.0f);
-		velocity.x = new ParticleSystem.MinMaxCurve(0.5f, curve);
-		curve.RemoveKey (0);
-		curve.RemoveKey (0);
-		curve.AddKey(0.0f, -rb2D.velocity.y);
-		curve.AddKey(1.0f, 0.0f);
-		velocity.y = new ParticleSystem.MinMaxCurve(0.5f, curve);
-
-
-		landingPuff.Play ();
-	*/
 		base.OnLanding ();
+		// box landing stuff
 	}
 
 	protected override void HitTrigger2D (Collider2D collider) {

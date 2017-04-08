@@ -19,7 +19,6 @@ public abstract class Throwable : MonoBehaviour {
 
 	public AudioClip[]			thrownSounds;
 	public AudioClip[]			landingSounds;
-	public AudioClip[]			explodeSounds;
 
 	public LayerMask 			airStrikeMask;
 	public LayerMask			groundedResetMask;
@@ -133,7 +132,7 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	protected void PlayRandomSoundFx(params AudioClip [] clips) {
-		int randomIndex = Random.Range (0, clips.Length - 1);
+		int randomIndex = Random.Range (0, clips.Length);
 		efxSource.clip = clips [randomIndex];
 		efxSource.Play ();
 	}

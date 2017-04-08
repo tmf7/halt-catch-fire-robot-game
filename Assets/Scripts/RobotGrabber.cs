@@ -3,19 +3,9 @@
 
 public class RobotGrabber : MonoBehaviour {
 
-	public static RobotGrabber 	instance = null;
-
 	private Robot 				grabbedRobot;
     private DistanceJoint2D 	joint;
 	private Collider2D 			collider;
-
-
-	void Awake () {
-		if (instance == null)
-			instance = this;
-		else if (instance != null)
-			Destroy (gameObject);
-	}
 
     void Update() {
         Vector3 mousePos = Input.mousePosition;
@@ -32,6 +22,11 @@ public class RobotGrabber : MonoBehaviour {
   
 				// stop the robot from pathfinding/following while grabbed
 				grabbedRobot = collider.gameObject.GetComponent<Robot> ();
+				if (grabbedRobot.currentState == Robot.RobotStates.STATE_REPAIRING) {
+					grabbedRobot = null;
+					return;
+				}
+
 				grabbedRobot.grabbed = true;
 				grabbedRobot.whoGrabbed = gameObject;
 

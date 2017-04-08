@@ -23,11 +23,6 @@ public class Robot : Throwable {
 	public GameObject	whoGrabbed;
 	[HideInInspector]
 	public float 		health = 100;
-	[HideInInspector]
-	public bool 		onHealing = false;
-	[HideInInspector]
-	public ParticleSystem fireInstance;
-
 
 	[HideInInspector]
 	public bool onFire {
@@ -49,6 +44,7 @@ public class Robot : Throwable {
 		STATE_DELIVERING,
 		STATE_REPAIRING
 	};
+	public RobotStates	currentState;
 
 	// pathing
 	private Vector3[] 	path;
@@ -64,7 +60,7 @@ public class Robot : Throwable {
 	private bool 		justReleased;
 	private Throwable 	carriedItem;
 	private ParticleSystem robotBeam;
-	private RobotStates	currentState;
+	private ParticleSystem fireInstance;
 
 	void Start() {
 		currentState = RobotStates.STATE_FINDBOX;
@@ -93,32 +89,29 @@ public class Robot : Throwable {
 			} 
 			StopMoving ();
 		} else if (!grounded && !justReleased) {
-			Destroy (robotBeam);					//FIXME: this line is a test
+		//	Destroy (robotBeam);					//FIXME: this line is a test
 			justReleased = true;
 			rb2D.velocity = new Vector2 (dropForce.x, dropForce.y);
 			Throw (0.0f, -1.0f);
-		} else if (grounded) {
-			SearchForTarget ();
 		}
 
 		if (onFire)
 			health -= Time.deltaTime * damageRate;
 
-		if (onHealing) {
+		if (currentState == RobotStates.STATE_REPAIRING) {
 			onFire = false;
-
-			currentState = RobotStates.STATE_REPAIRING;
-
 			health += Time.deltaTime * healRate;
 			if (health > maxHealth) {
 				health = maxHealth;
-				onHealing = false;
 				currentState = RobotStates.STATE_FINDBOX;
 			}
 		}
 
 		if (health <= 0) 
 			Explode();
+
+		if (grounded) 
+			SearchForTarget ();
 		
 		UpdateShadow ();
 	}
@@ -179,7 +172,7 @@ public class Robot : Throwable {
 	}
 
 	void UpdatePath(bool freshStart) {
-		if (freshStart || (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold) {	// grounded && SearchForTarget() && !followingPath
+		if (freshStart || (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold) {
 			PathRequestManager.RequestPath (transform.position, target.position, OnPathFound);
 			targetLastKnownPosition = target.position;
 		}
@@ -218,7 +211,6 @@ public class Robot : Throwable {
 		path = null;
 		target = null;
 		targetIndex = 0;
-	//	currentWaypoint = null;
 	}
 
 	void OnCollisionEnter2D(Collision2D collision) {
@@ -247,6 +239,9 @@ public class Robot : Throwable {
 				onFire = true;
 		}
 
+		if (collision.collider.tag == "Crusher")
+			Explode ();
+
 		if (collision.collider.tag == "Robot") {
 			if (!onFire && collision.collider.GetComponent<Robot> ().onFire)
 				onFire = true;
@@ -258,7 +253,8 @@ public class Robot : Throwable {
 			RandomThrow ();
 		}
 		if (collider.tag == "HealZone") {
-			onHealing = true;
+			currentState = RobotStates.STATE_REPAIRING;
+			efxSource.Stop ();
 			PlaySingleSoundFx (repairingSound);
 		}
 	}
@@ -281,6 +277,6 @@ public class Robot : Throwable {
 
 	protected override void OnLanding () {
 		base.OnLanding ();
-		// do robot landing stuff
+		// robot landing stuff
 	}
 }

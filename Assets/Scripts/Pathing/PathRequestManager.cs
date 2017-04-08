@@ -22,6 +22,9 @@ public class PathRequestManager : MonoBehaviour {
 	}
 
 	public static void RequestPath(Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool> callback) {
+		if (instance.pathRequestQueue.Count > GameManager.instance.maxRobots)
+			instance.pathRequestQueue.Clear ();
+		
 		PathRequest newRequest = new PathRequest (pathStart, pathEnd, callback);
 		instance.pathRequestQueue.Enqueue (newRequest);
 		instance.TryProcessNext ();

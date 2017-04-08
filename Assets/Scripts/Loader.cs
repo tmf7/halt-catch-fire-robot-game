@@ -4,7 +4,6 @@ using System.Collections;
 public class Loader : MonoBehaviour	{
 	public GameObject gameManagerPrefab;
 	public GameObject soundManagerPrefab;
-	public GameObject robotGrabberPrefab;
 
 	void Awake () {
 		if (GameManager.instance == null)
@@ -12,8 +11,5 @@ public class Loader : MonoBehaviour	{
 		
 		if (SoundManager.instance == null)
 			Instantiate(soundManagerPrefab);
-
-		if (RobotGrabber.instance == null)
-			Instantiate(robotGrabberPrefab);
 	}
 }

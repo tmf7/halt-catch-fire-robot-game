@@ -78,11 +78,11 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public Transform GetRandomBoxTarget() {
-		return allBoxes.Count > 0 ? allBoxes [Random.Range (0, allBoxes.Count - 1)].transform : null;
+		return allBoxes.Count > 0 ? allBoxes [Random.Range (0, allBoxes.Count)].transform : null;
 	}
 
 	public Transform GetRandomRobotTarget () {
-		return allRobots.Count > 0 ? allRobots [Random.Range (0, allRobots.Count - 1)].transform : null;
+		return allRobots.Count > 0 ? allRobots [Random.Range (0, allRobots.Count)].transform : null;
 	}
 
 	public int robotCount {

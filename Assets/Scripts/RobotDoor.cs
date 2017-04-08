@@ -22,7 +22,7 @@ public class RobotDoor : MonoBehaviour {
 	}
 
 	void Update() {		 // too many Invoke calls put on the stack, only put one at a time
-		spawnOn = spawnEnabled && (GameManager.instance.robotCount <= GameManager.instance.maxRobots);
+		spawnOn = spawnEnabled && (GameManager.instance.robotCount < GameManager.instance.maxRobots);
 		if (spawnOn && doorClosed && !openTriggerSet) {
 			openTriggerSet = true;
 			Invoke ("TriggerDoorOpen", spawnDelay);
