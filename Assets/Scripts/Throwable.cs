@@ -29,6 +29,8 @@ public abstract class Throwable : MonoBehaviour {
 	public Range 				throwSpeeds = new Range(8.0f, 12.0f);
 	public Range 				throwAnglesDeg = new Range (30.0f, 150.0f);
 	public Range				airTimes = new Range(0.5f, 2.0f);
+	public float				smallestPitfallScale = 0.1f;
+	public float				pitfallRate = 0.9f;
 
 	[HideInInspector] 
 	public Vector3				dropForce;
@@ -43,6 +45,7 @@ public abstract class Throwable : MonoBehaviour {
 	protected Rigidbody2D 		rb2D;
 	protected float 			oldShadowOffset = 0.0f;
 	protected bool 				landingResolved;
+	protected float 			currentPitfallScale = 1.0f;		// transform.localScale
 
 	void Awake() {
 		efxSource = GetComponent<AudioSource> ();
@@ -83,6 +86,12 @@ public abstract class Throwable : MonoBehaviour {
 			return shadowController.grounded;
 		}
 	}
+
+	public bool fellInPit {
+		get { 
+			return currentPitfallScale < 1.0f;
+		}
+	}
 		
 	protected void UpdateShadow() {
 		if (!grounded) {
@@ -109,6 +118,16 @@ public abstract class Throwable : MonoBehaviour {
 		}
 	}
 
+	IEnumerator FallingDownPit() {
+		while (currentPitfallScale > smallestPitfallScale) {
+			currentPitfallScale *= pitfallRate;
+			transform.localScale = new Vector3 (currentPitfallScale, currentPitfallScale);
+			efxSource.volume = currentPitfallScale;
+			yield return null;
+		}
+		Remove();
+	}
+
 	public void Explode() {
 		Instantiate<GameObject> (explosionPrefab, transform.position, Quaternion.identity);
 		Remove();
@@ -123,15 +142,19 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	void OnTriggerEnter2D(Collider2D collider) {
+		if (collider.tag == "Pit" && !fellInPit) {
+			StartCoroutine ("FallingDownPit");
+			PlayRandomSoundFx (thrownSounds);
+		}
 		HitTrigger2D (collider);
 	}
 
-	protected void PlaySingleSoundFx (AudioClip clip) {
+	public void PlaySingleSoundFx (AudioClip clip) {
 		efxSource.clip = clip;
 		efxSource.Play ();
 	}
 
-	protected void PlayRandomSoundFx(params AudioClip [] clips) {
+	public void PlayRandomSoundFx(params AudioClip [] clips) {
 		int randomIndex = Random.Range (0, clips.Length);
 		efxSource.clip = clips [randomIndex];
 		efxSource.Play ();
@@ -147,7 +170,6 @@ public abstract class Throwable : MonoBehaviour {
 		rb2D.drag = groundedDrag;
 		rb2D.velocity = Vector2.zero;
 		dropShadow.SetActive(false);
-		PlayRandomSoundFx (landingSounds);
 		landingParticles.Play ();
 	}
 

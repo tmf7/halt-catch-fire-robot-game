@@ -5,7 +5,7 @@ public class RobotGrabber : MonoBehaviour {
 
 	private Robot 				grabbedRobot;
     private DistanceJoint2D 	joint;
-	private Collider2D 			collider;
+	private Collider2D 			hit;
 
     void Update() {
         Vector3 mousePos = Input.mousePosition;
@@ -16,12 +16,12 @@ public class RobotGrabber : MonoBehaviour {
 			if (joint == null) {
 				RaycastHit2D rayHit = Physics2D.GetRayIntersection (Camera.main.ScreenPointToRay (Input.mousePosition));
 
-				collider = rayHit.collider;
-				if (!collider || collider.tag != "Robot")
+				hit = rayHit.collider;
+				if (!hit || hit.tag != "Robot")
 					return;
   
 				// stop the robot from pathfinding/following while grabbed
-				grabbedRobot = collider.gameObject.GetComponent<Robot> ();
+				grabbedRobot = hit.gameObject.GetComponent<Robot> ();
 				if (grabbedRobot.currentState == Robot.RobotStates.STATE_REPAIRING) {
 					grabbedRobot = null;
 					return;
@@ -29,18 +29,19 @@ public class RobotGrabber : MonoBehaviour {
 
 				grabbedRobot.grabbed = true;
 				grabbedRobot.whoGrabbed = gameObject;
+				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 
 				// create a hinge on the robot sprite at its top-center for a cleaner effect
-				joint = collider.gameObject.AddComponent<DistanceJoint2D> ();
+				joint = hit.gameObject.AddComponent<DistanceJoint2D> ();
 				joint.autoConfigureConnectedAnchor = false;
 				joint.autoConfigureDistance = false;
 				joint.enableCollision = true;
-				joint.anchor = Vector3.up * collider.bounds.extents.y;	// put the joint in robot local space slightly above its head
+				joint.anchor = Vector3.up * hit.bounds.extents.y;	// put the joint in robot local space slightly above its head
 				joint.connectedAnchor = worldPosition;
 				joint.distance = 0.1f;
 
 				// allow the robot to swing on the hinge and spin in flight
-				collider.attachedRigidbody.constraints = RigidbodyConstraints2D.None;
+				hit.attachedRigidbody.constraints = RigidbodyConstraints2D.None;
 			} 
 
 		} else if (joint != null && (Input.GetAxis("Mouse X") != 0.0f || Input.GetAxis("Mouse Y") != 0.0f)) {

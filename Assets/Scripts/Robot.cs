@@ -5,9 +5,13 @@ using Random = UnityEngine.Random;
 
 public class Robot : Throwable {
 
-	public ParticleSystem 	firePrefab;
-	public ParticleSystem 	robotBeamPrefab;
-	public AudioClip 		repairingSound;
+	public ParticleSystem firePrefab;
+	public ParticleSystem robotBeamPrefab;
+	public AudioClip 	repairingSound;
+	public AudioClip	finishRepairSound;
+
+	public AudioClip 	playerGrabbedSound;
+	public AudioClip 	robotGrabbedSound;
 
 	public Transform 	target;
 	public float 		speed = 2.0f;
@@ -85,6 +89,7 @@ public class Robot : Throwable {
 			if (whoGrabbed.tag == "Player") {
 				SetHeight (grabHeight);
 			} else if (whoGrabbed.tag == "Robot" && robotBeam == null) {
+				PlaySingleSoundFx (robotGrabbedSound);
 				robotBeam = Instantiate<ParticleSystem> (robotBeamPrefab, transform.position, Quaternion.identity, transform);
 			} 
 			StopMoving ();
@@ -104,14 +109,19 @@ public class Robot : Throwable {
 			if (health > maxHealth) {
 				health = maxHealth;
 				currentState = RobotStates.STATE_FINDBOX;
+				PlaySingleSoundFx (finishRepairSound);
 			}
 		}
 
 		if (health <= 0) 
 			Explode();
 
-		if (grounded) 
+		if (grounded && !fellInPit) {
 			SearchForTarget ();
+		} else if (fellInPit && onFire) {
+			// set the fire system size proportional to the currentPitfallScale
+			fireInstance.transform.localScale = new Vector3(currentPitfallScale, 1.0f, currentPitfallScale);
+		}
 		
 		UpdateShadow ();
 	}
@@ -252,9 +262,9 @@ public class Robot : Throwable {
 		if (collider.tag == "Finish") {
 			RandomThrow ();
 		}
-		if (collider.tag == "HealZone") {
+
+		if (collider.tag == "HealZone" && currentState != RobotStates.STATE_REPAIRING && health < maxHealth) {
 			currentState = RobotStates.STATE_REPAIRING;
-			efxSource.Stop ();
 			PlaySingleSoundFx (repairingSound);
 		}
 	}
@@ -277,6 +287,7 @@ public class Robot : Throwable {
 
 	protected override void OnLanding () {
 		base.OnLanding ();
-		// robot landing stuff
+		if (currentState != RobotStates.STATE_REPAIRING && !fellInPit)		// bugfix for the landing sound overwriting the repair sound playing
+			PlayRandomSoundFx (landingSounds);
 	}
 }

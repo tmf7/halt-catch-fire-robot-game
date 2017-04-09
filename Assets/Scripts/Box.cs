@@ -19,7 +19,7 @@ public class Box : Throwable {
 
 	protected override void OnLanding () {
 		base.OnLanding ();
-		// box landing stuff
+		PlayRandomSoundFx (landingSounds);
 	}
 
 	protected override void HitTrigger2D (Collider2D collider) {
