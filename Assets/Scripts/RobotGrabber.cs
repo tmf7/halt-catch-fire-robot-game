@@ -34,6 +34,7 @@ public class RobotGrabber : MonoBehaviour {
 				joint = collider.gameObject.AddComponent<DistanceJoint2D> ();
 				joint.autoConfigureConnectedAnchor = false;
 				joint.autoConfigureDistance = false;
+				joint.enableCollision = true;
 				joint.anchor = Vector3.up * collider.bounds.extents.y;	// put the joint in robot local space slightly above its head
 				joint.connectedAnchor = worldPosition;
 				joint.distance = 0.1f;
