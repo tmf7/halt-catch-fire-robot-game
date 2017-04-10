@@ -30,7 +30,7 @@ public class Grid : MonoBehaviour {
 	
 	void CreateGrid () {
 		grid = new GridNode[numGridRows, numGridCols];
-		Vector3 worldBottomLeft = transform.position - Vector3.right * gridWorldSize.x * 0.5f - Vector3.up * gridWorldSize.y * 0.5f;
+		Vector3 worldBottomLeft = transform.position + Vector3.left * gridWorldSize.x * 0.5f + Vector3.down * gridWorldSize.y * 0.5f;
 
 		for (int row = 0; row < numGridRows; row++) {
 			for (int col = 0; col < numGridCols; col++) {

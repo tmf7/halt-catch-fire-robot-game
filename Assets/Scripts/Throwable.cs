@@ -43,6 +43,7 @@ public abstract class Throwable : MonoBehaviour {
 	public bool 				grabbed = false;
 
 	protected ParticleSystem	landingParticles;
+	protected ParticleSystem 	robotBeam;
 	protected AudioSource 		efxSource;
 	protected GameObject		dropShadow;
 	protected SpriteRenderer	spriteRenderer;
@@ -68,6 +69,12 @@ public abstract class Throwable : MonoBehaviour {
 
 	public void SetShadowParent(Transform parent) {
 		dropShadow.transform.SetParent (parent);
+	}
+
+	public void ActivateRobotBeam(ParticleSystem _robotBeam) {
+		if (robotBeam != null)
+			Destroy (robotBeam);
+		robotBeam = _robotBeam;
 	}
 
 	// negative airTime to ignores trajectory of a parabola
@@ -120,7 +127,7 @@ public abstract class Throwable : MonoBehaviour {
 			float shadowOffset = shadowController.GetShadowOffset ();
 
 			// set the shadow position
-			dropShadow.transform.position = transform.position - Vector3.up * shadowOffset;
+			dropShadow.transform.position = transform.position + Vector3.down * shadowOffset;
 
 			// coming in for a landing
 			// possibly FIXME: I moved the isFalling logic to the shadowController class and made the shadowController a private member of Throwable
@@ -130,6 +137,14 @@ public abstract class Throwable : MonoBehaviour {
 		} else if (!landingResolved) {
 			landingResolved = true;
 			OnLanding ();
+		}
+	}
+
+	protected void UpdateRobotBeam() {
+		if (robotBeam != null) {
+			Robot robotParent = GetComponentInParent<Robot> ();
+			if (robotParent == null)
+				Destroy (robotBeam);
 		}
 	}
 
@@ -167,6 +182,13 @@ public abstract class Throwable : MonoBehaviour {
 		HitTrigger2D (collider);
 	}
 
+	void OnCollisionEnter2D(Collision2D collision)  {
+		if (!grounded)
+			HitWall ();
+		
+		HitCollision2D (collision);
+	}
+
 	public void PlaySingleSoundFx (AudioClip clip) {
 		efxSource.clip = clip;
 		efxSource.Play ();
@@ -192,4 +214,5 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	protected abstract void HitTrigger2D (Collider2D collider);
+	protected abstract void HitCollision2D(Collision2D collision);
 }

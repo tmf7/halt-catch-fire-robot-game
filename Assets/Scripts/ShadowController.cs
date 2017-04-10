@@ -83,7 +83,7 @@ public class ShadowController : MonoBehaviour {
 		// modify further if the parentRB is hovering over a map edge
 		if (shadowOffset > 0.1f) {
 			Vector2 parentPos = new Vector2 (parentRB.transform.position.x, parentRB.transform.position.y);
-			RaycastHit2D shadowHit = Physics2D.Raycast(parentPos, -Vector2.up, shadowOffset, mapHitMask);
+			RaycastHit2D shadowHit = Physics2D.Raycast(parentPos, Vector2.down, shadowOffset, mapHitMask);
 			return shadowHit.distance > 0.0f ? shadowHit.distance : shadowOffset;
 		}
 		return shadowOffset;

@@ -14,27 +14,13 @@ public class GameManager : MonoBehaviour {
 	public int 					maxRobots = 10;
 	public int					maxBoxes = 20;
 
-	// TODO: these hazards are already in the scene, not spawned, so just drag their object instances into the GameManager script inputs
-//	public GameObject furnace;	
-//	public GameObject pit;
-//	public GameObject fence;
-//	public GameObject crusher;
-
 	// heierarchy organization
 	private Transform 		boxHolder;		
 	private Transform		robotHolder;
 	private List<Box> 		allBoxes;
 	private List<Robot> 	allRobots;
-/*
-	[HideInInspector] public bool playersTurn = true;		//Boolean to check if it's players turn, hidden in inspector but public.
-
-	private Text levelText;									//Text to display current level number.
-	private GameObject levelImage;							//Image to block out level as levels are being set up, background for levelText.
-	private int level = 1;									//Current level number, expressed in game as "Day 1".
-	private List<Enemy> enemies;							//List of all Enemy units, used to issue them move commands.
-	private bool enemiesMoving;								//Boolean to check if enemies are moving.
-	private bool doingSetup = true;							//Boolean to check if we're setting up board, prevent Player from moving during setup.
-*/
+	private List<Transform>	deliveryPoints;
+	private List<Transform> hazardPoints;
 
 	void Awake() {
         if (instance == null)
@@ -43,18 +29,34 @@ public class GameManager : MonoBehaviour {
             Destroy(gameObject);	
 
 		DontDestroyOnLoad(gameObject);
+
 		allBoxes = new List<Box>();
 		allRobots = new List<Robot> ();
 		boxHolder = new GameObject ("Boxes").transform;
 		robotHolder = new GameObject ("Robots").transform;
+	}
 
-		/*		
-		enemies = new List<Enemy>();
-		
-		//Get a component reference to the attached BoardManager script
-		boardScript = GetComponent<BoardManager>();
-		InitGame();
-*/
+	void Start() {
+
+		deliveryPoints = new List<Transform> ();
+		hazardPoints = new List<Transform> ();
+
+		GameObject[] exits = GameObject.FindGameObjectsWithTag ("BoxExit");
+		GameObject[] conveyors = GameObject.FindGameObjectsWithTag ("Conveyor");
+		foreach (GameObject exit in exits)
+			deliveryPoints.Add (exit.transform);
+		foreach (GameObject conveyor in conveyors)
+			deliveryPoints.Add (conveyor.transform);
+
+		GameObject[] crushers = GameObject.FindGameObjectsWithTag ("Crusher");
+		GameObject[] furnaces = GameObject.FindGameObjectsWithTag ("Furnace");
+		GameObject[] pits = GameObject.FindGameObjectsWithTag ("Pit");
+		foreach (GameObject crusher in crushers)
+			hazardPoints.Add (crusher.transform);
+		foreach (GameObject furnace in furnaces)
+			hazardPoints.Add (furnace.transform);
+		foreach (GameObject pit in pits)
+			hazardPoints.Add (pit.transform);
 	}
 
 	public void AddBox(Box newBox) {
@@ -94,13 +96,21 @@ public class GameManager : MonoBehaviour {
 		if (allRobots.Count > 0) {
 			Robot targetRobot = allRobots [Random.Range (0, allRobots.Count)];
 			if (targetRobot.isClaimed) {
-				return null;			// try to get a different target next frame
+				return null;	// try to get a different target next frame
 			} else {
 				return targetRobot.transform;
 			}
 		} else {
 			return null;
 		}
+	}
+
+	public Transform GetRandomDeliveryTarget () {
+		return deliveryPoints.Count > 0 ? deliveryPoints [Random.Range (0, deliveryPoints.Count)] : null;
+	}
+
+	public Transform GetRandomHazardTarget () {
+		return hazardPoints.Count > 0 ? hazardPoints [Random.Range (0, hazardPoints.Count)] : null;
 	}
 
 	public int robotCount {
@@ -114,97 +124,68 @@ public class GameManager : MonoBehaviour {
 			return allBoxes.Count;
 		}
 	}
-
-/*
-    //this is called only once, and the paramter tell it to be called only after the scene was loaded
-    //(otherwise, our Scene Load callback would be called the very first load, and we don't want that)
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    static public void CallbackInitialization()
-    {
-        //register the callback to be called everytime the scene is loaded
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    static private void OnSceneLoaded(Scene arg0, LoadSceneMode arg1)
-    {
-        instance.level++;
-        instance.InitGame();
-    }
-
-	
-	//Initializes the game for each level.
-	void InitGame()
-	{
-		//While doingSetup is true the player can't move, prevent player from moving while title card is up.
-		doingSetup = true;
-		
-		levelImage = GameObject.Find("LevelImage");
-		
-		//Get a reference to our text LevelText's text component by finding it by name and calling GetComponent.
-		levelText = GameObject.Find("LevelText").GetComponent<Text>();
-		
-		levelText.text = "Day " + level;
-		
-		//Set levelImage to active blocking player's view of the game board during setup.
-		levelImage.SetActive(true);
-		
-		//Call the HideLevelImage function with a delay in seconds of levelStartDelay.
-		Invoke("HideLevelImage", levelStartDelay);
-
-		enemies.Clear();
-		boardScript.SetupScene(level);
-		
-	}
-	
-	void HideLevelImage()
-	{
-		levelImage.SetActive(false);
-		
-		//Set doingSetup to false allowing player to move again.
-		doingSetup = false;
-	}
-	
-	void Update() {
-		if(playersTurn || enemiesMoving || doingSetup)
-			return;
-		
-		//Start moving enemies.
-		StartCoroutine (MoveEnemies ());
-	}
-	
-	public void AddEnemyToList(Enemy script) {
-		enemies.Add(script);
-	}
-
-	public void GameOver() {
-		//Set levelText to display number of levels passed and game over message
-		levelText.text = "After " + level + " days, you starved.";
-		
-		//Enable black background image gameObject.
-		levelImage.SetActive(true);
-		
-		//Disable this GameManager.
-		enabled = false;
-	}
-	//Coroutine to move enemies in sequence.
-	IEnumerator MoveEnemies()
-	{
-		enemiesMoving = true;
-
-		yield return new WaitForSeconds(turnDelay);
-		
-		if (enemies.Count == 0) {
-			yield return new WaitForSeconds(turnDelay);
-		}
-		
-		//Loop through List of Enemy objects.
-		for (int i = 0; i < enemies.Count; i++) {
-			enemies[i].MoveEnemy ();
-			yield return new WaitForSeconds(enemies[i].moveTime);
-		}
-
-		playersTurn = true;
-		enemiesMoving = false;
-	}
-*/
 }
+/*
+//this is called only once, and the paramter tell it to be called only after the scene was loaded
+//(otherwise, our Scene Load callback would be called the very first load, and we don't want that)
+[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+static public void CallbackInitialization() {
+    //register the callback to be called everytime the scene is loaded
+    SceneManager.sceneLoaded += OnSceneLoaded;
+}
+
+static private void OnSceneLoaded(Scene arg0, LoadSceneMode arg1) {
+    instance.level++;
+    instance.InitGame();
+}
+
+
+//Initializes the game for each level.
+void InitGame() {
+	//While doingSetup is true the player can't move, prevent player from moving while title card is up.
+	doingSetup = true;
+	
+	levelImage = GameObject.Find("LevelImage");
+	
+	//Get a reference to our text LevelText's text component by finding it by name and calling GetComponent.
+	levelText = GameObject.Find("LevelText").GetComponent<Text>();
+	
+	levelText.text = "Day " + level;
+	
+	//Set levelImage to active blocking player's view of the game board during setup.
+	levelImage.SetActive(true);
+	
+	//Call the HideLevelImage function with a delay in seconds of levelStartDelay.
+	Invoke("HideLevelImage", levelStartDelay);
+
+	enemies.Clear();
+	boardScript.SetupScene(level);
+	
+}
+
+void HideLevelImage() {
+	levelImage.SetActive(false);
+	
+	//Set doingSetup to false allowing player to move again.
+	doingSetup = false;
+}
+
+void Update() {
+	if(playersTurn || enemiesMoving || doingSetup)
+		return;
+	
+	//Start moving enemies.
+	StartCoroutine (MoveEnemies ());
+}
+
+public void GameOver() {
+	//Set levelText to display number of levels passed and game over message
+	levelText.text = "After " + level + " days, you starved.";
+	
+	//Enable black background image gameObject.
+	levelImage.SetActive(true);
+	
+	//Disable this GameManager.
+	enabled = false;
+}
+*/

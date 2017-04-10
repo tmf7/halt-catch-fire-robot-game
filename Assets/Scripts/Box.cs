@@ -9,11 +9,11 @@ public class Box : Throwable {
 
 	void Update () {
 		UpdateShadow ();
+		UpdateRobotBeam ();
 	}
 
-	void OnCollisionEnter2D(Collision2D collision) {
-		if (!grounded)
-			HitWall ();
+	protected override void HitCollision2D(Collision2D collision) {
+		// box collision stuff
 	}
 
 	protected override void OnLanding () {
@@ -22,7 +22,7 @@ public class Box : Throwable {
 	}
 
 	protected override void HitTrigger2D (Collider2D collider) {
-		if (collider.tag == "Finish") {
+		if (collider.tag == "BoxExit") {
 			GetComponent<BoxCollider2D> ().enabled = false;
 			SetHeight (2.0f * deadlyHeight);
 			rb2D.velocity = new Vector2( 0.0f, exitSpeed);

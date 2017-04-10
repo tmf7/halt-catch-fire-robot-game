@@ -23,7 +23,6 @@ public class Robot : Throwable {
 	public float		healRate = 10.0f;
 	public float		maxHealth = 100.0f;
 
-
 	// state machine
 	[HideInInspector]
 	public GameObject	whoGrabbed;
@@ -53,6 +52,7 @@ public class Robot : Throwable {
 		STATE_REPAIRING
 	};
 	public RobotStates	currentState;
+	public RobotStates	oldState;
 
 	// pathing
 	private Vector3[] 	path;
@@ -60,6 +60,7 @@ public class Robot : Throwable {
 	private Vector3 	currentWaypoint;
 	private Vector3		targetLastKnownPosition;
 	private float 		sqrTargetSlowdownDistance;
+	private float 		carryItemDistance;
 	private const float	pathUpdateMoveThreshold = 0.25f;
 	private const float minWaitTime = 0.2f;
 	private const float stoppingThreshold = 0.01f;
@@ -67,11 +68,14 @@ public class Robot : Throwable {
 	// state machine
 	private bool 		justReleased;
 	private Throwable 	carriedItem;
-	private ParticleSystem robotBeam;
 	private ParticleSystem fireInstance;
+	private CircleCollider2D circleCollider;
 
 	void Start() {
+		circleCollider = GetComponent<CircleCollider2D> ();
+		carryItemDistance = 2.0f * circleCollider.radius;
 		currentState = RobotStates.STATE_FINDBOX;
+		oldState = RobotStates.STATE_FINDBOX;
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
 	}
 
@@ -88,17 +92,19 @@ public class Robot : Throwable {
 			// TODO: another robot can set the grabbed boolean
 			// picking up a grabbed robot keeps the two attached and drops/ungrabs all 
 			// picking up a grabbing robot makes it drop its carried item
+			if (carriedItem != null) {
+				carriedItem.transform.SetParent (null);
+				carriedItem = null;
+			}
 
 			justReleased = false;
 			if (whoGrabbed.tag == "Player") {
 				SetHeight (grabHeight);
 			} else if (whoGrabbed.tag == "Robot" && robotBeam == null) {
-				PlaySingleSoundFx (robotGrabbedSound);
-				robotBeam = Instantiate<ParticleSystem> (robotBeamPrefab, transform.position, Quaternion.identity, transform);
+				PlaySingleSoundFx (robotGrabbedSound);	// distressed robot better indicates it's a victim
 			} 
 			StopMoving ();
 		} else if (!grounded && !justReleased) {
-		//	Destroy (robotBeam);					//FIXME: this line is a test
 			justReleased = true;
 			SetHeight (grabHeight);
 			rb2D.velocity = new Vector2 (dropForce.x, dropForce.y);
@@ -121,15 +127,41 @@ public class Robot : Throwable {
 
 		if (health <= 0) 
 			Explode();
-
+	
 		if (grounded && !fellInPit) {
 			SearchForTarget ();
 		} else if (fellInPit && onFire) {
 			// make the fire shrink too
 			fireInstance.transform.localScale = new Vector3(currentPitfallScale, 1.0f, currentPitfallScale);
 		}
-		
+
 		UpdateShadow ();
+		UpdateCarriedItemPosition ();
+		UpdateRobotBeam ();
+	}
+
+	private void UpdateCarriedItemPosition() {
+		// check if another robot took this one's carriedItem
+		Throwable checkCarry = GetComponentInChildren<Throwable> ();
+		if (checkCarry == null)
+			carriedItem = null;
+
+		if (carriedItem == null) {
+			//StopMoving ();
+			currentState = oldState;		// FIXME: this line of logic may not quite work
+			return;
+		}
+		
+		float robotMoveAngle = Vector3.Angle (Vector3.right, target.position - transform.position);
+		if (robotMoveAngle < 45.0f) {
+			carriedItem.transform.localPosition = Vector3.right * carryItemDistance;
+		} else if (robotMoveAngle < 90.0f) {
+			carriedItem.transform.localPosition = Vector3.up * carryItemDistance;
+		} else if (robotMoveAngle < 180.0f) {
+			carriedItem.transform.localPosition = Vector3.left * carryItemDistance;
+		} else if (robotMoveAngle < 360.0f) {
+			carriedItem.transform.localPosition = Vector3.down * carryItemDistance;
+		}
 	}
 
 	public void SetState(RobotStates newState) {
@@ -169,24 +201,29 @@ public class Robot : Throwable {
 			case RobotStates.STATE_FINDBOX:
 				target = GameManager.instance.GetRandomBoxTarget();
 				break;
+			case RobotStates.STATE_DELIVERING:
+				target = GameManager.instance.GetRandomDeliveryTarget ();
+				break;
 			case RobotStates.STATE_SUICIDAL:
 				// change the robot visual
-				// target a hazard (pit, furnace, crusher) and fall/fire/explode on contact with those
+				target = GameManager.instance.GetRandomHazardTarget ();
 				break;
 			case RobotStates.STATE_HOMICIDAL:
 				target = GameManager.instance.GetRandomRobotTarget ();
 				// target a random robot to deliver (as if a box), and again, and again
 				break;
 			case RobotStates.STATE_ONFIRE: 
-				// run around like a crazy person
+				// TODO: run around like a crazy person
 				break;
 		}
 
 		if (target == null) {
 			//SetStateRandom ();
-		} else {	// prevent others from attempting to grab this target
+			StopMoving();
+		} else {	// prevent others from attempting to grab this target (only affects boxes and robots, not delivery points or hazards, see GameManager)
 			Throwable targetObj = target.gameObject.GetComponent<Throwable> ();
-			targetObj.SetClaimant (gameObject);
+			if (targetObj != null)
+				targetObj.SetClaimant (gameObject);
 		}
 	}
 
@@ -226,34 +263,42 @@ public class Robot : Throwable {
 
 	void StopMoving() {
 		path = null;
+		targetIndex = 0;
 		if (target != null) {
-			target.gameObject.GetComponent<Throwable> ().SetClaimant(null);			// FIXME: isClaimed should also become false if the claimant dies
+			Throwable targetObj = target.gameObject.GetComponent<Throwable> ();
+			if (targetObj != null)
+				targetObj.SetClaimant (null);	// isClaimed also becomes false if the claimant dies
 			target = null;
 		}
-		targetIndex = 0;
 	}
 
-	void OnCollisionEnter2D(Collision2D collision) {
+	protected override void HitCollision2D(Collision2D collision) {
 		if (carriedItem == null) {
-			if (currentState == RobotStates.STATE_FINDBOX && collision.collider.tag == "Box") { // AND the box is the target box...or just pickup the first box you hit, its all the same
-			//	Box hitBox = collision.collider.gameObject.GetComponent<Box> ();
-			//	hitBox.Explode ();
-				StopMoving();
-			//	hitBox.transform.SetParent (transform);
-			//	hitBox.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
-			//	carriedItem = hitBox;
-				// then set its transform.position x/y (z=0) relative to the robots current intended movement along path
+			if (currentState == RobotStates.STATE_FINDBOX && collision.collider.tag == "Box") {
+				StopMoving ();
+				Box hitBox = collision.collider.gameObject.GetComponent<Box> ();
+				hitBox.transform.SetParent (transform);
+				hitBox.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
+				carriedItem = hitBox;
+				oldState = currentState;
+				currentState = RobotStates.STATE_DELIVERING;
+				// TODO: once the carriedItem has hit the intended target collider/trigger, 
+				// unparent it and change back to previousState (saved whenever changing to DELIVERING)
+				// FIXME: ensure that robots stealing boxes doesn't cause multiple parenting (doubtful)
+				// but more importantly that the stolen-from robot's carriedItem becomes null and it state returns to oldState (as if delivered)
 			} else if (currentState == RobotStates.STATE_HOMICIDAL && collision.collider.tag == "Robot") {
-			//	Robot hitRobot = collision.collider.gameObject.GetComponent<Robot> ();
-			//	hitRobot.transform.SetParent (transform);
-			//	hitRobot.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
-			//	carriedItem = hitRobot;
+				Robot hitRobot = collision.collider.gameObject.GetComponent<Robot> ();
+				hitRobot.transform.SetParent (transform);
+				hitRobot.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
+				carriedItem = hitRobot;
+				oldState = currentState;
+				currentState = Random.Range (0, 2) == 0 ? RobotStates.STATE_DELIVERING : RobotStates.STATE_SUICIDAL;
 			}
+			// This GRABBING robot instantiates the beam and parents it to the carriedItem.
+			// It then becomes the responsibility of the carriedItem to check if its a child of a robot to decide whether to remove its robotBeam
+			if (carriedItem != null)
+				carriedItem.ActivateRobotBeam(Instantiate<ParticleSystem> (robotBeamPrefab, carriedItem.transform.position, Quaternion.identity, carriedItem.transform));
 		}
-		// if the robot has collided with its target (and its a box~)
-		// then pick the box up (shift its y a little up)
-		// and start moving with the box (give the Box object a posseser, or assign a gameobject to a private variable in Robot, or both)
-
 
 		if (collision.collider.tag == "Furnace") {
 			if (!onFire)
@@ -270,7 +315,7 @@ public class Robot : Throwable {
 	}
 
 	protected override void HitTrigger2D (Collider2D collider) {
-		if (collider.tag == "Finish") {
+		if (collider.tag == "BoxExit") {
 			RandomThrow ();
 		}
 
