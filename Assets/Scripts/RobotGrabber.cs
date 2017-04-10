@@ -21,12 +21,12 @@ public class RobotGrabber : MonoBehaviour {
 					return;
   
 				grabbedRobot = hit.gameObject.GetComponent<Robot> ();
-				if (grabbedRobot.currentState == Robot.RobotStates.STATE_REPAIRING) {
+				if (grabbedRobot.GetState() == Robot.RobotStates.STATE_REPAIRING) {
 					grabbedRobot = null;
 					return;
 				}
 
-				grabbedRobot.grabbed = true;
+				grabbedRobot.grabbedByPlayer = true;
 				grabbedRobot.whoGrabbed = gameObject;	// tell the robot the player grabbed it (instead of another robot)
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 
@@ -53,7 +53,7 @@ public class RobotGrabber : MonoBehaviour {
 				grabbedRobot.dropForce = dropForce;
 				Destroy (joint);
 				joint = null;
-				grabbedRobot.grabbed = false;
+				grabbedRobot.grabbedByPlayer = false;
 				grabbedRobot = null;
 			}
 		}

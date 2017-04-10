@@ -9,7 +9,7 @@ public class Box : Throwable {
 
 	void Update () {
 		UpdateShadow ();
-		UpdateRobotBeam ();
+		CheckIfCarried ();
 	}
 
 	protected override void HitCollision2D(Collision2D collision) {

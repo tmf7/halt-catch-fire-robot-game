@@ -83,7 +83,7 @@ public class GameManager : MonoBehaviour {
 		if (allBoxes.Count > 0) {
 			Box targetBox = allBoxes [Random.Range (0, allBoxes.Count)];
 			if (!targetBox.isClaimed) {
-				return targetBox.transform;	
+				return targetBox.transform;				// FIXME: an exception occurs here when a box gets removed when the ROBOT dies carrying a box (then someone tries to target it later)
 			} else {
 				return null;	// try to get a different target next frame
 			}

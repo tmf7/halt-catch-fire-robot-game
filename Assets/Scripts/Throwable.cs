@@ -40,7 +40,7 @@ public abstract class Throwable : MonoBehaviour {
 	[HideInInspector] 
 	public Vector3				dropForce;
 	[HideInInspector]
-	public bool 				grabbed = false;
+	public bool 				grabbedByPlayer = false;
 
 	protected ParticleSystem	landingParticles;
 	protected ParticleSystem 	robotBeam;
@@ -64,19 +64,15 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	public void SetClaimant(GameObject newClaimant) {
+	//	if (isClaimed)	// force the old claimant to unclaim it
+	//		whoClaimed.GetComponent<Robot>().UnclaimObject(gameObject);
 		whoClaimed = newClaimant;
 	}
 
 	public void SetShadowParent(Transform parent) {
 		dropShadow.transform.SetParent (parent);
 	}
-
-	public void ActivateRobotBeam(ParticleSystem _robotBeam) {
-		if (robotBeam != null)
-			Destroy (robotBeam);
-		robotBeam = _robotBeam;
-	}
-
+		
 	// negative airTime to ignores trajectory of a parabola
 	public void Throw(float verticalSpeed, float airTime) {
 		shadowController.SetVelocity(Vector3.forward * verticalSpeed);
@@ -140,11 +136,26 @@ public abstract class Throwable : MonoBehaviour {
 		}
 	}
 
-	protected void UpdateRobotBeam() {
+	public void SetKinematic(bool isKinematic) {
+		shadowController.SetKinematic (isKinematic);
+		rb2D.isKinematic = isKinematic;
+		rb2D.simulated = !isKinematic;	// true winds up pushing the grabbing robot down if its carriedItem is above it
+		rb2D.transform.rotation = Quaternion.identity;
+	}
+
+	public void ActivateRobotBeam(ParticleSystem _robotBeam) {
+		if (robotBeam != null)
+			Destroy (robotBeam);
+		robotBeam = _robotBeam;
+	}
+
+	protected void CheckIfCarried() {
 		if (robotBeam != null) {
 			Robot robotParent = GetComponentInParent<Robot> ();
-			if (robotParent == null)
+			if (robotParent == null) {
+				SetKinematic (false);	// FIXME: this screws with the shadow trajectory each frame, only do it if the carrier was recently lost
 				Destroy (robotBeam);
+			}
 		}
 	}
 
@@ -169,8 +180,11 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	protected void Remove() {
+		// TODO: drop anything being carried by a robot
+		if (this is Robot)
+			(this as Robot).DropItem ();
 		GameManager.instance.Remove (this);
-		Destroy(shadowController);				// FIXME: may also need to destroy its script instance (hopefully not)
+		Destroy(shadowController);
 		Destroy(dropShadow);
 		Destroy(gameObject);
 		Destroy (this);
