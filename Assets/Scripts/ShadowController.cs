@@ -7,17 +7,22 @@ public class ShadowController : MonoBehaviour {
 	// NOTE: project settings -> physics, the Shadow layer only collides with the Map layer
 	// This object's z-coordinate determines the drop shadow sprite y-offset relative to its user sprite
 
+	public float 			suddenDropForce;
+
 	private Rigidbody2D 	parentRB;
 	private Rigidbody 		rb3D;
 	private BoxCollider 	boxCollider;
+	private LayerMask		mapHitMask;
 	private float 			offsetSlope = 0.0f;
 	private float 			startPosX;
 	private float 			colliderHeight;
+	private float 			oldShadowOffset = 0.0f;
 
 	void Awake () { 
 		parentRB = GetComponentInParent<Rigidbody2D> ();
 		rb3D = GetComponent<Rigidbody> ();
 		boxCollider = GetComponent<BoxCollider> ();
+		mapHitMask = LayerMask.GetMask ("Map");
 
 		// move the box origin/center to slightly above the x-y plane because
 		// the shadowOffset is calculated from the cube's bottom face's z-value
@@ -43,8 +48,13 @@ public class ShadowController : MonoBehaviour {
 		return rb3D.isKinematic;
 	}
 
-	public bool IsFalling () {
-		return rb3D.velocity.z < 0.0f;
+	public bool isFalling {
+		get {
+			float shadowOffset = GetShadowOffset ();
+			bool returnValue = shadowOffset < oldShadowOffset;
+			oldShadowOffset = shadowOffset;
+			return returnValue;
+		}
 	}
 
 	public bool grounded {
@@ -60,10 +70,23 @@ public class ShadowController : MonoBehaviour {
 		}
 	}
 
+	public void SuddenDrop() {
+		parentRB.velocity = Vector2.zero;
+		rb3D.AddForceAtPosition (Vector3.forward * -suddenDropForce, rb3D.transform.position, ForceMode.Impulse);
+	}
+
 	// height off the ground that determines the dropShadow sprite y-offset from its user sprite
 	public float GetShadowOffset() {
-		float offsetModifier = offsetSlope * (rb3D.transform.position.x - startPosX);
-		return (rb3D.transform.position.z - colliderHeight) - offsetModifier;
+		float trajectoryModifier = offsetSlope * (rb3D.transform.position.x - startPosX);
+		float shadowOffset = (rb3D.transform.position.z - colliderHeight) - trajectoryModifier;
+
+		// modify further if the parentRB is hovering over a map edge
+		if (shadowOffset > 0.1f) {
+			Vector2 parentPos = new Vector2 (parentRB.transform.position.x, parentRB.transform.position.y);
+			RaycastHit2D shadowHit = Physics2D.Raycast(parentPos, -Vector2.up, shadowOffset, mapHitMask);
+			return shadowHit.distance > 0.0f ? shadowHit.distance : shadowOffset;
+		}
+		return shadowOffset;
 	}
 		
 	public void SetTrajectory(float airTime) {

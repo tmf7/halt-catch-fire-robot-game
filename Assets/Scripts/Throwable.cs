@@ -17,10 +17,8 @@ public class Range {
 
 public abstract class Throwable : MonoBehaviour {
 
-	public AudioClip[]			thrownSounds;
 	public AudioClip[]			landingSounds;
 
-	public LayerMask 			airStrikeMask;
 	public LayerMask			groundedResetMask;
 	public float 				groundedDrag = 10.0f;
 	public float 				deadlyHeight;
@@ -32,6 +30,13 @@ public abstract class Throwable : MonoBehaviour {
 	public float				smallestPitfallScale = 0.1f;
 	public float				pitfallRate = 0.9f;
 
+	[HideInInspector]
+	public bool isClaimed {		// already grabbed or will be grabbed
+		get {
+			return whoClaimed != null;
+		} 
+	}  			
+		
 	[HideInInspector] 
 	public Vector3				dropForce;
 	[HideInInspector]
@@ -40,12 +45,13 @@ public abstract class Throwable : MonoBehaviour {
 	protected ParticleSystem	landingParticles;
 	protected AudioSource 		efxSource;
 	protected GameObject		dropShadow;
-	protected ShadowController 	shadowController;
 	protected SpriteRenderer	spriteRenderer;
 	protected Rigidbody2D 		rb2D;
-	protected float 			oldShadowOffset = 0.0f;
 	protected bool 				landingResolved;
 	protected float 			currentPitfallScale = 1.0f;		// transform.localScale
+
+	private ShadowController 	shadowController;
+	private GameObject			whoClaimed;
 
 	void Awake() {
 		efxSource = GetComponent<AudioSource> ();
@@ -54,6 +60,10 @@ public abstract class Throwable : MonoBehaviour {
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 		rb2D = GetComponent<Rigidbody2D> ();
 		landingParticles = GetComponentInChildren<ParticleSystem> ();		// the landing particle system must be the first child of the throwable gameobject for this to work
+	}
+
+	public void SetClaimant(GameObject newClaimant) {
+		whoClaimed = newClaimant;
 	}
 
 	public void SetShadowParent(Transform parent) {
@@ -65,7 +75,6 @@ public abstract class Throwable : MonoBehaviour {
 		shadowController.SetVelocity(Vector3.forward * verticalSpeed);
 		shadowController.SetKinematic (false);
 		shadowController.SetTrajectory (airTime);
-		PlayRandomSoundFx (thrownSounds);
 	}
 
 	public void RandomThrow() {
@@ -84,6 +93,12 @@ public abstract class Throwable : MonoBehaviour {
 	public bool grounded {
 		get {
 			return shadowController.grounded;
+		}
+	}
+		
+	public bool isFalling {
+		get { 
+			return shadowController.isFalling;
 		}
 	}
 
@@ -108,10 +123,10 @@ public abstract class Throwable : MonoBehaviour {
 			dropShadow.transform.position = transform.position - Vector3.up * shadowOffset;
 
 			// coming in for a landing
-			if (shadowOffset < oldShadowOffset && shadowOffset < deadlyHeight)
+			// possibly FIXME: I moved the isFalling logic to the shadowController class and made the shadowController a private member of Throwable
+			if (isFalling && shadowOffset < deadlyHeight)
 				gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
-
-			oldShadowOffset = shadowOffset;
+			
 		} else if (!landingResolved) {
 			landingResolved = true;
 			OnLanding ();
@@ -128,6 +143,11 @@ public abstract class Throwable : MonoBehaviour {
 		Remove();
 	}
 
+	// stop the rb2D and apply a force to the rb3D so it lands quicker
+	public void HitWall() {
+		shadowController.SuddenDrop ();
+	}
+
 	public void Explode() {
 		Instantiate<GameObject> (explosionPrefab, transform.position, Quaternion.identity);
 		Remove();
@@ -142,10 +162,8 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	void OnTriggerEnter2D(Collider2D collider) {
-		if (collider.tag == "Pit" && !fellInPit) {
+		if (collider.tag == "Pit" && !fellInPit)
 			StartCoroutine ("FallingDownPit");
-			PlayRandomSoundFx (thrownSounds);
-		}
 		HitTrigger2D (collider);
 	}
 

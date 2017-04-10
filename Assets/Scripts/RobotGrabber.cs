@@ -20,7 +20,6 @@ public class RobotGrabber : MonoBehaviour {
 				if (!hit || hit.tag != "Robot")
 					return;
   
-				// stop the robot from pathfinding/following while grabbed
 				grabbedRobot = hit.gameObject.GetComponent<Robot> ();
 				if (grabbedRobot.currentState == Robot.RobotStates.STATE_REPAIRING) {
 					grabbedRobot = null;
@@ -28,7 +27,7 @@ public class RobotGrabber : MonoBehaviour {
 				}
 
 				grabbedRobot.grabbed = true;
-				grabbedRobot.whoGrabbed = gameObject;
+				grabbedRobot.whoGrabbed = gameObject;	// tell the robot the player grabbed it (instead of another robot)
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 
 				// create a hinge on the robot sprite at its top-center for a cleaner effect

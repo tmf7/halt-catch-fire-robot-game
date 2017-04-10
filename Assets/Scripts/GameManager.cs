@@ -78,11 +78,29 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public Transform GetRandomBoxTarget() {
-		return allBoxes.Count > 0 ? allBoxes [Random.Range (0, allBoxes.Count)].transform : null;
+		if (allBoxes.Count > 0) {
+			Box targetBox = allBoxes [Random.Range (0, allBoxes.Count)];
+			if (!targetBox.isClaimed) {
+				return targetBox.transform;	
+			} else {
+				return null;	// try to get a different target next frame
+			}
+		} else {
+			return null;
+		}
 	}
 
 	public Transform GetRandomRobotTarget () {
-		return allRobots.Count > 0 ? allRobots [Random.Range (0, allRobots.Count)].transform : null;
+		if (allRobots.Count > 0) {
+			Robot targetRobot = allRobots [Random.Range (0, allRobots.Count)];
+			if (targetRobot.isClaimed) {
+				return null;			// try to get a different target next frame
+			} else {
+				return targetRobot.transform;
+			}
+		} else {
+			return null;
+		}
 	}
 
 	public int robotCount {

@@ -9,9 +9,11 @@ public class Robot : Throwable {
 	public ParticleSystem robotBeamPrefab;
 	public AudioClip 	repairingSound;
 	public AudioClip	finishRepairSound;
+	public AudioClip	catchFireSound;
 
 	public AudioClip 	playerGrabbedSound;
 	public AudioClip 	robotGrabbedSound;
+	public AudioClip	thrownSound;
 
 	public Transform 	target;
 	public float 		speed = 2.0f;
@@ -33,10 +35,12 @@ public class Robot : Throwable {
 		get { 
 			return fireInstance != null;
 		} set { 
-			if (!onFire && value)
+			if (!onFire && value) {
 				fireInstance = Instantiate<ParticleSystem> (firePrefab, transform.position, Quaternion.identity, transform);
-			else if (onFire)
+				PlaySingleSoundFx (catchFireSound);
+			} else if (onFire) {
 				Destroy (fireInstance.gameObject);
+			}
 		}
 	}
 		
@@ -96,8 +100,10 @@ public class Robot : Throwable {
 		} else if (!grounded && !justReleased) {
 		//	Destroy (robotBeam);					//FIXME: this line is a test
 			justReleased = true;
+			SetHeight (grabHeight);
 			rb2D.velocity = new Vector2 (dropForce.x, dropForce.y);
 			Throw (0.0f, -1.0f);
+			PlaySingleSoundFx (thrownSound);
 		}
 
 		if (onFire)
@@ -119,7 +125,7 @@ public class Robot : Throwable {
 		if (grounded && !fellInPit) {
 			SearchForTarget ();
 		} else if (fellInPit && onFire) {
-			// set the fire system size proportional to the currentPitfallScale
+			// make the fire shrink too
 			fireInstance.transform.localScale = new Vector3(currentPitfallScale, 1.0f, currentPitfallScale);
 		}
 		
@@ -178,6 +184,9 @@ public class Robot : Throwable {
 
 		if (target == null) {
 			//SetStateRandom ();
+		} else {	// prevent others from attempting to grab this target
+			Throwable targetObj = target.gameObject.GetComponent<Throwable> ();
+			targetObj.SetClaimant (gameObject);
 		}
 	}
 
@@ -189,9 +198,7 @@ public class Robot : Throwable {
 	}
 
 	void FollowPath() {
-
 		UpdatePath (path == null);
-
 		if (path == null)
 			return;
 
@@ -219,15 +226,19 @@ public class Robot : Throwable {
 
 	void StopMoving() {
 		path = null;
-		target = null;
+		if (target != null) {
+			target.gameObject.GetComponent<Throwable> ().SetClaimant(null);			// FIXME: isClaimed should also become false if the claimant dies
+			target = null;
+		}
 		targetIndex = 0;
 	}
 
 	void OnCollisionEnter2D(Collision2D collision) {
 		if (carriedItem == null) {
 			if (currentState == RobotStates.STATE_FINDBOX && collision.collider.tag == "Box") { // AND the box is the target box...or just pickup the first box you hit, its all the same
-				Box hitBox = collision.collider.gameObject.GetComponent<Box> ();
-				hitBox.Explode ();
+			//	Box hitBox = collision.collider.gameObject.GetComponent<Box> ();
+			//	hitBox.Explode ();
+				StopMoving();
 			//	hitBox.transform.SetParent (transform);
 			//	hitBox.GetComponent<Rigidbody2D> ().constraints = RigidbodyConstraints2D.FreezeRotation;
 			//	carriedItem = hitBox;
@@ -287,7 +298,7 @@ public class Robot : Throwable {
 
 	protected override void OnLanding () {
 		base.OnLanding ();
-		if (currentState != RobotStates.STATE_REPAIRING && !fellInPit)		// bugfix for the landing sound overwriting the repair sound playing
+		if (currentState != RobotStates.STATE_REPAIRING && !fellInPit && !onFire)		// bugfix for the landing sound overwriting status change sounds
 			PlayRandomSoundFx (landingSounds);
 	}
 }
