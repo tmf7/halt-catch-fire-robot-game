@@ -41,22 +41,24 @@ public class GameManager : MonoBehaviour {
 		deliveryPoints = new List<Transform> ();
 		hazardPoints = new List<Transform> ();
 
+		// separate "BoxExit" and "Conveyor" tags are used because robots and boxes checks 
+		// if they should be thrown by the BoxExit instead of the BoxExit throwing things on it own
 		GameObject[] exits = GameObject.FindGameObjectsWithTag ("BoxExit");
 		GameObject[] conveyors = GameObject.FindGameObjectsWithTag ("Conveyor");
-		foreach (GameObject exit in exits)
-			deliveryPoints.Add (exit.transform);
-		foreach (GameObject conveyor in conveyors)
-			deliveryPoints.Add (conveyor.transform);
+		for (int i = 0; i < exits.Length; i++)
+			deliveryPoints.Add (exits[i].transform);
+		for (int i = 0; i < conveyors.Length; i++)
+			deliveryPoints.Add (conveyors[i].transform);
 
 		GameObject[] crushers = GameObject.FindGameObjectsWithTag ("Crusher");
 		GameObject[] furnaces = GameObject.FindGameObjectsWithTag ("Furnace");
 		GameObject[] pits = GameObject.FindGameObjectsWithTag ("Pit");
-		foreach (GameObject crusher in crushers)
-			hazardPoints.Add (crusher.transform);
-		foreach (GameObject furnace in furnaces)
-			hazardPoints.Add (furnace.transform);
-		foreach (GameObject pit in pits)
-			hazardPoints.Add (pit.transform);
+		for (int i = 0; i < crushers.Length; i++)
+			hazardPoints.Add (crushers[i].transform);
+		for (int i = 0; i < furnaces.Length; i++)
+			hazardPoints.Add (furnaces[i].transform);
+		for (int i = 0; i < pits.Length; i++)
+			hazardPoints.Add (pits[i].transform);
 	}
 
 	public void AddBox(Box newBox) {
@@ -80,29 +82,11 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public Transform GetRandomBoxTarget() {
-		if (allBoxes.Count > 0) {
-			Box targetBox = allBoxes [Random.Range (0, allBoxes.Count)];
-			if (!targetBox.isClaimed) {
-				return targetBox.transform;				// FIXME: an exception occurs here when a box gets removed when the ROBOT dies carrying a box (then someone tries to target it later)
-			} else {
-				return null;	// try to get a different target next frame
-			}
-		} else {
-			return null;
-		}
+		return allBoxes.Count > 0 ? allBoxes [Random.Range (0, allBoxes.Count)].transform : null;
 	}
 
 	public Transform GetRandomRobotTarget () {
-		if (allRobots.Count > 0) {
-			Robot targetRobot = allRobots [Random.Range (0, allRobots.Count)];
-			if (targetRobot.isClaimed) {
-				return null;	// try to get a different target next frame
-			} else {
-				return targetRobot.transform;
-			}
-		} else {
-			return null;
-		}
+		return allRobots.Count > 0 ? allRobots [Random.Range (0, allRobots.Count)].transform : null;
 	}
 
 	public Transform GetRandomDeliveryTarget () {

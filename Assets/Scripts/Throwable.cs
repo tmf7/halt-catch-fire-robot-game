@@ -30,13 +30,6 @@ public abstract class Throwable : MonoBehaviour {
 	public float				smallestPitfallScale = 0.1f;
 	public float				pitfallRate = 0.9f;
 
-	[HideInInspector]
-	public bool isClaimed {		// already grabbed or will be grabbed
-		get {
-			return whoClaimed != null;
-		} 
-	}  			
-		
 	[HideInInspector] 
 	public Vector3				dropForce;
 	[HideInInspector]
@@ -52,7 +45,7 @@ public abstract class Throwable : MonoBehaviour {
 	protected float 			currentPitfallScale = 1.0f;		// transform.localScale
 
 	private ShadowController 	shadowController;
-	private GameObject			whoClaimed;
+	private Robot				whoIsCarrying;
 
 	void Awake() {
 		efxSource = GetComponent<AudioSource> ();
@@ -61,12 +54,6 @@ public abstract class Throwable : MonoBehaviour {
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 		rb2D = GetComponent<Rigidbody2D> ();
 		landingParticles = GetComponentInChildren<ParticleSystem> ();		// the landing particle system must be the first child of the throwable gameobject for this to work
-	}
-
-	public void SetClaimant(GameObject newClaimant) {
-	//	if (isClaimed)	// force the old claimant to unclaim it
-	//		whoClaimed.GetComponent<Robot>().UnclaimObject(gameObject);
-		whoClaimed = newClaimant;
 	}
 
 	public void SetShadowParent(Transform parent) {
@@ -92,7 +79,7 @@ public abstract class Throwable : MonoBehaviour {
 	public void SetHeight(float height) {
 		shadowController.SetHeight (height);
 	}
-
+		
 	public bool grounded {
 		get {
 			return shadowController.grounded;
@@ -104,13 +91,58 @@ public abstract class Throwable : MonoBehaviour {
 			return shadowController.isFalling;
 		}
 	}
-
+		
 	public bool fellInPit {
 		get { 
 			return currentPitfallScale < 1.0f;
 		}
 	}
+
+	public bool isBeingCarried {
+		get {
+			return whoIsCarrying != null;
+		} 
+	}
+
+	public void SetCarrier(Robot newCarrier) {
+		if (this is Robot) {
+			PlaySingleSoundFx ((this as Robot).robotGrabbedSound);
+			if ((this as Robot).isCarryingItem)
+				(this as Robot).DropItem ();
+			else
+				(this as Robot).StopMoving ();
+		}
+		whoIsCarrying = newCarrier;
+	}
+
+	public Robot GetCarrier() {
+		return whoIsCarrying;
+	}
+
+	protected void UpdateRobotBeam() {
+		if (robotBeam != null) {
+			if (!isBeingCarried) {
+				SetKinematic (false);
+				Destroy (robotBeam);
+			}
+		}
+	}
 		
+	public void SetKinematic(bool isKinematic) {
+		shadowController.SetKinematic (isKinematic);
+		rb2D.isKinematic = isKinematic;
+	//	rb2D.simulated = !isKinematic;	// FIXME: default true winds up pushing the grabbing robot down if its carriedItem is above it
+										// but if its not simulated then OnTriggerEntered and OnCollisionEntered, and any Casting returns empty
+										// BUGFIX: just leave some space b/t the parent and child colliders
+		rb2D.transform.rotation = Quaternion.identity;
+	}
+
+	public void ActivateRobotBeam(ParticleSystem _robotBeam) {
+		if (robotBeam != null)
+			Destroy (robotBeam);
+		robotBeam = _robotBeam;
+	}
+
 	protected void UpdateShadow() {
 		if (!grounded) {
 			landingResolved = false;
@@ -129,34 +161,12 @@ public abstract class Throwable : MonoBehaviour {
 			// possibly FIXME: I moved the isFalling logic to the shadowController class and made the shadowController a private member of Throwable
 			if (isFalling && shadowOffset < deadlyHeight)
 				gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
-			
+
 		} else if (!landingResolved) {
 			landingResolved = true;
 			OnLanding ();
 		}
-	}
-
-	public void SetKinematic(bool isKinematic) {
-		shadowController.SetKinematic (isKinematic);
-		rb2D.isKinematic = isKinematic;
-		rb2D.simulated = !isKinematic;	// true winds up pushing the grabbing robot down if its carriedItem is above it
-		rb2D.transform.rotation = Quaternion.identity;
-	}
-
-	public void ActivateRobotBeam(ParticleSystem _robotBeam) {
-		if (robotBeam != null)
-			Destroy (robotBeam);
-		robotBeam = _robotBeam;
-	}
-
-	protected void CheckIfCarried() {
-		if (robotBeam != null) {
-			Robot robotParent = GetComponentInParent<Robot> ();
-			if (robotParent == null) {
-				SetKinematic (false);	// FIXME: this screws with the shadow trajectory each frame, only do it if the carrier was recently lost
-				Destroy (robotBeam);
-			}
-		}
+		UpdateRobotBeam ();
 	}
 
 	IEnumerator FallingDownPit() {
@@ -190,16 +200,25 @@ public abstract class Throwable : MonoBehaviour {
 		Destroy (this);
 	}
 
-	void OnTriggerEnter2D(Collider2D collider) {
-		if (collider.tag == "Pit" && !fellInPit)
+	void OnTriggerEnter2D(Collider2D hitTrigger) {
+		if (hitTrigger.tag == "Pit" && !fellInPit)
 			StartCoroutine ("FallingDownPit");
-		HitTrigger2D (collider);
+
+		// tell the carrier to drop this
+		if (isBeingCarried && whoIsCarrying.CheckHitTarget(hitTrigger.tag))
+				whoIsCarrying.DropItem();
+
+		HitTrigger2D (hitTrigger);
 	}
 
 	void OnCollisionEnter2D(Collision2D collision)  {
 		if (!grounded)
 			HitWall ();
-		
+
+		// tell the carrier to drop this
+		if (isBeingCarried && whoIsCarrying.CheckHitTarget(collision.collider.tag))
+			whoIsCarrying.DropItem();
+
 		HitCollision2D (collision);
 	}
 

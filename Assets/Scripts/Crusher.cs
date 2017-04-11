@@ -11,9 +11,9 @@ public class Crusher : MonoBehaviour {
 	private Animator animator;
 	private ParticleSystem smashParticles;
 
-	void Awake() {
+	void Start() {
 		source = GetComponent<AudioSource> ();
-		animator = GetComponent<Animator> ();
+		animator = transform.parent.GetComponent<Animator> ();
 		smashParticles = GetComponentInChildren<ParticleSystem> ();
 	}
 
@@ -38,5 +38,11 @@ public class Crusher : MonoBehaviour {
 
 	private void TriggerRetract() {
 		animator.SetTrigger ("RetractCrusher");
+	}
+
+	void OnCollisionEnter2D(Collision2D collision) {
+		Robot hitRobot = collision.collider.GetComponent<Robot> ();
+		if (hitRobot != null)
+			hitRobot.Explode ();
 	}
 }

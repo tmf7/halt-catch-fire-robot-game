@@ -27,7 +27,6 @@ public class RobotGrabber : MonoBehaviour {
 				}
 
 				grabbedRobot.grabbedByPlayer = true;
-				grabbedRobot.whoGrabbed = gameObject;	// tell the robot the player grabbed it (instead of another robot)
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 
 				// create a hinge on the robot sprite at its top-center for a cleaner effect
