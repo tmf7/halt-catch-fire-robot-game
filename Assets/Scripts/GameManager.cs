@@ -41,14 +41,9 @@ public class GameManager : MonoBehaviour {
 		deliveryPoints = new List<Transform> ();
 		hazardPoints = new List<Transform> ();
 
-		// separate "BoxExit" and "Conveyor" tags are used because robots and boxes checks 
-		// if they should be thrown by the BoxExit instead of the BoxExit throwing things on it own
 		GameObject[] exits = GameObject.FindGameObjectsWithTag ("BoxExit");
-		GameObject[] conveyors = GameObject.FindGameObjectsWithTag ("Conveyor");
 		for (int i = 0; i < exits.Length; i++)
 			deliveryPoints.Add (exits[i].transform);
-		for (int i = 0; i < conveyors.Length; i++)
-			deliveryPoints.Add (conveyors[i].transform);
 
 		GameObject[] crushers = GameObject.FindGameObjectsWithTag ("Crusher");
 		GameObject[] furnaces = GameObject.FindGameObjectsWithTag ("Furnace");

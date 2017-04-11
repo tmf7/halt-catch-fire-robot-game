@@ -279,7 +279,7 @@ public class Robot : Throwable {
 
 	// helper function for Throwables checking if they've been delivered by their carrier
 	public bool CheckHitTarget(string possibleTargetTag) {
-		return possibleTargetTag == target.tag || possibleTargetTag == target.parent.tag;
+		return possibleTargetTag == target.tag;
 	}
 
 	public void DropItem() {
@@ -299,6 +299,10 @@ public class Robot : Throwable {
 		SetupCarryRange ();
 		UpdateCarriedItem ();
 		SearchForTarget ();
+	}
+
+	public void ExitRobot() {
+		RandomThrow ();
 	}
 
 	// derived-class extension of OnCollisionEnter2D
@@ -336,10 +340,6 @@ public class Robot : Throwable {
 	// because Throwable implements OnTriggerEnter2D,
 	// which prevents derived classes from directly using it
 	protected override void HitTrigger2D (Collider2D hitTrigger) {
-		if (hitTrigger.tag == "BoxExit") {
-			RandomThrow ();
-		}
-
 		if (hitTrigger.tag == "HealZone" && currentState != RobotStates.STATE_REPAIRING && health < maxHealth) {
 			currentState = RobotStates.STATE_REPAIRING;
 			PlaySingleSoundFx (repairingSound);

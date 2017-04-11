@@ -13,16 +13,20 @@ public class Crusher : MonoBehaviour {
 
 	void Start() {
 		source = GetComponent<AudioSource> ();
-		animator = transform.parent.GetComponent<Animator> ();
+		animator = GetComponent<Animator> ();
 		smashParticles = GetComponentInChildren<ParticleSystem> ();
 	}
 
+	// activate the crusherShadow collider
+	// crusherShadow must be the first child of crusher
 	private void EnableCollider() {
-		GetComponent<BoxCollider2D> ().enabled = true;
+		GetComponentInChildren<BoxCollider2D> ().enabled = true;
 	}
 
+	// de-activate the crusherShadow collider
+	// crusherShadow must be the first child of crusher
 	private void DisableCollider() {
-		GetComponent<BoxCollider2D> ().enabled = false;
+		GetComponentInChildren<BoxCollider2D> ().enabled = false;
 	}
 
 	private void PlaySmashSound() {

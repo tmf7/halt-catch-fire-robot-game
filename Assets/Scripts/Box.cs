@@ -27,12 +27,14 @@ public class Box : Throwable {
 	// because Throwable implements OnTriggerEnter2D,
 	// which prevents derived classes from directly using it
 	protected override void HitTrigger2D (Collider2D hitTrigger) {
-		if (hitTrigger.tag == "BoxExit") {
-			GetComponent<BoxCollider2D> ().enabled = false;
-			SetHeight (2.0f * deadlyHeight);
-			rb2D.velocity = new Vector2( 0.0f, exitSpeed);
-			Throw (rb2D.velocity.y, -1.0f);
-			Invoke ("Remove", exitDelay);
-		}
+		// box trigger stuff
+	}
+
+	public void ExitBox() {
+		GetComponent<BoxCollider2D> ().enabled = false;
+		SetHeight (2.0f * deadlyHeight);
+		rb2D.velocity = new Vector2( 0.0f, exitSpeed);
+		Throw (rb2D.velocity.y, -1.0f);
+		Invoke ("Remove", exitDelay);
 	}
 }
