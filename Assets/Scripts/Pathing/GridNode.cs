@@ -8,6 +8,7 @@ public class GridNode : IHeapItem<GridNode> {
 	public Vector2 	worldPosition;
 	public int 		gridRow;
 	public int 		gridCol;
+	public int		movementPenalty;
 
 	public GridNode	parent;
 	public int 		gCost;
@@ -15,11 +16,12 @@ public class GridNode : IHeapItem<GridNode> {
 
 	private int 	heapIndex;
 
-	public GridNode(Vector2 _worldPos, bool _walkable, int _gridRow, int _gridCol) {
+	public GridNode(Vector2 _worldPos, bool _walkable, int _gridRow, int _gridCol, int _penalty) {
 		walkable = _walkable;
 		worldPosition = _worldPos;
 		gridRow = _gridRow;
 		gridCol = _gridCol;
+		movementPenalty = _penalty;
 	}
 
 	public int fCost{

@@ -32,8 +32,6 @@ public abstract class Throwable : MonoBehaviour {
 
 	[HideInInspector] 
 	public Vector3				dropForce;
-	[HideInInspector]
-	public bool 				grabbedByPlayer = false;
 
 	protected ParticleSystem	landingParticles;
 	protected ParticleSystem 	robotBeam;
@@ -105,12 +103,14 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	public void SetCarrier(Robot newCarrier) {
-		if (this is Robot) {
-			PlaySingleSoundFx ((this as Robot).robotGrabbedSound);
+		if (newCarrier != null && this is Robot) {
+
+			// only scream the first time its grabbed by a homicidal robot
+			if (whoIsCarrying == null)
+				PlaySingleSoundFx ((this as Robot).robotGrabbedSound);
+			
 			if ((this as Robot).isCarryingItem)
 				(this as Robot).DropItem ();
-			else
-				(this as Robot).StopMoving ();
 		}
 		whoIsCarrying = newCarrier;
 	}
@@ -123,18 +123,9 @@ public abstract class Throwable : MonoBehaviour {
 		if (robotBeam != null) {
 			if (!isBeingCarried) {
 				SetKinematic (false);
-				Destroy (robotBeam);
+				Destroy (robotBeam.gameObject);
 			}
 		}
-	}
-		
-	public void SetKinematic(bool isKinematic) {
-		shadowController.SetKinematic (isKinematic);
-		rb2D.isKinematic = isKinematic;
-	//	rb2D.simulated = !isKinematic;	// FIXME: default true winds up pushing the grabbing robot down if its carriedItem is above it
-										// but if its not simulated then OnTriggerEntered and OnCollisionEntered, and any Casting returns empty
-										// BUGFIX: just leave some space b/t the parent and child colliders
-		rb2D.transform.rotation = Quaternion.identity;
 	}
 
 	public void ActivateRobotBeam(ParticleSystem _robotBeam) {
@@ -142,6 +133,13 @@ public abstract class Throwable : MonoBehaviour {
 			Destroy (robotBeam);
 		robotBeam = _robotBeam;
 	}
+		
+	public void SetKinematic(bool isKinematic) {
+		shadowController.SetKinematic (isKinematic);
+		rb2D.isKinematic = isKinematic;
+		rb2D.transform.rotation = Quaternion.identity;
+	}
+
 
 	protected void UpdateShadow() {
 		if (!grounded) {
@@ -205,6 +203,7 @@ public abstract class Throwable : MonoBehaviour {
 			StartCoroutine ("FallingDownPit");
 
 		// tell the carrier to drop this
+		// FIXME: doens't quite work for the disabled crusher collider (causes a null target exception)
 		if (isBeingCarried && whoIsCarrying.CheckHitTarget(hitTrigger.tag))
 				whoIsCarrying.DropItem();
 
@@ -216,6 +215,7 @@ public abstract class Throwable : MonoBehaviour {
 			HitWall ();
 
 		// tell the carrier to drop this
+		// FIXME: doens't quite work for the disabled crusher collider (causes a null target exception)
 		if (isBeingCarried && whoIsCarrying.CheckHitTarget(collision.collider.tag))
 			whoIsCarrying.DropItem();
 

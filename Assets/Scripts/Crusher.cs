@@ -20,13 +20,13 @@ public class Crusher : MonoBehaviour {
 	// activate the crusherShadow collider
 	// crusherShadow must be the first child of crusher
 	private void EnableCollider() {
-		GetComponentInChildren<BoxCollider2D> ().enabled = true;
+		GetComponentInChildren<BoxCollider2D> ().isTrigger = false;
 	}
 
 	// de-activate the crusherShadow collider
 	// crusherShadow must be the first child of crusher
 	private void DisableCollider() {
-		GetComponentInChildren<BoxCollider2D> ().enabled = false;
+		GetComponentInChildren<BoxCollider2D> ().isTrigger = true;
 	}
 
 	private void PlaySmashSound() {

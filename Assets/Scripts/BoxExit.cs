@@ -15,7 +15,6 @@ public class BoxExit : MonoBehaviour {
 	void FixedUpdate () {
 		Vector2 exitCenter = new Vector2(transform.position.x, transform.position.y) + boxCollider.offset;
 
-		// FIXME: possibly make the distance 0.0f instead of 1.0f
 		RaycastHit2D[] hits = Physics2D.BoxCastAll(exitCenter, boxCollider.size, 0.0f, Vector3.zero, 1.0f, exitMask);
 
 		foreach (RaycastHit2D hit in hits) {

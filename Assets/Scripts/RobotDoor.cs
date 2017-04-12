@@ -5,7 +5,7 @@ using UnityEngine;
 public class RobotDoor : MonoBehaviour {
 
 	public AudioClip doorSlideSound;
-	public Robot 	robotPrefab;
+	public Robot[] 	robotPrefabs;
 	public float 	spawnDelay = 3.0f;
 	public float	doorCloseDelay = 1.0f;
 	public bool 	spawnEnabled = true;
@@ -37,7 +37,8 @@ public class RobotDoor : MonoBehaviour {
 	private void SpawnRobot() {
 		doorClosed = false;
 		openTriggerSet = false;
-		Robot spawnedRobot = Instantiate<Robot> (robotPrefab, animator.transform.position, Quaternion.identity);
+		int i = Random.Range (0, 2);
+		Robot spawnedRobot = Instantiate<Robot> (robotPrefabs[i], animator.transform.position, Quaternion.identity);
 		GameManager.instance.AddRobot (spawnedRobot);
 		Invoke ("TriggerDoorClose", doorCloseDelay);
 	}

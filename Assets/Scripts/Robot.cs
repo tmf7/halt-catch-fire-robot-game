@@ -2,18 +2,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using UnityEngine.UI;
 
 public class Robot : Throwable {
 
 	public ParticleSystem firePrefab;
 	public ParticleSystem robotBeamPrefab;
-	public AudioClip 	repairingSound;
-	public AudioClip	finishRepairSound;
-	public AudioClip	catchFireSound;
 
+	public AudioClip 	repairingSound;
+	public AudioClip	catchFireSound;
 	public AudioClip 	playerGrabbedSound;
 	public AudioClip 	robotGrabbedSound;
-	public AudioClip	thrownSound;
+	public AudioClip	slowThrownSound;
+
+	public AudioClip[]	fastThrownSounds;
+	public AudioClip[]	robotReliefSounds;
+	public AudioClip	exitRepairZapSound;
 
 	public Transform 	target;
 	public float 		speed = 2.0f;
@@ -22,9 +26,18 @@ public class Robot : Throwable {
 	public float		damageRate = 9.0f;
 	public float		healRate = 10.0f;
 	public float		maxHealth = 100.0f;
+	public float		robotScreamTolerance = 16.0f;
+
+	public float		findBoxChance = 0.8f;
+	public float		homicideChance = 0.1f;
+//	public float		suicideChance = 0.1f;		// the remaining probability
 
 	[HideInInspector]
 	public float 		health = 100;
+	[HideInInspector]
+	public bool 		grabbedByPlayer = false;
+	[HideInInspector]
+	public Text 		nameTag;
 
 	[HideInInspector]
 	public bool onFire {
@@ -48,7 +61,8 @@ public class Robot : Throwable {
 		STATE_DELIVERING,
 		STATE_REPAIRING
 	};
-	private RobotStates	currentState;
+	public RobotStates	currentState;
+	public RobotStates oldState;
 
 	// pathing
 	private Vector3[] 	path;
@@ -62,29 +76,34 @@ public class Robot : Throwable {
 	private const float stoppingThreshold = 0.01f;
 
 	// state machine
-	private bool 		justReleased;
-	private Throwable 	carriedItem;
-	private ParticleSystem fireInstance;
-	private CircleCollider2D circleCollider;
+	private bool 				justReleased;
+	private Throwable 			carriedItem;
+	private ParticleSystem 		fireInstance;
+	private CircleCollider2D 	circleCollider;
+	private Animator			animator;
 
 	void Start() {
+		animator = GetComponent<Animator> ();
 		circleCollider = GetComponent<CircleCollider2D> ();
 		SetState (RobotStates.STATE_FINDBOX);
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
+
+		nameTag = GetComponentInChildren<Text> ();
+		int i = Random.Range (0, RobotNames.names.Length);
+		nameTag.text = RobotNames.names[i];
 	}
 
 	void Update() {
-
-		if (Input.GetKey (KeyCode.Space))
-			SetStateRandom ();
-
-		if (!CheckGrabbedByPlayer () && !grounded && !justReleased) {
+		if (!CheckGrabbedStatus () && !grounded && !justReleased) {
 			justReleased = true;
 			SetHeight (grabHeight);
 			rb2D.drag = 0.0f;
 			rb2D.velocity = new Vector2 (dropForce.x, dropForce.y);
 			Throw (0.0f, -1.0f);
-			PlaySingleSoundFx (thrownSound);
+			if (dropForce.sqrMagnitude > robotScreamTolerance)
+				PlayRandomSoundFx (fastThrownSounds);
+			else
+				PlaySingleSoundFx (slowThrownSound);
 		}
 
 		if (onFire)
@@ -96,34 +115,43 @@ public class Robot : Throwable {
 			if (health > maxHealth) {
 				health = maxHealth;
 				currentState = RobotStates.STATE_FINDBOX;
-				PlaySingleSoundFx (finishRepairSound);
 			}
 		}
 
 		if (health <= 0) 
 			Explode();
 	
-		if (grounded && !fellInPit) {
+		if (grounded && !fellInPit && !isBeingCarried)
 			SearchForTarget ();
-		} else if (fellInPit && onFire) {
-			// make the fire shrink too
+
+		// make the fire shrink too
+		if (fellInPit && onFire)
 			fireInstance.transform.localScale = new Vector3(currentPitfallScale, 1.0f, currentPitfallScale);
-		}
 
 		UpdateShadow ();
 		UpdateCarriedItem ();
 	}
 
-	private bool CheckGrabbedByPlayer() {
-		if (grabbedByPlayer) {
-			if (isCarryingItem)
+	private bool CheckGrabbedStatus() {
+		if (grabbedByPlayer || isBeingCarried) {
+			if (isCarryingItem) {
+				if (carriedItem is Robot)
+					PlayRandomSoundFx (robotReliefSounds);
 				DropItem ();
-			else
+			}
+		
+			if (grabbedByPlayer && isBeingCarried) {
+				PlayRandomSoundFx (robotReliefSounds);
+				GetCarrier ().DropItem ();
+			}
+		
+			if (target != null || path != null)
 				StopMoving ();
-			
-			justReleased = false;
-			SetHeight (grabHeight);
-				
+
+			if (grabbedByPlayer) {
+				justReleased = false;
+				SetHeight (grabHeight);
+			}
 			return true;
 		}
 		return false;
@@ -131,20 +159,17 @@ public class Robot : Throwable {
 
 	// carriedItem must not be null to call this
 	private void SetupCarryRange() {
-		float carriedWidth = circleCollider.radius;
-		float carriedHeight = circleCollider.radius;
+		float carriedRadius = circleCollider.radius;
 		float roomForJesus = 0.2f;
 
 		if (carriedItem is Box) {
-			Vector3 boxExtents = carriedItem.GetComponent<BoxCollider2D> ().bounds.extents;
-			carriedWidth = boxExtents.x + roomForJesus;
-			carriedHeight = boxExtents.y + roomForJesus;
+			float boxRadius = carriedItem.GetComponent<BoxCollider2D> ().bounds.extents.magnitude;
+			carriedRadius = boxRadius + roomForJesus;
 		} else {	// its a robot
 			float robotRadius = carriedItem.GetComponent<CircleCollider2D> ().radius;
-			carriedWidth = robotRadius + roomForJesus;
-			carriedHeight = robotRadius + roomForJesus;
+			carriedRadius = robotRadius + roomForJesus;
 		}
-		carryItemDistance = circleCollider.radius + (carriedWidth > carriedHeight ? carriedWidth : carriedWidth);
+		carryItemDistance = circleCollider.radius + carriedRadius;
 	}
 
 	// FIXME: this function may be interfering with releaseing on the conveyor belts from time to time
@@ -154,30 +179,37 @@ public class Robot : Throwable {
 			return;
 
 		Vector3 carryDir = (target.position - transform.position).normalized;
-		carriedItem.transform.position = transform.position + carryDir * carryItemDistance;
+		Vector3 carryPos = transform.position + carryDir * carryItemDistance;
+		carriedItem.transform.position = new Vector3(carryPos.x, carryPos.y, 0.0f);
 	}
 
 	public RobotStates GetState() {
 		return currentState;
 	}
-
+		
 	public void SetState(RobotStates newState) {
+		oldState = currentState;
 		currentState = newState;
 		StopMoving ();
 	}
 
-	public void SetStateRandom() {
-		switch (Random.Range (0, 3)) {
-			case 0:
-				SetState(RobotStates.STATE_FINDBOX);
-				break;
-			case 1:
-				SetState(RobotStates.STATE_SUICIDAL);
-				break;
-			case 2:
-				SetState(currentState = RobotStates.STATE_HOMICIDAL);
-				break;
-		}
+	// FIXME: if a Homicidal robot is told to DropItem, then it will revert state, which it shouldn't
+	// revert state should only occur upon Item delivery or Item stealing (not player grabbing)
+	// if not delivering and grabbed by player...the old state is...what?
+	public void RevertState() {
+		StopMoving ();
+		if (!grabbedByPlayer)
+			currentState = oldState;
+	}
+
+	public RobotStates GetRandomState() {
+		float stateWeight = Random.Range(0.0f, 1.0f);
+		if (stateWeight < findBoxChance)
+			return RobotStates.STATE_FINDBOX;
+		else if (stateWeight < (findBoxChance + homicideChance)) 
+			return RobotStates.STATE_HOMICIDAL;
+		else
+			return RobotStates.STATE_SUICIDAL;
 	}
 
 	void SearchForTarget() {
@@ -192,21 +224,22 @@ public class Robot : Throwable {
 			return;
 		}
 	
-		// SEARCH for a box to pickup, not just a random box. (meaning do a box2d sweep, then path to a random valid cell if nothing is found) 
 		switch (currentState) {
 			case RobotStates.STATE_FINDBOX:
 				target = GameManager.instance.GetRandomBoxTarget();
 				break;
 			case RobotStates.STATE_DELIVERING:
-				target = GameManager.instance.GetRandomDeliveryTarget ();
+				if (oldState == RobotStates.STATE_FINDBOX)
+					target = GameManager.instance.GetRandomDeliveryTarget ();
+				else if (oldState == RobotStates.STATE_HOMICIDAL && (carriedItem is Robot))
+					target = GameManager.instance.GetRandomHazardTarget ();
 				break;
 			case RobotStates.STATE_SUICIDAL:
-				// change the robot visual
+				// TODO: change the robot visual
 				target = GameManager.instance.GetRandomHazardTarget ();
 				break;
 			case RobotStates.STATE_HOMICIDAL:
 				target = GameManager.instance.GetRandomRobotTarget ();
-				// target a random robot to deliver (as if a box), and again, and again
 				break;
 			case RobotStates.STATE_ONFIRE: 
 				// TODO: run around like a crazy person
@@ -214,7 +247,7 @@ public class Robot : Throwable {
 		}
 
 		if (target == null)
-			SetStateRandom ();
+			SetState(GetRandomState());
 	}
 
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful) {
@@ -257,7 +290,17 @@ public class Robot : Throwable {
 				return;
 			}
 		}
-			
+
+		// animation controller
+		Vector3 move = currentWaypoint - transform.position;
+
+		animator.SetFloat ("XDir", Mathf.Clamp01 (Mathf.Abs(move.x)));
+		animator.SetFloat ("YDir", Mathf.Clamp(move.y, -1.0f, 1.0f));
+		if (move.x < 0)
+			spriteRenderer.flipX = true;
+		else
+			spriteRenderer.flipX = false;	
+
 		transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * percentSpeed * Time.deltaTime);
 	}
 
@@ -271,7 +314,8 @@ public class Robot : Throwable {
 		get { 
 			if (carriedItem != null && carriedItem.GetCarrier () != this) {
 				carriedItem = null;
-				SetState (RobotStates.STATE_FINDBOX);
+				SetState (GetRandomState());		// FIXME: if a homicidal robot's robot is stolen it should go back to finding boxes, this line came from: if a carried BOX is properly delivered
+													// then give the robot a chance to freak out. But then it should stay in one of the broken states until repaired
 			}
 			return carriedItem != null;
 		}
@@ -283,19 +327,19 @@ public class Robot : Throwable {
 	}
 
 	public void DropItem() {
-		SetState (RobotStates.STATE_FINDBOX);
+		RevertState ();
 		if (carriedItem != null) {
 			carriedItem.SetCarrier (null);
 			carriedItem = null;
 		}
 	}
 
-	private void GrabItem(Throwable item, RobotStates newState) {
-		item.SetKinematic (true);
+	private void GrabItem(Throwable item) {
 		carriedItem = item;
+		carriedItem.SetKinematic (true);
 		carriedItem.SetCarrier (this);
 		carriedItem.ActivateRobotBeam(Instantiate<ParticleSystem> (robotBeamPrefab, carriedItem.transform.position, Quaternion.identity, carriedItem.transform));
-		SetState (newState);
+		SetState (RobotStates.STATE_DELIVERING);
 		SetupCarryRange ();
 		UpdateCarriedItem ();
 		SearchForTarget ();
@@ -309,17 +353,11 @@ public class Robot : Throwable {
 	// because Throwable implements OnCollisionEnter2D,
 	// which prevents derived classes from directly using it
 	protected override void HitCollision2D(Collision2D collision) {
-		if (!isCarryingItem) {
-			if (currentState == RobotStates.STATE_FINDBOX && collision.collider.tag == "Box") {
-				GrabItem (collision.gameObject.GetComponent<Box> (), RobotStates.STATE_DELIVERING);
-				// TODO: once the carriedItem has hit the intended target collider/trigger, 
-				// unparent it and change back to previousState (saved whenever changing to DELIVERING)
-				// FIXME: ensure that robots stealing boxes doesn't cause multiple parenting (doubtful)
-				// but more importantly that the stolen-from robot's carriedItem becomes null and it state returns to oldState (as if delivered)
-			} else if (currentState == RobotStates.STATE_HOMICIDAL && collision.collider.tag == "Robot") {
-				RobotStates newState = Random.Range (0, 2) == 0 ? RobotStates.STATE_DELIVERING : RobotStates.STATE_SUICIDAL;
-				GrabItem(collision.gameObject.GetComponent<Robot> (), newState);
-			}
+		if (!isCarryingItem && !isBeingCarried) {
+
+			Throwable toGrab = collision.gameObject.GetComponent<Throwable> ();
+			if (toGrab != null && toGrab.grounded && (currentState == RobotStates.STATE_FINDBOX || currentState == RobotStates.STATE_HOMICIDAL))
+				GrabItem (toGrab);
 		}
 
 		if (collision.collider.tag == "Furnace") {
@@ -336,14 +374,26 @@ public class Robot : Throwable {
 		}
 	}
 
+	void OnCollisionStay2D(Collision2D collision) {
+		if (collision.collider.tag == "Crusher")
+			Explode ();
+	}
+
 	// derived-class extension of OnTriggerEnter2D
 	// because Throwable implements OnTriggerEnter2D,
 	// which prevents derived classes from directly using it
 	protected override void HitTrigger2D (Collider2D hitTrigger) {
-		if (hitTrigger.tag == "HealZone" && currentState != RobotStates.STATE_REPAIRING && health < maxHealth) {
-			currentState = RobotStates.STATE_REPAIRING;
-			PlaySingleSoundFx (repairingSound);
+		if (hitTrigger.tag == "HealZone" && currentState != RobotStates.STATE_REPAIRING) {
+			if (currentState != RobotStates.STATE_FINDBOX)
+				health = 50.0f;
+			if (health < maxHealth) {
+				currentState = RobotStates.STATE_REPAIRING;
+				PlaySingleSoundFx (repairingSound);
+			}
 		}
+			
+		if (hitTrigger.tag == "Electric" && efxSource.clip != exitRepairZapSound)
+			PlaySingleSoundFx (exitRepairZapSound);
 	}
 
 	// Debug Drawing

@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: d029aede55161fb41aa39fe85c92d133
+timeCreated: 1491977657
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: DooM
+  fontNames:
+  - DooM
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
