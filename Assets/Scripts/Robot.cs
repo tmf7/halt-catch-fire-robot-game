@@ -89,8 +89,7 @@ public class Robot : Throwable {
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
 
 		nameTag = GetComponentInChildren<Text> ();
-		int i = Random.Range (0, RobotNames.names.Length);
-		nameTag.text = RobotNames.names[i];
+		nameTag.text = RobotNames.Instance.GetUnusedName();
 	}
 
 	void Update() {
