@@ -17,6 +17,8 @@ public class UIManager : MonoBehaviour {
 	private GameObject[]	showOnPause;
 	private Image			muteImage;
 	private Image			pauseImage;
+	private Slider			musicSlider;
+	private Slider			sfxSlider;
 
 	void Awake() {
 		if (instance == null)
@@ -34,8 +36,10 @@ public class UIManager : MonoBehaviour {
 	}
 
     void Update() {
-		if (Input.GetButtonDown ("Cancel")) 		// set to escape key in project settings, other simultaneous keys can be added (eg: Pause/Break key)
+		if (Input.GetButtonDown ("Cancel")) { 		// set to escape key in project settings, other simultaneous keys can be added (eg: Pause/Break key)
 			ToggleOverlay ();
+			TogglePause ();
+		}
     }
 
 	public void QuitGame() {
@@ -52,29 +56,70 @@ public class UIManager : MonoBehaviour {
 		LoadLevel (buildIndex);
 	}
 		
-	// FIXME: possibly use instance versions of showOnPause, etc
 	public void LoadLevel(int buildIndex) {
-		SceneManager.LoadScene (buildIndex);
-		showOnPause = GameObject.FindGameObjectsWithTag("ShowOnPause");
-		muteImage = GameObject.Find ("MuteImage").GetComponent<Image>();
+		if (buildIndex == 0)
+			SoundManager.instance.PlayMenuMusic ();
+		else
+			SoundManager.instance.PlayGameMusic ();
+
+		// TODO: show and play intermission and gameover stuff
+
+		SceneManager.LoadScene (buildIndex, LoadSceneMode.Single);
+	}
+
+	//this is called only once, and the paramter tell it to be called only after the scene was loaded
+	//(otherwise, our Scene Load callback would be called the very first load, and we don't want that)
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+	static public void CallbackInitialization() {
+		//register the callback to be called everytime the scene is loaded
+		SceneManager.sceneLoaded += OnSceneLoaded;
+	}
+
+	//This is called each time a scene is loaded.
+	static private void OnSceneLoaded(Scene arg0, LoadSceneMode arg1) {
+		instance.InitScene();
+	}
+
+	void InitScene() {
+		Time.timeScale = 1.0f;
+		instance.showOnPause = GameObject.FindGameObjectsWithTag("ShowOnPause");
+		instance.muteImage = GameObject.Find ("MuteImage").GetComponent<Image>();
 		GameObject pauseObject = GameObject.Find ("PauseImage");
 		if (pauseObject != null)
-			pauseImage = pauseObject.GetComponent<Image> ();
+			instance.pauseImage = pauseObject.GetComponent<Image> ();
+		
 		GameManager.instance.InitLevel ();
+		if (SceneManager.GetActiveScene ().buildIndex > 0) {		// MainMenu is buildIndex 0
+			instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
+			instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
+		}
+		instance.UpdateSoundConfiguration ();
+		instance.ToggleOverlay ();
 	}
 		
-	public void ToggleOverlay() {
-		if (instance.pauseImage != null) {
-			Time.timeScale = Time.timeScale == 1.0f ? 0.0f : 1.0f;
-			instance.pauseImage.sprite = Time.timeScale == 1.0f ? instance.pauseSprite : instance.unpauseSprite;
-		}
+	public void TogglePause() {
+		if (instance.pauseImage == null)
+			return;
 
+		Time.timeScale = Time.timeScale == 1.0f ? 0.0f : 1.0f;
+		instance.pauseImage.sprite = Time.timeScale == 1.0f ? instance.pauseSprite : instance.unpauseSprite;
+	}
+
+	public void ToggleOverlay() {
 		foreach (GameObject showItem in instance.showOnPause)
 			showItem.SetActive (!showItem.activeSelf);
 	}
 
 	public void ToggleMute() {
 		SoundManager.instance.ToggleMasterMute();
+		instance.muteImage.sprite = SoundManager.instance.isMuted ? instance.muteSprite : instance.unmuteSprite;
+	}
+
+	private void UpdateSoundConfiguration() {
+		if (SceneManager.GetActiveScene ().buildIndex > 0) {		// MainMenu is buildIndex 0
+			musicSlider.value = SoundManager.instance.musicVolume;
+			sfxSlider.value = SoundManager.instance.sfxVolume;
+		}
 		instance.muteImage.sprite = SoundManager.instance.isMuted ? instance.muteSprite : instance.unmuteSprite;
 	}
 }

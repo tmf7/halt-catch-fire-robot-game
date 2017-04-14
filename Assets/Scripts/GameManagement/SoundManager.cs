@@ -60,21 +60,33 @@ public class SoundManager : MonoBehaviour {
 
 	public bool isMuted {
 		get {
-			return musicSource.mute;
+			return instance.musicSource.mute;
 		}
 	}
 		
+	public float musicVolume {
+		get { 
+			return instance.savedMusicVolume;
+		}
+	}
+
+	public float sfxVolume {
+		get { 
+			return instance.savedSfxAttenuation;
+		}
+	}
+			
 	// min 0, max 1 range set in UI slider
 	public void SetMusicVolume(float volume) {
-		savedMusicVolume = volume;
+		instance.savedMusicVolume = volume;
 		if (!isMuted)
-			musicSource.volume = savedMusicVolume;
+			instance.musicSource.volume = instance.savedMusicVolume;
 	}
 
 	// min -80, max 0 range set in UI slider and mixer properties
 	public void SetSFxVolume(float attenuation) {
-		savedSfxAttenuation = attenuation;
+		instance.savedSfxAttenuation = attenuation;
 		if (!isMuted)
-			sfxMixer.SetFloat ("Attenuation", savedSfxAttenuation);
+			instance.sfxMixer.SetFloat ("Attenuation", instance.savedSfxAttenuation);
 	}
 }
