@@ -31,9 +31,9 @@ public class Robot : Throwable {
 	public float		maxHealth = 100.0f;
 	public float		robotScreamTolerance = 16.0f;
 
-	public float		findBoxChance = 0.8f;
 	public float		homicideChance = 0.1f;
-//	public float		suicideChance = 0.1f;		// the remaining probability
+	public float		suicideChance = 0.1f;		
+//	public float		findBoxChance = 0.8f;	// the remaining probability
 
 	[HideInInspector]
 	public float 		health = 100;
@@ -61,13 +61,13 @@ public class Robot : Throwable {
 		STATE_SUICIDAL,
 		STATE_HOMICIDAL,
 		STATE_ONFIRE,
-		STATE_DELIVERING,
 		STATE_REPAIRING
 	};
-	public RobotStates	currentState;
-	public RobotStates oldState;
+	public RobotStates	currentState = RobotStates.STATE_FINDBOX;
+	private bool isDelivering = false;
 
 	// pathing
+	private Grid		grid;			// FIXME: Grid could be made a singleton with static access to its instance to prevent multiple references for each ROBOT
 	private Vector3[] 	path;
 	private int 		targetIndex;
 	private Vector3 	currentWaypoint;
@@ -77,8 +77,12 @@ public class Robot : Throwable {
 	private const float	pathUpdateMoveThreshold = 0.25f;
 	private const float minWaitTime = 0.2f;
 	private const float stoppingThreshold = 0.01f;
+	private bool 		waitingForPathRequestResults;
 
 	// state machine
+	private float				stateSpeedMultiplier = 1.0f;
+	private float 				homicidalLow;
+	private float 				homicidalHigh;
 	private bool 				justReleased;
 	private Throwable 			carriedItem;
 	private ParticleSystem 		fireInstance;
@@ -95,7 +99,9 @@ public class Robot : Throwable {
 		nameTag = GetComponentInChildren<Text> ();
 		nameTag.text = RobotNames.Instance.GetUnusedName();
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
-		SetState (RobotStates.STATE_FINDBOX);
+		grid = GameObject.FindObjectOfType<Grid> ();
+		homicidalLow = 1.0f - (homicideChance + suicideChance);
+		homicidalHigh = 1.0f - suicideChance;
 	}
 
 	void Update() {
@@ -119,7 +125,7 @@ public class Robot : Throwable {
 			health += Time.deltaTime * healRate;
 			if (health > maxHealth) {
 				health = maxHealth;
-				SetState(RobotStates.STATE_FINDBOX);
+				currentState = RobotStates.STATE_FINDBOX;
 			}
 		}
 
@@ -150,8 +156,9 @@ public class Robot : Throwable {
 				GetCarrier ().DropItem ();
 			}
 		
-			if (target != null || path != null)
+			if (target != null || path != null) {
 				StopMoving ();
+			}
 
 			if (grabbedByPlayer) {
 				justReleased = false;
@@ -192,19 +199,18 @@ public class Robot : Throwable {
 		return currentState;
 	}
 		
-	public void SetState(RobotStates newState) {
+	public void StartDelivering() {
 
 		// FIXME: the newState will be delivering often, so the sprite shouldn't change for a homicidal bot
 		// HOMICIDE, SUICIDE, ON_FIRE, DELIVERING, FIND_BOX, REPAIRING
-		if (newState == RobotStates.STATE_HOMICIDAL) {
-			animator.runtimeAnimatorController = slimeBotController;
-			spriteRenderer.sprite = slimeBotSprite;
-		} else {
-			animator.runtimeAnimatorController = eggBotController;
-			spriteRenderer.sprite = eggBotSprite;
-		}
-		oldState = currentState;
-		currentState = newState;
+//		if (newState == RobotStates.STATE_HOMICIDAL) {
+//			animator.runtimeAnimatorController = slimeBotController;
+//			spriteRenderer.sprite = slimeBotSprite;
+//		} else {
+//			animator.runtimeAnimatorController = eggBotController;
+//			spriteRenderer.sprite = eggBotSprite;
+//		}
+		isDelivering = true;
 		StopMoving ();
 	}
 
@@ -212,57 +218,61 @@ public class Robot : Throwable {
 	// revert state should only occur upon **Item delivery** or **Item stealing** (not player grabbing)
 	// if not delivering and grabbed by player...the old state is...what?
 	public void StopDelivering() {
+		isDelivering = false;
 		StopMoving ();
-		if (!grabbedByPlayer)
-			currentState = oldState;
 	}
 
-	public RobotStates GetRandomState() {
+	public void GoCrazy() {
 		float stateWeight = Random.Range(0.0f, 1.0f);
-		if (stateWeight < findBoxChance)
-			return RobotStates.STATE_FINDBOX;
-		else if (stateWeight < (findBoxChance + homicideChance)) 
-			return RobotStates.STATE_HOMICIDAL;
-		else
-			return RobotStates.STATE_SUICIDAL;
+		if (stateWeight > homicidalLow && stateWeight < homicidalHigh) 
+			currentState = RobotStates.STATE_HOMICIDAL;
+		else if (stateWeight >= homicidalHigh) 
+			currentState = RobotStates.STATE_SUICIDAL;
 	}
 
 	void SearchForTarget() {
 
-		if (currentState == RobotStates.STATE_REPAIRING || isBeingCarried) {
+		if (currentState == RobotStates.STATE_REPAIRING || isBeingCarried || !grid.NodeFromWorldPoint(transform.position).walkable) {
 			StopMoving ();
 			return;
 		}
+
+		CheckIfTargetLost ();
 			
 		if (target != null) {
 			FollowPath ();
 			return;
 		}
-	
+
 		switch (currentState) {
-			case RobotStates.STATE_FINDBOX:
-				target = GameManager.instance.GetRandomBoxTarget();
-				break;
-			case RobotStates.STATE_DELIVERING:
-				if (oldState == RobotStates.STATE_FINDBOX)
-					target = GameManager.instance.GetRandomDeliveryTarget ();
-				else if (oldState == RobotStates.STATE_HOMICIDAL && (carriedItem is Robot))
-					target = GameManager.instance.GetRandomHazardTarget ();
+		case RobotStates.STATE_FINDBOX:
+				// TODO: change the robot visual here
+				spriteRenderer.color = Color.white;
+				stateSpeedMultiplier = 1.0f;
+				target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
+									  : GameManager.instance.GetClosestBoxTarget (this);
 				break;
 			case RobotStates.STATE_SUICIDAL:
-				// TODO: change the robot visual
+				// TODO: change the robot visual here
+				spriteRenderer.color = Color.cyan;
+				stateSpeedMultiplier = 0.5f;
 				target = GameManager.instance.GetRandomHazardTarget ();
 				break;
 			case RobotStates.STATE_HOMICIDAL:
-				target = GameManager.instance.GetRandomRobotTarget ();
+				// TODO: change the robot visual here (skull overhead and slimebot sprite)
+				spriteRenderer.color = Color.red;
+				stateSpeedMultiplier = 2.0f;
+				target = isDelivering ? GameManager.instance.GetRandomHazardTarget ()
+									  : GameManager.instance.GetClosestRobotTarget (this);
 				break;
 			case RobotStates.STATE_ONFIRE: 
+				// TODO: change the robot visual here
 				// TODO: run around like a crazy person
 				break;
 		}
 
 		if (target == null)
-			SetState(GetRandomState());
+			GoCrazy ();
 	}
 
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful) {
@@ -273,13 +283,15 @@ public class Robot : Throwable {
 		} else {
 			StopMoving ();
 		}
+		waitingForPathRequestResults = false;
 	}
 
 	void UpdatePath(bool freshStart) {
-		if (freshStart || (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold) {
+		if (!waitingForPathRequestResults && (freshStart || (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold)) {
+			waitingForPathRequestResults = true;
 			PathRequestManager.RequestPath (transform.position, target.position, OnPathFound);
 			targetLastKnownPosition = target.position;
-		}
+		} 
 	}
 
 	void FollowPath() {
@@ -316,10 +328,15 @@ public class Robot : Throwable {
 		else
 			spriteRenderer.flipX = false;	
 
-		transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * percentSpeed * Time.deltaTime);
+		transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * stateSpeedMultiplier * percentSpeed * Time.deltaTime);
 	}
 
+	// FIXME: another robot may have already picked it up...which SHOULD be fine because then the operative variable is isCarried, so blanket null is irrelevant
+	// but is there another situation I'm not seeting where the targeter should be changed differently... etc... eg: DropItem/StopDelivering causes a call to StopMoving too
 	public void StopMoving() {
+		if (isTargetThrowable) 
+			target.GetComponent<Throwable> ().SetTargeter (null);
+
 		path = null;
 		targetIndex = 0;
 		target = null;
@@ -329,16 +346,35 @@ public class Robot : Throwable {
 		get { 
 			if (carriedItem != null && carriedItem.GetCarrier () != this) {
 				carriedItem = null;
-				SetState (GetRandomState());		// FIXME: if a homicidal robot's robot is stolen it should go back to finding boxes, this line came from: if a carried BOX is properly delivered
+				StopDelivering ();
+			//	SetState (GetRandomState());		// FIXME: if a homicidal robot's robot is stolen it should go back to finding boxes, this line came from: if a carried BOX is properly delivered
 													// then give the robot a chance to freak out. But then it should stay in one of the broken states until repaired
 			}
 			return carriedItem != null;
 		}
 	}
 
+	public bool isTargetThrowable {
+		get { 
+			return target != null && target.GetComponent<Throwable> () != null;	
+		}
+	}
+
+	// stop pathing to a box/robot that this has targeted, but has since been grabbed by another robot
+	// FIXME(?): homicidal robots will likely still target robots grabbed by the player
+	// FIXME: for some reason multiple robots will oscillate between targeting a box... and stutter step/pathfind as a result
+	public void CheckIfTargetLost() {
+		if (isTargetThrowable) {
+			Robot targeter = target.GetComponent<Throwable> ().GetTargeter ();
+			if (targeter != null && targeter != this) {
+				StopMoving ();
+			}
+		}
+	}
+
 	// helper function for Throwables checking if they've been delivered by their carrier
 	public bool CheckHitTarget(string possibleTargetTag) {
-		return possibleTargetTag == target.tag;
+		return target == null || possibleTargetTag == target.tag;
 	}
 
 	public void DropItem() {
@@ -354,7 +390,7 @@ public class Robot : Throwable {
 		carriedItem.SetKinematic (true);
 		carriedItem.SetCarrier (this);
 		carriedItem.ActivateRobotBeam(Instantiate<ParticleSystem> (robotBeamPrefab, carriedItem.transform.position, Quaternion.identity, carriedItem.transform));
-		SetState (RobotStates.STATE_DELIVERING);
+		StartDelivering ();
 		SetupCarryRange ();
 		UpdateCarriedItem ();
 		SearchForTarget ();
@@ -407,6 +443,7 @@ public class Robot : Throwable {
 				health = 50.0f;
 			if (health < maxHealth) {
 				currentState = RobotStates.STATE_REPAIRING;
+				StopMoving ();
 				PlaySingleSoundFx (repairingSound);
 			}
 		}

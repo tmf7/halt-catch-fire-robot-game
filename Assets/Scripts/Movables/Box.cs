@@ -37,4 +37,11 @@ public class Box : Throwable {
 		Throw (rb2D.velocity.y, -1.0f);
 		Invoke ("Remove", exitDelay);
 	}
+
+	void OnDrawGizmos() {
+		if (isTargeted) {
+			Gizmos.color = Color.cyan;
+			Gizmos.DrawCube (transform.position, Vector3.one);
+		}
+	}
 }

@@ -39,11 +39,12 @@ public abstract class Throwable : MonoBehaviour {
 	protected GameObject		dropShadow;
 	protected SpriteRenderer	spriteRenderer;
 	protected Rigidbody2D 		rb2D;
-	protected bool 				landingResolved;
+	protected bool 				landingResolved = true;
 	protected float 			currentPitfallScale = 1.0f;		// transform.localScale
 
 	private ShadowController 	shadowController;
 	private Robot				whoIsCarrying;
+	private Robot				whoHasTargeted;
 
 	void Awake() {
 		efxSource = GetComponent<AudioSource> ();
@@ -102,6 +103,20 @@ public abstract class Throwable : MonoBehaviour {
 		} 
 	}
 
+	public bool isTargeted {
+		get { 
+			return whoHasTargeted != null;
+		}
+	}
+
+	public void SetTargeter(Robot newTargeter) {
+		whoHasTargeted = newTargeter;
+	}
+
+	public Robot GetTargeter() {
+		return whoHasTargeted;
+	}
+
 	public void SetCarrier(Robot newCarrier) {
 		if (newCarrier != null && this is Robot) {
 
@@ -112,6 +127,7 @@ public abstract class Throwable : MonoBehaviour {
 			if ((this as Robot).isCarryingItem)
 				(this as Robot).DropItem ();
 		}
+		whoHasTargeted = newCarrier;
 		whoIsCarrying = newCarrier;
 	}
 
@@ -235,6 +251,7 @@ public abstract class Throwable : MonoBehaviour {
 
 	// these must be defined by inherited classes Robot and Box
 	protected virtual void OnLanding () {
+		print ("ON_LANDING");
 		gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
 		spriteRenderer.sortingLayerName = "Units";
 		rb2D.transform.rotation = Quaternion.identity;

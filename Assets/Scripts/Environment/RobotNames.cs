@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
+
 public class RobotNames {
 
 	private static RobotNames instance = null;
-	private Dictionary<string, bool> unusedNames = new Dictionary<string, bool>();
 
 	private RobotNames() {
-		foreach (string name in names)
-			unusedNames.Add (name, false);
+		
 	}
 
 	public static RobotNames Instance {
@@ -22,82 +21,95 @@ public class RobotNames {
 	}
 
 	public string GetUnusedName() {
-		string tryName = null;
+		int tryIndex = 0;
 		int tryCount = 0;
 		bool used = false;
 		do {
-			tryName = names [ Random.Range (0, names.Length)];
-			used = unusedNames [tryName];
+			tryIndex = Random.Range (0, robotNames.Length);
+			used = robotNames [tryIndex].used;
 			tryCount++;
-		} while (used && tryCount < unusedNames.Count);
+		} while (used && tryCount < robotNames.Length);
 
 		if (!used) {
-			unusedNames [tryName] = true;
-			return tryName;
+			robotNames [tryIndex].used = true;
+			return robotNames[tryIndex].name;
 		} else {
 			ResetUnusedNames ();
-			return GetUnusedName ();
+			return "Reset";
 		}
 	}
 
 	private void ResetUnusedNames() {
-		foreach (KeyValuePair<string, bool> pair in unusedNames)
-			unusedNames[pair.Key] = false;
+		for (int i = 0; i < robotNames.Length; i++)
+			robotNames [i].used = false;
+	}	
+
+	struct Name {
+		public string name;
+		public bool used;
+
+		public Name(string _name, bool _used = false) {
+			name = _name;
+			used = _used;
+		}
 	}
-		
-	private string[] names = { 
-		"Bob",
-		"Ethan",
-		"Rupert",
-		"Nathan",
-		"Olivia",
-		"John",
-		"Jade",
-		"Quincy",
-		"Dilbert",
-		"Sarah",
-		"Kristen",
-		"Blert",
-		"Nine",
-		"Fish",
-		"Kate",
-		"Jessica",
-		"Doris",
-		"Betty",
-		"Jack",
-		"K9",
-		"Ronald",
-		"Jorsh",
-		"Tom",
-		"Brandon",
-		"Russell",
-		"Atron",
-		"Kevin",
-		"Kyle",
-		"Jarett",
-		"Nikolai",
-		"Sebastian",
-		"Ana",
-		"Devin",
-		"Bread",
-		"Rerun",
-		"Radar",
-		"Domo",
-		"Roboto",
-		"Lucy",
-		"Gladis",
-		"Mlem",
-		"Rick",
-		"Mo",
-		"Mike",
-		"Kit",
-		"Kat",
-		"Nora",
-		"Keaton",
-		"Kathy",
-		"Mosh",
-		"Dobble",
-		"Diskette",
-		"Disk"
+
+	// 55 names
+	private Name[] robotNames = { 
+		new Name("Bob"),
+		new Name("Ethan"),
+		new Name("Rupert"),
+		new Name("Nathan"),
+		new Name("Olivia"),
+		new Name("John"),
+		new Name("Jade"),
+		new Name("Quincy"),
+		new Name("Dilbert"),
+		new Name("Sarah"),
+		new Name("Kristen"),
+		new Name("Blert"),
+		new Name("Nine"),
+		new Name("Fish"),
+		new Name("Kate"),
+		new Name("Jessica"),
+		new Name("Doris"),
+		new Name("Betty"),
+		new Name("Jack"),
+		new Name("K9"),
+		new Name("Ronald"),
+		new Name("Jorsh"),
+		new Name("Tom"),
+		new Name("Brandon"),
+		new Name("Russell"),
+		new Name("Atron"),
+		new Name("Kevin"),
+		new Name("Kyle"),
+		new Name("Jarett"),
+		new Name("Nikolai"),
+		new Name("Sebastian"),
+		new Name("Ana"),
+		new Name("Devin"),
+		new Name("Bread"),
+		new Name("Rerun"),
+		new Name("Radar"),
+		new Name("Domo"),
+		new Name("Roboto"),
+		new Name("Lucy"),
+		new Name("Gladis"),
+		new Name("Mlem"),
+		new Name("Rick"),
+		new Name("Mo"),
+		new Name("Mike"),
+		new Name("Kit"),
+		new Name("Kat"),
+		new Name("Nora"),
+		new Name("Keaton"),
+		new Name("Kathy"),
+		new Name("Mosh"),
+		new Name("Dobble"),
+		new Name("Diskette"),
+		new Name("Disk"),
+		new Name("Morty"),
+		new Name("Dice")
 	};
 }

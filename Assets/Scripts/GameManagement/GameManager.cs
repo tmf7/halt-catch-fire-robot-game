@@ -13,6 +13,7 @@ public class GameManager : MonoBehaviour {
 	public static GameManager 	instance = null;
 	public int 					maxRobots = 10;
 	public int					maxBoxes = 20;
+	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for somthing closer if currently queried item is within this range
 
 	// heierarchy organization
 	private Transform 		boxHolder;		
@@ -75,16 +76,77 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	public Transform GetRandomBoxTarget() {
-		return allBoxes.Count > 0 ? allBoxes [Random.Range (0, allBoxes.Count)].transform : null;
+	public Transform GetClosestBoxTarget(Robot robot) {
+		Box closestBox = null;
+		float minRangeSqr = float.MaxValue;
+
+		foreach (Box box in allBoxes) {
+			if (box.isBeingCarried || box.isTargeted)
+				continue;
+
+			float rangeSqr = (box.transform.position - robot.transform.position).sqrMagnitude;
+
+			if (rangeSqr < acceptableSearchRangeSqr) {
+				box.SetTargeter (robot);
+				return box.transform;
+			} else if (rangeSqr < minRangeSqr) {
+				minRangeSqr = rangeSqr;
+				closestBox = box;
+			}
+		}
+
+		if (closestBox != null) {
+			closestBox.SetTargeter (robot);
+			return closestBox.transform;
+		}
+		return null;
 	}
 
-	public Transform GetRandomRobotTarget () {
-		return allRobots.Count > 0 ? allRobots [Random.Range (0, allRobots.Count)].transform : null;
+	public Transform GetClosestRobotTarget(Robot homicidalRobot) {
+		Robot closestRobot = null;
+		float minRangeSqr = float.MaxValue;
+
+		foreach (Robot robot in allRobots) {
+			if (robot.isBeingCarried || robot.isTargeted)
+				continue;
+
+			float rangeSqr = (robot.transform.position - homicidalRobot.transform.position).sqrMagnitude;
+
+			if (rangeSqr < acceptableSearchRangeSqr) {
+				robot.SetTargeter (homicidalRobot);
+				return robot.transform;
+			} else if (rangeSqr < minRangeSqr) {
+				minRangeSqr = rangeSqr;
+				closestRobot = robot;
+			}
+		}
+
+		if (closestRobot != null) {
+			closestRobot.SetTargeter (homicidalRobot);
+			return closestRobot.transform;
+		}
+		return null;
 	}
 
-	public Transform GetRandomDeliveryTarget () {
-		return deliveryPoints.Count > 0 ? deliveryPoints [Random.Range (0, deliveryPoints.Count)] : null;
+	public Transform GetClosestDeliveryTarget(Robot robot) {
+		Transform closestDelivery = null;
+		float minRangeSqr = float.MaxValue;
+
+		foreach (Transform deliver in deliveryPoints) {
+			float rangeSqr = (deliver.position - robot.transform.position).sqrMagnitude;
+
+			if (rangeSqr < acceptableSearchRangeSqr) {
+				return deliver;
+			} else if (rangeSqr < minRangeSqr) {
+				minRangeSqr = rangeSqr;
+				closestDelivery = deliver;
+			}
+		}
+
+		if (closestDelivery != null)
+			return closestDelivery;
+	
+		return null;
 	}
 
 	public Transform GetRandomHazardTarget () {
