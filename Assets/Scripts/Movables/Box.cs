@@ -4,10 +4,19 @@ using UnityEngine;
 
 public class Box : Throwable {
 
+	public AudioClip[]		exitSounds;
 	public float 			exitSpeed = 20.0f;
 	public float 			exitDelay = 2.0f;
 
-	private bool 			hasExited = false;
+	[HideInInspector]
+	public bool 			hasExited = false;
+
+	private TrailRenderer	trail;
+
+	void Start () {
+		trail = GetComponent<TrailRenderer> ();
+		trail.enabled = false;
+	}
 
 	void Update () {
 		UpdateShadow ();
@@ -22,12 +31,7 @@ public class Box : Throwable {
 	// because Throwable implements OnCollisionEnter2D,
 	// which prevents derived classes from directly using it
 	protected override void HitCollision2D(Collision2D collision) {
-
-		// prevent this box from being targeted again
-		if (!hasExited && collision.collider.tag == "BoxExit") {
-			hasExited = true;
-			GameManager.instance.Remove (this);
-		}
+		// box collision stuff
 	}
 
 	// derived-class extension of OnTriggerEnter2D
@@ -36,10 +40,8 @@ public class Box : Throwable {
 	protected override void HitTrigger2D (Collider2D hitTrigger) {
 
 		// prevent this box from being targeted again
-		if (!hasExited && hitTrigger.tag == "BoxExit") {
+		if (!hasExited && hitTrigger.tag == "BoxExit")
 			hasExited = true;
-			GameManager.instance.Remove (this);
-		}
 	}
 
 	public void ExitBox() {
@@ -47,6 +49,8 @@ public class Box : Throwable {
 		SetHeight (2.0f * deadlyHeight);
 		rb2D.velocity = new Vector2( 0.0f, exitSpeed);
 		Throw (rb2D.velocity.y, -1.0f);
+		trail.enabled = true;
+		PlayRandomSoundFx (exitSounds);
 		Invoke ("Remove", exitDelay);
 	}
 

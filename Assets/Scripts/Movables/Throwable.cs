@@ -205,14 +205,14 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	protected void Remove() {
-		if (this is Robot) {
+		if (this is Robot)
 			(this as Robot).DropItem ();
-			GameManager.instance.Remove (this);	// boxes issue their own Remove call when they hit a BoxExit
-		}
+		
+		GameManager.instance.Remove (this);
 		Destroy(shadowController);
 		Destroy(dropShadow);
 		Destroy(gameObject);
-		Destroy (this);
+//		Destroy (this);
 	}
 
 	void OnTriggerEnter2D(Collider2D hitTrigger) {
@@ -238,12 +238,16 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	public void PlaySingleSoundFx (AudioClip clip) {
+		float pitch = Random.Range (0.95f, 1.05f);
+		efxSource.pitch = pitch;
 		efxSource.clip = clip;
 		efxSource.Play ();
 	}
 
 	public void PlayRandomSoundFx(params AudioClip [] clips) {
 		int randomIndex = Random.Range (0, clips.Length);
+		float pitch = Random.Range (0.95f, 1.05f);
+		efxSource.pitch = pitch;
 		efxSource.clip = clips [randomIndex];
 		efxSource.Play ();
 	}

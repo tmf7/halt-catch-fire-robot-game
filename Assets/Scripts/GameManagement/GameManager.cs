@@ -11,8 +11,11 @@ public class GameManager : MonoBehaviour {
 	public float levelStartDelay = 2f;						//Time to wait before starting level, in seconds.
 */	
 	public static GameManager 	instance = null;
+	public Gradient 			redWaveGradient;
+	public Gradient				blueWaveGradient;
+	public Gradient				greenWaveGradient;
 	public int					shiftTimeRemaining = 120;
-	public int					spawnTimeRemaining = 5;		// FIXME: this should be tied to the RobotDoor's spawnDelay
+	public int					spawnTimeRemaining = 5;		// FIXME: this should be tied to the RobotDoor's spawnDelay, and/or if there's multiple doors then this count down should control the respawn cycle
 	public int 					maxRobots = 10;
 	public int					maxBoxes = 20;
 	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for somthing closer if currently queried item is within this range
@@ -50,7 +53,7 @@ public class GameManager : MonoBehaviour {
 			boxesText.text = "Boxes Collected: " + boxesCollected;
 			robotsText.text = "Robots Fired: " + robotsFired + "/" + RobotNames.Instance.numRobotNames;		// FIXME: this should just start at names.Length, then count down with each death (easier to understand)
 			repairText.text = "Repairs Made: " + robotsRepaired;
-			timeText.text = "Shift Change In: " + shiftTimeRemaining;
+			timeText.text = "Shift Change In: " + (shiftTimeRemaining - Mathf.RoundToInt(Time.timeSinceLevelLoad));
 			spawnText.text = "New Recruits In: " + spawnTimeRemaining;
 		}
 	}
@@ -99,7 +102,8 @@ public class GameManager : MonoBehaviour {
 
 	public void Remove(Throwable item) {
 		if (item is Box) {
-			boxesCollected++;						// FIXME: sometimes boxes fall down the pit and shouldn't count
+			if ((item as Box).hasExited)
+				boxesCollected++;
 			allBoxes.Remove (item as Box);
 		} else if (item is Robot) {
 			robotsFired++;
@@ -116,7 +120,7 @@ public class GameManager : MonoBehaviour {
 		float minRangeSqr = float.MaxValue;
 
 		foreach (Box box in allBoxes) {
-			if (box.isBeingCarried || box.isTargeted)
+			if (box.isBeingCarried || box.isTargeted || box.hasExited || box.fellInPit)
 				continue;
 
 			float rangeSqr = (box.transform.position - robot.transform.position).sqrMagnitude;
@@ -142,7 +146,7 @@ public class GameManager : MonoBehaviour {
 		float minRangeSqr = float.MaxValue;
 
 		foreach (Robot robot in allRobots) {
-			if (robot.isBeingCarried || robot.isTargeted)
+			if (robot.isBeingCarried || robot.isTargeted || robot.fellInPit)
 				continue;
 
 			float rangeSqr = (robot.transform.position - homicidalRobot.transform.position).sqrMagnitude;

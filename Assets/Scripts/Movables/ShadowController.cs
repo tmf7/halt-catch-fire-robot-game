@@ -71,7 +71,7 @@ public class ShadowController : MonoBehaviour {
 	}
 
 	public void SuddenDrop() {
-		parentRB.velocity = Vector2.zero;
+//		parentRB.velocity = Vector2.zero;
 		rb3D.AddForceAtPosition (Vector3.forward * -suddenDropForce, rb3D.transform.position, ForceMode.Impulse);
 	}
 

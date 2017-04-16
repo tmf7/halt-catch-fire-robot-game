@@ -6,9 +6,6 @@ using UnityEngine.UI;
 
 public class Robot : Throwable {
 
-	public Sprite slimeBotSprite;
-	public AnimatorOverrideController 	slimeBotController;
-
 	public ParticleSystem firePrefab;
 	public ParticleSystem robotBeamPrefab;
 
@@ -89,15 +86,11 @@ public class Robot : Throwable {
 	private ParticleSystem 		fireInstance;
 	private CircleCollider2D 	circleCollider;
 	private Animator			animator;
-	private Sprite 				eggBotSprite;
-	private RuntimeAnimatorController eggBotController;
 
 	void Start() {
 		line = GetComponent<LineRenderer> ();
 		line.enabled = false;
 		animator = GetComponent<Animator> ();
-		eggBotController = animator.runtimeAnimatorController;
-		eggBotSprite = spriteRenderer.sprite;
 		circleCollider = GetComponent<CircleCollider2D> ();
 		nameTag = GetComponentInChildren<Text> ();
 		nameTag.text = RobotNames.Instance.GetUnusedName();
@@ -203,16 +196,6 @@ public class Robot : Throwable {
 	}
 		
 	public void StartDelivering() {
-
-		// FIXME: the newState will be delivering often, so the sprite shouldn't change for a homicidal bot
-		// HOMICIDE, SUICIDE, ON_FIRE, DELIVERING, FIND_BOX, REPAIRING
-//		if (newState == RobotStates.STATE_HOMICIDAL) {
-//			animator.runtimeAnimatorController = slimeBotController;
-//			spriteRenderer.sprite = slimeBotSprite;
-//		} else {
-//			animator.runtimeAnimatorController = eggBotController;
-//			spriteRenderer.sprite = eggBotSprite;
-//		}
 		isDelivering = true;
 		StopMoving ();
 	}
@@ -248,9 +231,10 @@ public class Robot : Throwable {
 		}
 
 		switch (currentState) {
-			case RobotStates.STATE_FINDBOX:
+		case RobotStates.STATE_FINDBOX:
 				// TODO: change the robot visual here
 				spriteRenderer.color = Color.white;
+				line.colorGradient = GameManager.instance.blueWaveGradient;
 				stateSpeedMultiplier = 1.0f;
 				target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
 									  : GameManager.instance.GetClosestBoxTarget (this);
@@ -258,12 +242,14 @@ public class Robot : Throwable {
 			case RobotStates.STATE_SUICIDAL:
 				// TODO: change the robot visual here
 				spriteRenderer.color = Color.cyan;
+				line.colorGradient = GameManager.instance.greenWaveGradient;
 				stateSpeedMultiplier = 0.5f;
 				target = GameManager.instance.GetClosestHazardTarget (this);
 				break;
 			case RobotStates.STATE_HOMICIDAL:
 				// TODO: change the robot visual here (skull overhead and slimebot sprite)
 				spriteRenderer.color = Color.red;
+				line.colorGradient = GameManager.instance.redWaveGradient;
 				stateSpeedMultiplier = 2.0f;
 				target = isDelivering ? GameManager.instance.GetClosestHazardTarget (this)
 									  : GameManager.instance.GetClosestRobotTarget (this);

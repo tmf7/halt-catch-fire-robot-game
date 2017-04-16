@@ -6,10 +6,15 @@ public class BoxExit : MonoBehaviour {
 
 	private LayerMask 		exitMask;
 	private BoxCollider2D 	boxCollider;
+	private ParticleSystem	exitBlast;
 
 	void Awake () {
 		boxCollider = GetComponent<BoxCollider2D> ();
 		exitMask = LayerMask.GetMask ("DynamicCollision");
+	}
+
+	void Start() {
+		exitBlast = GetComponentInChildren<ParticleSystem> ();
 	}
 	
 	void FixedUpdate () {
@@ -25,6 +30,7 @@ public class BoxExit : MonoBehaviour {
 				
 				if (toThrow is Box) {
 					(toThrow as Box).ExitBox ();
+					exitBlast.Play ();
 				} else { // its a robot
 					(toThrow as Robot).ExitRobot();
 				}

@@ -88,8 +88,8 @@ public class UIManager : MonoBehaviour {
 		if (pauseObject != null)
 			instance.pauseImage = pauseObject.GetComponent<Image> ();
 		
-		GameManager.instance.InitLevel ();
 		if (SceneManager.GetActiveScene ().buildIndex > 0) {		// MainMenu is buildIndex 0
+			GameManager.instance.InitLevel ();
 			instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
 			instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
 		}

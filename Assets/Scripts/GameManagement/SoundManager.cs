@@ -5,6 +5,10 @@ using UnityEngine.Audio;
 
 public class SoundManager : MonoBehaviour {
 
+	public AudioSource musicSource;
+	public AudioSource buttonClickSource;
+	public AudioClip selectSound;
+	public AudioClip clickSound;
 	public AudioClip menuMusic;
 	public AudioClip gameMusic;
 	public AudioClip intermissionSound;
@@ -13,7 +17,6 @@ public class SoundManager : MonoBehaviour {
 
 	public static SoundManager instance = null;
 
-	private AudioSource musicSource;
 	private float savedSfxAttenuation = 0.0f;
 	private float savedMusicVolume = 1.0f;
 
@@ -24,28 +27,36 @@ public class SoundManager : MonoBehaviour {
 			Destroy (gameObject);
 
 		DontDestroyOnLoad (gameObject);
+	}
 
-		musicSource = GetComponent<AudioSource> ();
+	public void PlaySelectSound() {
+		instance.buttonClickSource.clip = selectSound;
+		instance.buttonClickSource.Play ();
+	}
+
+	public void PlayClickSound() {
+		instance.buttonClickSource.clip = clickSound;
+		instance.buttonClickSource.Play ();
 	}
 
 	public void PlayMenuMusic() {
-		musicSource.clip = menuMusic;
-		musicSource.Play ();
+		instance.musicSource.clip = menuMusic;
+		instance.musicSource.Play ();
 	}
 
 	public void PlayGameMusic() {
-		musicSource.clip = gameMusic;
-		musicSource.Play ();
+		instance.musicSource.clip = gameMusic;
+		instance.musicSource.Play ();
 	}
 
 	public void PlayIntermissionMusic() {
-		musicSource.clip = intermissionSound;
-		musicSource.Play ();
+		instance.musicSource.clip = intermissionSound;
+		instance.musicSource.Play ();
 	}
 
 	public void PlayGameOverMusic() {
-		musicSource.clip = gameOverMusic;
-		musicSource.Play ();
+		instance.musicSource.clip = gameOverMusic;
+		instance.musicSource.Play ();
 	}
 
 	public void ToggleMasterMute() {
