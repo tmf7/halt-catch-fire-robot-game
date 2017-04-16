@@ -67,6 +67,7 @@ public class Robot : Throwable {
 	private bool isDelivering = false;
 
 	// pathing
+	private LineRenderer line;
 	private Grid		grid;			// FIXME: Grid could be made a singleton with static access to its instance to prevent multiple references for each ROBOT
 	private Vector3[] 	path;
 	private int 		targetIndex;
@@ -92,6 +93,8 @@ public class Robot : Throwable {
 	private RuntimeAnimatorController eggBotController;
 
 	void Start() {
+		line = GetComponent<LineRenderer> ();
+		line.enabled = false;
 		animator = GetComponent<Animator> ();
 		eggBotController = animator.runtimeAnimatorController;
 		eggBotSprite = spriteRenderer.sprite;
@@ -121,11 +124,11 @@ public class Robot : Throwable {
 			health -= Time.deltaTime * damageRate;
 
 		if (currentState == RobotStates.STATE_REPAIRING) {
-			onFire = false;
 			health += Time.deltaTime * healRate;
 			if (health > maxHealth) {
 				health = maxHealth;
 				currentState = RobotStates.STATE_FINDBOX;
+				GameManager.instance.RobotRepairComplete ();
 			}
 		}
 
@@ -245,7 +248,7 @@ public class Robot : Throwable {
 		}
 
 		switch (currentState) {
-		case RobotStates.STATE_FINDBOX:
+			case RobotStates.STATE_FINDBOX:
 				// TODO: change the robot visual here
 				spriteRenderer.color = Color.white;
 				stateSpeedMultiplier = 1.0f;
@@ -256,13 +259,13 @@ public class Robot : Throwable {
 				// TODO: change the robot visual here
 				spriteRenderer.color = Color.cyan;
 				stateSpeedMultiplier = 0.5f;
-				target = GameManager.instance.GetRandomHazardTarget ();
+				target = GameManager.instance.GetClosestHazardTarget (this);
 				break;
 			case RobotStates.STATE_HOMICIDAL:
 				// TODO: change the robot visual here (skull overhead and slimebot sprite)
 				spriteRenderer.color = Color.red;
 				stateSpeedMultiplier = 2.0f;
-				target = isDelivering ? GameManager.instance.GetRandomHazardTarget ()
+				target = isDelivering ? GameManager.instance.GetClosestHazardTarget (this)
 									  : GameManager.instance.GetClosestRobotTarget (this);
 				break;
 			case RobotStates.STATE_ONFIRE: 
@@ -309,12 +312,14 @@ public class Robot : Throwable {
 		}
 
 		float percentSpeed = 1.0f;
-		float sqrRange = (path [path.Length - 1] - transform.position).sqrMagnitude;
-		if (sqrRange < sqrTargetSlowdownDistance) {
-			percentSpeed = Mathf.Clamp01 (Mathf.Sqrt (sqrRange) / slowdownDistance);
-			if (percentSpeed < stoppingThreshold) {
-				StopMoving ();
-				return;
+		if (currentState != RobotStates.STATE_HOMICIDAL) {
+			float sqrRange = (path [path.Length - 1] - transform.position).sqrMagnitude;
+			if (sqrRange < sqrTargetSlowdownDistance) {
+				percentSpeed = Mathf.Clamp01 (Mathf.Sqrt (sqrRange) / slowdownDistance);
+				if (percentSpeed < stoppingThreshold) {
+					StopMoving ();
+					return;
+				}
 			}
 		}
 
@@ -329,17 +334,30 @@ public class Robot : Throwable {
 			spriteRenderer.flipX = false;	
 
 		transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * stateSpeedMultiplier * percentSpeed * Time.deltaTime);
+		UpdatePathLine ();
 	}
 
-	// FIXME: another robot may have already picked it up...which SHOULD be fine because then the operative variable is isCarried, so blanket null is irrelevant
-	// but is there another situation I'm not seeting where the targeter should be changed differently... etc... eg: DropItem/StopDelivering causes a call to StopMoving too
+	private void UpdatePathLine() {
+		line.enabled = true;
+
+		if (path != null) {
+			line.numPositions = (path.Length - targetIndex) + 1;
+			line.SetPosition(0, transform.position);
+
+			for (int i = targetIndex, pos = 1; i < path.Length; i++, pos++)
+					line.SetPosition (pos, path [i]);
+		}
+	}
+
 	public void StopMoving() {
 		if (isTargetThrowable) 
 			target.GetComponent<Throwable> ().SetTargeter (null);
-
+	
 		path = null;
 		targetIndex = 0;
 		target = null;
+		if (line != null)
+			line.enabled = false;
 	}
 
 	public bool isCarryingItem {
@@ -432,6 +450,11 @@ public class Robot : Throwable {
 	void OnCollisionStay2D(Collision2D collision) {
 		if (collision.collider.tag == "Crusher")
 			Explode ();
+	}
+
+	void OnTriggerStay2D(Collider2D hitTrigger) {
+		if (hitTrigger.tag == "HealZone")
+			onFire = false;
 	}
 
 	// derived-class extension of OnTriggerEnter2D

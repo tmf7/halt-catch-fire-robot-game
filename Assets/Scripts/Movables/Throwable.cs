@@ -49,6 +49,7 @@ public abstract class Throwable : MonoBehaviour {
 	void Awake() {
 		efxSource = GetComponent<AudioSource> ();
 		dropShadow = Instantiate<GameObject> (dropShadowPrefab, transform.position, Quaternion.identity);
+		dropShadow.SetActive (false);
 		shadowController = GetComponentInChildren<ShadowController> ();
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 		rb2D = GetComponent<Rigidbody2D> ();
@@ -204,10 +205,10 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	protected void Remove() {
-		// TODO: drop anything being carried by a robot
-		if (this is Robot)
+		if (this is Robot) {
 			(this as Robot).DropItem ();
-		GameManager.instance.Remove (this);
+			GameManager.instance.Remove (this);	// boxes issue their own Remove call when they hit a BoxExit
+		}
 		Destroy(shadowController);
 		Destroy(dropShadow);
 		Destroy(gameObject);
@@ -219,7 +220,6 @@ public abstract class Throwable : MonoBehaviour {
 			StartCoroutine ("FallingDownPit");
 
 		// tell the carrier to drop this
-		// FIXME: doens't quite work for the disabled crusher collider (causes a null target exception)
 		if (isBeingCarried && whoIsCarrying.CheckHitTarget(hitTrigger.tag))
 				whoIsCarrying.DropItem();
 
@@ -231,7 +231,6 @@ public abstract class Throwable : MonoBehaviour {
 			HitWall ();
 
 		// tell the carrier to drop this
-		// FIXME: doens't quite work for the disabled crusher collider (causes a null target exception)
 		if (isBeingCarried && whoIsCarrying.CheckHitTarget(collision.collider.tag))
 			whoIsCarrying.DropItem();
 
@@ -251,7 +250,6 @@ public abstract class Throwable : MonoBehaviour {
 
 	// these must be defined by inherited classes Robot and Box
 	protected virtual void OnLanding () {
-		print ("ON_LANDING");
 		gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
 		spriteRenderer.sortingLayerName = "Units";
 		rb2D.transform.rotation = Quaternion.identity;

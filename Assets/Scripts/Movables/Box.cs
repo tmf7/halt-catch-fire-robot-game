@@ -7,6 +7,8 @@ public class Box : Throwable {
 	public float 			exitSpeed = 20.0f;
 	public float 			exitDelay = 2.0f;
 
+	private bool 			hasExited = false;
+
 	void Update () {
 		UpdateShadow ();
 	}
@@ -20,14 +22,24 @@ public class Box : Throwable {
 	// because Throwable implements OnCollisionEnter2D,
 	// which prevents derived classes from directly using it
 	protected override void HitCollision2D(Collision2D collision) {
-		// box collision stuff
+
+		// prevent this box from being targeted again
+		if (!hasExited && collision.collider.tag == "BoxExit") {
+			hasExited = true;
+			GameManager.instance.Remove (this);
+		}
 	}
 
 	// derived-class extension of OnTriggerEnter2D
 	// because Throwable implements OnTriggerEnter2D,
 	// which prevents derived classes from directly using it
 	protected override void HitTrigger2D (Collider2D hitTrigger) {
-		// box trigger stuff
+
+		// prevent this box from being targeted again
+		if (!hasExited && hitTrigger.tag == "BoxExit") {
+			hasExited = true;
+			GameManager.instance.Remove (this);
+		}
 	}
 
 	public void ExitBox() {

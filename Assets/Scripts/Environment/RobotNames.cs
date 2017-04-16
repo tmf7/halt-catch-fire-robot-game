@@ -20,6 +20,12 @@ public class RobotNames {
 		}
 	}
 
+	public int numRobotNames {
+		get { 
+			return robotNames.Length;
+		}
+	}
+
 	public string GetUnusedName() {
 		int tryIndex = 0;
 		int tryCount = 0;

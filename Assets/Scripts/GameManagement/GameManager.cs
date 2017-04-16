@@ -11,6 +11,8 @@ public class GameManager : MonoBehaviour {
 	public float levelStartDelay = 2f;						//Time to wait before starting level, in seconds.
 */	
 	public static GameManager 	instance = null;
+	public int					shiftTimeRemaining = 120;
+	public int					spawnTimeRemaining = 5;		// FIXME: this should be tied to the RobotDoor's spawnDelay
 	public int 					maxRobots = 10;
 	public int					maxBoxes = 20;
 	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for somthing closer if currently queried item is within this range
@@ -23,6 +25,17 @@ public class GameManager : MonoBehaviour {
 	private List<Transform>	deliveryPoints;
 	private List<Transform> hazardPoints;
 
+	// player stats
+	private Text boxesText;
+	private Text robotsText;
+	private Text repairText;
+	private Text timeText;
+	private Text spawnText;
+
+	private int boxesCollected = 0;
+	private int robotsFired = 0;
+	private int robotsRepaired = 0;
+
 	void Awake() {
         if (instance == null)
             instance = this;
@@ -32,7 +45,23 @@ public class GameManager : MonoBehaviour {
 		DontDestroyOnLoad(gameObject);
 	}
 
+	void Update() {
+		if (SceneManager.GetActiveScene ().buildIndex > 0) {
+			boxesText.text = "Boxes Collected: " + boxesCollected;
+			robotsText.text = "Robots Fired: " + robotsFired + "/" + RobotNames.Instance.numRobotNames;		// FIXME: this should just start at names.Length, then count down with each death (easier to understand)
+			repairText.text = "Repairs Made: " + robotsRepaired;
+			timeText.text = "Shift Change In: " + shiftTimeRemaining;
+			spawnText.text = "New Recruits In: " + spawnTimeRemaining;
+		}
+	}
+		
 	public void InitLevel() {
+
+		boxesText = GameObject.Find ("BoxesText").GetComponent<Text>();
+		robotsText = GameObject.Find ("RobotsText").GetComponent<Text>();
+		repairText = GameObject.Find ("RepairText").GetComponent<Text>();
+		timeText = GameObject.Find ("TimeText").GetComponent<Text>();
+		spawnText = GameObject.Find ("SpawnText").GetComponent<Text>();
 
 		boxHolder = new GameObject ("Boxes").transform;
 		robotHolder = new GameObject ("Robots").transform;
@@ -70,10 +99,16 @@ public class GameManager : MonoBehaviour {
 
 	public void Remove(Throwable item) {
 		if (item is Box) {
+			boxesCollected++;						// FIXME: sometimes boxes fall down the pit and shouldn't count
 			allBoxes.Remove (item as Box);
 		} else if (item is Robot) {
+			robotsFired++;
 			allRobots.Remove (item as Robot);
 		}
+	}
+
+	public void RobotRepairComplete() {
+		robotsRepaired++;
 	}
 
 	public Transform GetClosestBoxTarget(Robot robot) {
@@ -142,15 +177,24 @@ public class GameManager : MonoBehaviour {
 				closestDelivery = deliver;
 			}
 		}
-
-		if (closestDelivery != null)
-			return closestDelivery;
-	
-		return null;
+		return closestDelivery;
 	}
 
-	public Transform GetRandomHazardTarget () {
-		return hazardPoints.Count > 0 ? hazardPoints [Random.Range (0, hazardPoints.Count)] : null;
+	public Transform GetClosestHazardTarget(Robot robot) {
+		Transform closestHazard = null;
+		float minRangeSqr = float.MaxValue;
+
+		foreach (Transform hazard in hazardPoints) {
+			float rangeSqr = (hazard.position - robot.transform.position).sqrMagnitude;
+
+			if (rangeSqr < acceptableSearchRangeSqr) {
+				return hazard;
+			} else if (rangeSqr < minRangeSqr) {
+				minRangeSqr = rangeSqr;
+				closestHazard = hazard;
+			}
+		}
+		return closestHazard;
 	}
 
 	public int robotCount {
@@ -166,19 +210,6 @@ public class GameManager : MonoBehaviour {
 	}
 }
 /*
-//this is called only once, and the paramter tell it to be called only after the scene was loaded
-//(otherwise, our Scene Load callback would be called the very first load, and we don't want that)
-[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-static public void CallbackInitialization() {
-    //register the callback to be called everytime the scene is loaded
-    SceneManager.sceneLoaded += OnSceneLoaded;
-}
-
-static private void OnSceneLoaded(Scene arg0, LoadSceneMode arg1) {
-    instance.level++;
-    instance.InitGame();
-}
-
 
 //Initializes the game for each level.
 void InitGame() {
