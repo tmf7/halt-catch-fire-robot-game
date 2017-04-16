@@ -15,7 +15,7 @@ public class GameManager : MonoBehaviour {
 	public Gradient				blueWaveGradient;
 	public Gradient				greenWaveGradient;
 	public int					shiftTimeRemaining = 120;
-	public int					spawnTimeRemaining = 5;		// FIXME: this should be tied to the RobotDoor's spawnDelay, and/or if there's multiple doors then this count down should control the respawn cycle
+	public float				globalSpawnDelay = 5.0f;
 	public int 					maxRobots = 10;
 	public int					maxBoxes = 20;
 	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for somthing closer if currently queried item is within this range
@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour {
 	private Transform		robotHolder;
 	private List<Box> 		allBoxes;
 	private List<Robot> 	allRobots;
+	private List<RobotDoor>	allDoors;
 	private List<Transform>	deliveryPoints;
 	private List<Transform> hazardPoints;
 
@@ -38,6 +39,8 @@ public class GameManager : MonoBehaviour {
 	private int boxesCollected = 0;
 	private int robotsFired = 0;
 	private int robotsRepaired = 0;
+	private float	nextRobotSpawnTime;
+	private bool spawningRobots = false;
 
 	void Awake() {
         if (instance == null)
@@ -46,6 +49,7 @@ public class GameManager : MonoBehaviour {
             Destroy(gameObject);	
 
 		DontDestroyOnLoad(gameObject);
+		nextRobotSpawnTime = Time.time + globalSpawnDelay;
 	}
 
 	void Update() {
@@ -54,7 +58,35 @@ public class GameManager : MonoBehaviour {
 			robotsText.text = "Robots Fired: " + robotsFired + "/" + RobotNames.Instance.numRobotNames;		// FIXME: this should just start at names.Length, then count down with each death (easier to understand)
 			repairText.text = "Repairs Made: " + robotsRepaired;
 			timeText.text = "Shift Change In: " + (shiftTimeRemaining - Mathf.RoundToInt(Time.timeSinceLevelLoad));
-			spawnText.text = "New Recruits In: " + spawnTimeRemaining;
+
+			int recruitTime = Mathf.RoundToInt(nextRobotSpawnTime - Time.time);
+			if (recruitTime < 0)
+				recruitTime = 0;
+			spawnText.text = "New Recruits In: " + recruitTime;
+
+			if (Time.time > nextRobotSpawnTime) {
+				if (!spawningRobots && robotCount < maxRobots) {
+					spawningRobots = true;
+
+					foreach (RobotDoor door in allDoors) {
+						door.TriggerDoorOpen ();
+					}
+				} else if (robotCount == maxRobots) {		// FIXME: this assumes that none died during the spawn cycle, so foreach door.spawnEnabled = false after what WOULD have replenished the supply have been added
+					bool allClosed = true;					// IE: robotsToAdd = maxRobots - robotCount; then robotsAdded = 0; then robotsAdded++; for each addRobot call
+
+					foreach (RobotDoor door in allDoors) {
+						if (!door.isClosed) {
+							allClosed = false;
+							break;
+						}
+					}
+
+					if (allClosed) {
+						nextRobotSpawnTime = Time.time + globalSpawnDelay;
+						spawningRobots = false;
+					}
+				}
+			}
 		}
 	}
 		
@@ -70,8 +102,13 @@ public class GameManager : MonoBehaviour {
 		robotHolder = new GameObject ("Robots").transform;
 		allBoxes = new List<Box>();
 		allRobots = new List<Robot> ();
+		allDoors = new List<RobotDoor> ();
 		deliveryPoints = new List<Transform> ();
 		hazardPoints = new List<Transform> ();
+
+		GameObject[] doors = GameObject.FindGameObjectsWithTag ("Respawn");
+		for (int i = 0; i < doors.Length; i++)
+			allDoors.Add (doors[i].GetComponent<RobotDoor>());
 
 		GameObject[] exits = GameObject.FindGameObjectsWithTag ("BoxExit");
 		for (int i = 0; i < exits.Length; i++)
