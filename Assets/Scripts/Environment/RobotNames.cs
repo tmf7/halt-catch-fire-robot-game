@@ -5,7 +5,7 @@ using Random = UnityEngine.Random;
 
 public class RobotNames {
 
-	public int maxNames = 20;
+	public int maxNames = 60;
 
 	private static RobotNames instance = null;
 	private  Dictionary<string, Name> robotNames;
