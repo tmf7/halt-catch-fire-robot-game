@@ -37,7 +37,7 @@ public class Robot : Throwable {
 	[HideInInspector]
 	public bool 		grabbedByPlayer = false;
 	[HideInInspector]
-	public Text 		nameTag;
+	public float 		spawnTime;
 
 	[HideInInspector]
 	public bool onFire {
@@ -64,18 +64,18 @@ public class Robot : Throwable {
 	private bool isDelivering = false;
 
 	// pathing
-	private LineRenderer line;
-	private Grid		grid;			// FIXME: Grid could be made a singleton with static access to its instance to prevent multiple references for each ROBOT
-	private Vector3[] 	path;
-	private int 		targetIndex;
-	private Vector3 	currentWaypoint;
-	private Vector3		targetLastKnownPosition;
-	private float 		sqrTargetSlowdownDistance;
-	private float 		carryItemDistance;
-	private const float	pathUpdateMoveThreshold = 0.25f;
-	private const float minWaitTime = 0.2f;
-	private const float stoppingThreshold = 0.01f;
-	private bool 		waitingForPathRequestResults;
+	private LineRenderer 		line;
+	private Grid				grid;			// FIXME: Grid could be made a singleton with static access to its instance to prevent multiple references for each ROBOT
+	private Vector3[] 			path;
+	private int 				targetIndex;
+	private Vector3 			currentWaypoint;
+	private Vector3				targetLastKnownPosition;
+	private float 				sqrTargetSlowdownDistance;
+	private float 				carryItemDistance;
+	private const float			pathUpdateMoveThreshold = 0.25f;
+	private const float 		minWaitTime = 0.2f;
+	private const float 		stoppingThreshold = 0.01f;
+	private bool 				waitingForPathRequestResults;
 
 	// state machine
 	private float				stateSpeedMultiplier = 1.0f;
@@ -92,12 +92,12 @@ public class Robot : Throwable {
 		line.enabled = false;
 		animator = GetComponent<Animator> ();
 		circleCollider = GetComponent<CircleCollider2D> ();
-		nameTag = GetComponentInChildren<Text> ();
-		nameTag.text = RobotNames.Instance.GetUnusedName();
+		name = RobotNames.Instance.GetUnusedName();
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
 		grid = GameObject.FindObjectOfType<Grid> ();
 		homicidalLow = 1.0f - (homicideChance + suicideChance);
 		homicidalHigh = 1.0f - suicideChance;
+		spawnTime = Time.time;
 	}
 
 	void Update() {

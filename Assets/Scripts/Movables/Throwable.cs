@@ -205,8 +205,10 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	protected void Remove() {
-		if (this is Robot)
+		if (this is Robot) {
 			(this as Robot).DropItem ();
+			RobotNames.Instance.AddRobotSurvivalTime(name, Time.time - (this as Robot).spawnTime, true);
+		}
 		
 		GameManager.instance.Remove (this);
 		Destroy(shadowController);

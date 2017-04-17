@@ -14,7 +14,7 @@ public class GameManager : MonoBehaviour {
 	public Gradient 			redWaveGradient;
 	public Gradient				blueWaveGradient;
 	public Gradient				greenWaveGradient;
-	public int					shiftTimeRemaining = 120;
+	public int					levelDuration = 30;
 	public float				globalSpawnDelay = 5.0f;
 	public int 					maxRobots = 10;
 	public int					maxBoxes = 20;
@@ -30,17 +30,32 @@ public class GameManager : MonoBehaviour {
 	private List<Transform> hazardPoints;
 
 	// player stats
-	private Text boxesText;
-	private Text robotsText;
-	private Text repairText;
-	private Text timeText;
-	private Text spawnText;
+	private Text 	boxesText;
+	private Text 	robotsText;
+	private Text 	repairText;
+	private Text 	timeText;
+	private Text 	spawnText;
 
-	private int boxesCollected = 0;
-	private int robotsFired = 0;
-	private int robotsRepaired = 0;
+	private int 	boxesCollected = 0;
+	private int 	robotsFired = 0;
+	private int 	robotsRepaired = 0;
 	private float	nextRobotSpawnTime;
-	private bool spawningRobots = false;
+	private float	levelEndTime;
+	private bool 	spawningRobots = false;
+	private int 	robotsToSpawnThisCycle;
+	private int 	robotsAddedThisCycle;
+
+	public int robotCount {
+		get {
+			return allRobots.Count;
+		}
+	}
+
+	public int boxCount {
+		get {
+			return allBoxes.Count;
+		}
+	}
 
 	void Awake() {
         if (instance == null)
@@ -57,24 +72,31 @@ public class GameManager : MonoBehaviour {
 			boxesText.text = "Boxes Collected: " + boxesCollected;
 			robotsText.text = "Robots Fired: " + robotsFired + "/" + RobotNames.Instance.numRobotNames;		// FIXME: this should just start at names.Length, then count down with each death (easier to understand)
 			repairText.text = "Repairs Made: " + robotsRepaired;
-			timeText.text = "Shift Change In: " + (shiftTimeRemaining - Mathf.RoundToInt(Time.timeSinceLevelLoad));
+			timeText.text = "Shift Change In: " + (levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad));
+			UpdateRespawnText ();
+			CheckIfGameOver ();
+			CheckIfLevelOver ();
+		}
+	}
 
-			int recruitTime = Mathf.RoundToInt(nextRobotSpawnTime - Time.time);
-			if (recruitTime < 0)
-				recruitTime = 0;
-			spawnText.text = "New Recruits In: " + recruitTime;
-
+	// regulate robot spawn rate
+	private void UpdateRespawnText() {
+		if (robotCount < maxRobots && robotsFired < RobotNames.Instance.maxNames) {
 			if (Time.time > nextRobotSpawnTime) {
 				if (!spawningRobots && robotCount < maxRobots) {
+					robotsToSpawnThisCycle = maxRobots - robotCount;
+					robotsAddedThisCycle = 0;
 					spawningRobots = true;
 
 					foreach (RobotDoor door in allDoors) {
+						door.spawnEnabled = true;
 						door.TriggerDoorOpen ();
 					}
-				} else if (robotCount == maxRobots) {		// FIXME: this assumes that none died during the spawn cycle, so foreach door.spawnEnabled = false after what WOULD have replenished the supply have been added
-					bool allClosed = true;					// IE: robotsToAdd = maxRobots - robotCount; then robotsAdded = 0; then robotsAdded++; for each addRobot call
+				} else if (robotsAddedThisCycle >= robotsToSpawnThisCycle) {
+					bool allClosed = true;
 
 					foreach (RobotDoor door in allDoors) {
+						door.spawnEnabled = false;
 						if (!door.isClosed) {
 							allClosed = false;
 							break;
@@ -87,8 +109,61 @@ public class GameManager : MonoBehaviour {
 					}
 				}
 			}
+
+			int recruitTime = Mathf.RoundToInt (nextRobotSpawnTime - Time.time);
+			if (recruitTime < 0)
+				recruitTime = 0;
+			spawnText.text = "New Recruits In: " + recruitTime;
+		} else {
+			spawnText.text = "";
 		}
 	}
+
+	private void CheckIfGameOver() {
+		if (robotsFired >= RobotNames.Instance.maxNames) {
+			// TODO: cut to the GameOver screen with final stats and story ending
+			AssesTheLivingAndDead ();
+			UIManager.instance.LoadLevel(0);	// TODO: replace this return to MainMenu with a transition to intermission
+		}
+	}
+
+	private void CheckIfLevelOver() {
+		if (Time.time > levelEndTime) {
+			AssesTheLivingAndDead ();
+			UIManager.instance.LoadLevel (0);		// TODO: replace this return to MainMenu with a transition to intermission
+		}
+	}
+
+	private void AssesTheLivingAndDead() {
+		AccountForSurvivingRobots ();
+		PrintObituariesTest();
+	}
+
+	private void AccountForSurvivingRobots() {
+		foreach (Robot robot in allRobots) {
+			RobotNames.Instance.AddRobotSurvivalTime (robot.name, Time.time - robot.spawnTime, false);
+		}
+	}
+
+	private void PrintObituariesTest () {
+		Dictionary<string, int> obituaries = RobotNames.Instance.GetObituaries();
+		foreach (KeyValuePair<string, int> deadRobot in obituaries) {
+			print (deadRobot.Key + " SURVIVED " + deadRobot.Value + " SECONDS.");
+		}
+	}
+
+/*
+	public void GameOver() {
+		//Set levelText to display number of levels passed and game over message
+		levelText.text = "After " + level + " days, you starved.";
+		
+		//Enable black background image gameObject.
+		levelImage.SetActive(true);
+		
+		//Disable this GameManager.
+		enabled = false;
+	}
+*/
 		
 	public void InitLevel() {
 
@@ -123,6 +198,7 @@ public class GameManager : MonoBehaviour {
 			hazardPoints.Add (furnaces[i].transform);
 		for (int i = 0; i < pits.Length; i++)
 			hazardPoints.Add (pits[i].transform);
+		levelEndTime = Time.time + levelDuration;
 	}
 
 	public void AddBox(Box newBox) {
@@ -135,6 +211,7 @@ public class GameManager : MonoBehaviour {
 		newRobot.transform.SetParent (robotHolder);
 		newRobot.SetShadowParent (robotHolder);
 		allRobots.Add (newRobot);
+		robotsAddedThisCycle++;
 	}
 
 	public void Remove(Throwable item) {
@@ -237,60 +314,4 @@ public class GameManager : MonoBehaviour {
 		}
 		return closestHazard;
 	}
-
-	public int robotCount {
-		get {
-			return allRobots.Count;
-		}
-	}
-		
-	public int boxCount {
-		get {
-			return allBoxes.Count;
-		}
-	}
 }
-/*
-
-//Initializes the game for each level.
-void InitGame() {
-	//While doingSetup is true the player can't move, prevent player from moving while title card is up.
-	doingSetup = true;
-	
-	levelImage = GameObject.Find("LevelImage");
-	
-	//Get a reference to our text LevelText's text component by finding it by name and calling GetComponent.
-	levelText = GameObject.Find("LevelText").GetComponent<Text>();
-	
-	levelText.text = "Day " + level;
-	
-	//Set levelImage to active blocking player's view of the game board during setup.
-	levelImage.SetActive(true);
-	
-	//Call the HideLevelImage function with a delay in seconds of levelStartDelay.
-	Invoke("HideLevelImage", levelStartDelay);
-
-	enemies.Clear();
-	boardScript.SetupScene(level);
-	
-}
-
-void HideLevelImage() {
-	levelImage.SetActive(false);
-	
-	//Set doingSetup to false allowing player to move again.
-	doingSetup = false;
-}
-
-
-public void GameOver() {
-	//Set levelText to display number of levels passed and game over message
-	levelText.text = "After " + level + " days, you starved.";
-	
-	//Enable black background image gameObject.
-	levelImage.SetActive(true);
-	
-	//Disable this GameManager.
-	enabled = false;
-}
-*/
