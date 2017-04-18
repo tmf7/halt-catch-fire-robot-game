@@ -19,6 +19,10 @@ public class Robot : Throwable {
 	public AudioClip[]	robotReliefSounds;
 	public AudioClip	exitRepairZapSound;
 
+	public Sprite 		onFireSpeechSprite;
+	public Sprite 		homicidalSpeechSprite;
+	public Sprite 		suidicalSpeechSprite;
+
 	public Transform 	target;
 	public float 		speed = 2.0f;
 	public float 		slowdownDistance = 2.0f;
@@ -45,6 +49,8 @@ public class Robot : Throwable {
 			return fireInstance != null;
 		} set { 
 			if (!onFire && value) {
+				DropItem ();
+				currentState = RobotStates.STATE_ONFIRE;
 				fireInstance = Instantiate<ParticleSystem> (firePrefab, transform.position, Quaternion.identity, transform);
 				PlaySingleSoundFx (catchFireSound);
 			} else if (onFire) {
@@ -86,12 +92,15 @@ public class Robot : Throwable {
 	private ParticleSystem 		fireInstance;
 	private CircleCollider2D 	circleCollider;
 	private Animator			animator;
+	private Image				currentSpeech;
 
 	void Start() {
 		line = GetComponent<LineRenderer> ();
 		line.enabled = false;
 		animator = GetComponent<Animator> ();
 		circleCollider = GetComponent<CircleCollider2D> ();
+		currentSpeech = GetComponentInChildren<Image> ();
+		currentSpeech.enabled = false;
 		name = RobotNames.Instance.GetUnusedName();
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
 		grid = GameObject.FindObjectOfType<Grid> ();
@@ -113,7 +122,7 @@ public class Robot : Throwable {
 				PlaySingleSoundFx (slowThrownSound);
 		}
 
-		if (onFire)
+		if (onFire) 
 			health -= Time.deltaTime * damageRate;
 
 		if (currentState == RobotStates.STATE_REPAIRING) {
@@ -231,9 +240,10 @@ public class Robot : Throwable {
 		}
 
 		switch (currentState) {
-		case RobotStates.STATE_FINDBOX:
+			case RobotStates.STATE_FINDBOX:
 				// TODO: change the robot visual here
 				spriteRenderer.color = Color.white;
+				currentSpeech.enabled = false;
 				line.colorGradient = GameManager.instance.blueWaveGradient;
 				stateSpeedMultiplier = 1.0f;
 				target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
@@ -242,6 +252,8 @@ public class Robot : Throwable {
 			case RobotStates.STATE_SUICIDAL:
 				// TODO: change the robot visual here
 				spriteRenderer.color = Color.cyan;
+				currentSpeech.enabled = true;
+				currentSpeech.sprite = suidicalSpeechSprite;
 				line.colorGradient = GameManager.instance.greenWaveGradient;
 				stateSpeedMultiplier = 0.5f;
 				target = GameManager.instance.GetClosestHazardTarget (this);
@@ -249,18 +261,24 @@ public class Robot : Throwable {
 			case RobotStates.STATE_HOMICIDAL:
 				// TODO: change the robot visual here (skull overhead and slimebot sprite)
 				spriteRenderer.color = Color.red;
+				currentSpeech.enabled = true;
+				currentSpeech.sprite = homicidalSpeechSprite;
 				line.colorGradient = GameManager.instance.redWaveGradient;
 				stateSpeedMultiplier = 2.0f;
 				target = isDelivering ? GameManager.instance.GetClosestHazardTarget (this)
 									  : GameManager.instance.GetClosestRobotTarget (this);
 				break;
 			case RobotStates.STATE_ONFIRE: 
+				StopMoving();
+				// TODO: onFire overwrites currentState fully (no deliveries, no homicide, no suicide, different targets though)
 				// TODO: change the robot visual here
 				// TODO: run around like a crazy person
+				currentSpeech.enabled = true;
+				currentSpeech.sprite = onFireSpeechSprite;
 				break;
 		}
 
-		if (target == null)
+		if (target == null && currentState != RobotStates.STATE_ONFIRE)
 			GoCrazy ();
 	}
 

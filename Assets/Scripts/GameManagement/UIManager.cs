@@ -64,6 +64,7 @@ public class UIManager : MonoBehaviour {
 
 		// TODO: show and play intermission and gameover stuff
 
+		GameManager.instance.spawningRobots = false;
 		SceneManager.LoadScene (buildIndex, LoadSceneMode.Single);
 	}
 
@@ -89,9 +90,12 @@ public class UIManager : MonoBehaviour {
 			instance.pauseImage = pauseObject.GetComponent<Image> ();
 		
 		if (SceneManager.GetActiveScene ().buildIndex > 0) {		// MainMenu is buildIndex 0
+			Cursor.visible = false;
 			GameManager.instance.InitLevel ();
 			instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
 			instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
+		} else {
+			Cursor.visible = true;
 		}
 		instance.UpdateSoundConfiguration ();
 		instance.ToggleOverlay ();
@@ -103,6 +107,7 @@ public class UIManager : MonoBehaviour {
 
 		Time.timeScale = Time.timeScale == 1.0f ? 0.0f : 1.0f;
 		instance.pauseImage.sprite = Time.timeScale == 1.0f ? instance.pauseSprite : instance.unpauseSprite;
+		Cursor.visible = Time.timeScale == 1.0f ? false : true;
 	}
 
 	public void ToggleOverlay() {

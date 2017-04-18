@@ -15,8 +15,8 @@ public class BlinkInterval : MonoBehaviour {
 		animator = GetComponent<Animator> ();
 		blinkInterval = Random.Range (blinkTimes.minimum, blinkTimes.maximum);
 		nextBlinkTime = Time.time + blinkInterval;
-		if (tag == "Hazard")
-			animator.speed = 2.0f;
+		if (tag == "Electric")
+			animator.speed = 1.5f;
 		else
 			animator.speed = 0.25f;
 	}

@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour {
 	public int 					maxRobots = 10;
 	public int					maxBoxes = 20;
 	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for somthing closer if currently queried item is within this range
+	public bool 				spawningRobots = false;
 
 	// heierarchy organization
 	private Transform 		boxHolder;		
@@ -41,7 +42,6 @@ public class GameManager : MonoBehaviour {
 	private int 	robotsRepaired = 0;
 	private float	nextRobotSpawnTime;
 	private float	levelEndTime;
-	private bool 	spawningRobots = false;
 	private int 	robotsToSpawnThisCycle;
 	private int 	robotsAddedThisCycle;
 
@@ -122,8 +122,9 @@ public class GameManager : MonoBehaviour {
 	private void CheckIfGameOver() {
 		if (robotsFired >= RobotNames.Instance.maxNames) {
 			// TODO: cut to the GameOver screen with final stats and story ending
+			// TODO: reset robotsFired and the obituaries AFTER the final obituaries have been shown and return to MainMenu
 			AssesTheLivingAndDead ();
-			UIManager.instance.LoadLevel(0);	// TODO: replace this return to MainMenu with a transition to intermission
+			UIManager.instance.LoadLevel(0);		// TODO: replace this return to MainMenu with a transition to intermission
 		}
 	}
 
@@ -166,6 +167,7 @@ public class GameManager : MonoBehaviour {
 */
 		
 	public void InitLevel() {
+		Cursor.visible = false;
 
 		boxesText = GameObject.Find ("BoxesText").GetComponent<Text>();
 		robotsText = GameObject.Find ("RobotsText").GetComponent<Text>();

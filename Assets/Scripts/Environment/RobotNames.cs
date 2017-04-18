@@ -38,6 +38,13 @@ public class RobotNames {
 		}
 	}
 
+	public void ResetNames() {
+		robotNames.Clear ();
+		foreach (string name in rawNames) {
+			robotNames.Add (name, new Name (name));
+		}
+	}
+
 	public void AddRobotSurvivalTime(string name, float timeSurvived, bool died) {
 		float currentTimeSurvived = robotNames [name].timeSurvived;
 		robotNames [name] = new Name (name, true, died, currentTimeSurvived + timeSurvived);
@@ -73,7 +80,7 @@ public class RobotNames {
 					return pair.Value.name;
 			}
 		}
-		return "Ghost";		// GameOver should occur before this happens (Ghost has no Name properties for the obituaries)
+		return "Ghost";		// GameOver should occur before this happens (Ghost has no Name properties for the obituaries and will cause game breaking exceptions)
 	}
 
 	// GetUnusedName can be called maxNames times before GameOver
