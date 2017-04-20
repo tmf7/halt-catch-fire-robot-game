@@ -56,7 +56,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	void Update() {
-		if (SceneManager.GetActiveScene ().buildIndex > 0) {
+		if (!UIManager.instance.isSceneMainMenu) {
 			UpdateRespawnText ();
 			CheckIfGameOver ();
 			CheckIfLevelOver ();

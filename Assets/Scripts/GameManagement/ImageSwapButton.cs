@@ -8,8 +8,9 @@ public class ImageSwapButton : MonoBehaviour {
 	public Sprite 			onStateSprite;
 	public Sprite 			offStateSprite;
 
+	protected bool			isOn = false;
+
 	private Image			swapImage;
-	private bool			isOn = false;
 
 	void Start () {
 		swapImage = GetComponent<Image> ();

@@ -10,6 +10,8 @@ public class UIManager : MonoBehaviour {
 	public static UIManager instance = null;
 
 	private GameObject[]	overlayObjects;
+	private Animator		screenFadeAnimator;
+	private ScreenFader		screenFader;
 	private Slider			musicSlider;
 	private Slider			sfxSlider;
 
@@ -23,6 +25,8 @@ public class UIManager : MonoBehaviour {
 	}
 
 	void Start() {
+		screenFadeAnimator = GetComponentInChildren<Animator> ();
+		screenFader = GetComponentInChildren<ScreenFader> ();
 		InitScene ();
 	}
 
@@ -41,6 +45,10 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
+	public void TransitionScreenToVisible() {
+		instance.screenFadeAnimator.SetTrigger ("FadeToClear");
+	}
+
 	public void QuitGame() {
 		Application.Quit ();
 	}
@@ -56,6 +64,18 @@ public class UIManager : MonoBehaviour {
 	}
 		
 	public void LoadLevel(int buildIndex) {
+		if (Time.timeScale == 0.0f)
+			TogglePause();
+		GameManager.instance.enabled = false;
+		instance.screenFadeAnimator.SetTrigger ("FadeToBlack");
+		instance.StartCoroutine(AwaitTransition(buildIndex));
+	}
+
+	private IEnumerator AwaitTransition(int buildIndex) {
+		instance.screenFader.fadeComplete = false;
+		while (!instance.screenFader.fadeComplete) {
+			yield return null;
+		}
 		SceneManager.LoadScene (buildIndex, LoadSceneMode.Single);
 	}
 
@@ -70,17 +90,17 @@ public class UIManager : MonoBehaviour {
 	//This is called each time a scene is loaded.
 	static private void OnSceneLoaded(Scene arg0, LoadSceneMode arg1) {
 		instance.InitScene();
+		instance.TransitionScreenToVisible ();
 	}
 
 
 	// FIXME: this function may no longer be necessary given the persistence of the musicSlider, sfxSlider, and the different pauseMenu visibility setup via an object.enabled
 	void InitScene() {
-		if (Time.timeScale == 0.0f)
-			TogglePause();
 
 		// TODO: show and play intermission and gameover stuff
 
 		if (!isSceneMainMenu) {
+			GameManager.instance.enabled = true;
 			HUDManager.instance.gameObject.SetActive (true);
 			RobotGrabber.instance.gameObject.SetActive (true);
 			PauseManager.instance.gameObject.SetActive (true);
@@ -90,6 +110,7 @@ public class UIManager : MonoBehaviour {
 			GameManager.instance.InitLevel ();
 			Cursor.visible = false;
 		} else {
+			GameManager.instance.enabled = false;
 			HUDManager.instance.gameObject.SetActive (false);
 			RobotGrabber.instance.gameObject.SetActive (false);
 			SoundManager.instance.PlayMenuMusic ();
