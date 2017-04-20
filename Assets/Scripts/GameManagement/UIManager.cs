@@ -7,16 +7,9 @@ using Random = UnityEngine.Random;
 
 public class UIManager : MonoBehaviour {
 
-	public Sprite 			pauseSprite;
-	public Sprite 			unpauseSprite;
-	public Sprite 			muteSprite;
-	public Sprite 			unmuteSprite;
-
 	public static UIManager instance = null;
 
-	private GameObject[]	showOnPause;
-	private Image			muteImage;
-	private Image			pauseImage;
+	private GameObject[]	overlayObjects;
 	private Slider			musicSlider;
 	private Slider			sfxSlider;
 
@@ -30,17 +23,23 @@ public class UIManager : MonoBehaviour {
 	}
 
 	void Start() {
-		showOnPause = GameObject.FindGameObjectsWithTag("ShowOnPause");
-		muteImage = GameObject.Find ("MuteImage").GetComponent<Image>();
-		ToggleOverlay ();
+		InitScene ();
 	}
 
     void Update() {
 		if (Input.GetButtonDown ("Cancel")) { 		// set to escape key in project settings, other simultaneous keys can be added (eg: Pause/Break key)
-			ToggleOverlay ();
-			TogglePause ();
+			if (isSceneMainMenu)
+				ToggleOverlay ();
+			else
+				TogglePause ();
 		}
     }
+
+	public bool isSceneMainMenu {
+		get { 
+			return SceneManager.GetActiveScene ().buildIndex == 0;
+		}
+	}
 
 	public void QuitGame() {
 		Application.Quit ();
@@ -57,14 +56,6 @@ public class UIManager : MonoBehaviour {
 	}
 		
 	public void LoadLevel(int buildIndex) {
-		if (buildIndex == 0)
-			SoundManager.instance.PlayMenuMusic ();
-		else
-			SoundManager.instance.PlayGameMusic ();
-
-		// TODO: show and play intermission and gameover stuff
-
-		GameManager.instance.spawningRobots = false;
 		SceneManager.LoadScene (buildIndex, LoadSceneMode.Single);
 	}
 
@@ -81,50 +72,51 @@ public class UIManager : MonoBehaviour {
 		instance.InitScene();
 	}
 
+
+	// FIXME: this function may no longer be necessary given the persistence of the musicSlider, sfxSlider, and the different pauseMenu visibility setup via an object.enabled
 	void InitScene() {
-		Time.timeScale = 1.0f;
-		instance.showOnPause = GameObject.FindGameObjectsWithTag("ShowOnPause");
-		instance.muteImage = GameObject.Find ("MuteImage").GetComponent<Image>();
-		GameObject pauseObject = GameObject.Find ("PauseImage");
-		if (pauseObject != null)
-			instance.pauseImage = pauseObject.GetComponent<Image> ();
-		
-		if (SceneManager.GetActiveScene ().buildIndex > 0) {		// MainMenu is buildIndex 0
-			Cursor.visible = false;
-			GameManager.instance.InitLevel ();
+		if (Time.timeScale == 0.0f)
+			TogglePause();
+
+		// TODO: show and play intermission and gameover stuff
+
+		if (!isSceneMainMenu) {
+			HUDManager.instance.gameObject.SetActive (true);
+			RobotGrabber.instance.gameObject.SetActive (true);
+			PauseManager.instance.gameObject.SetActive (true);
+			SoundManager.instance.PlayGameMusic ();
 			instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
 			instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
+			GameManager.instance.InitLevel ();
+			Cursor.visible = false;
 		} else {
+			HUDManager.instance.gameObject.SetActive (false);
+			RobotGrabber.instance.gameObject.SetActive (false);
+			SoundManager.instance.PlayMenuMusic ();
 			Cursor.visible = true;
 		}
 		instance.UpdateSoundConfiguration ();
+		PauseManager.instance.gameObject.SetActive (false);
+		instance.overlayObjects = GameObject.FindGameObjectsWithTag("Overlay");
 		instance.ToggleOverlay ();
 	}
 		
 	public void TogglePause() {
-		if (instance.pauseImage == null)
-			return;
-
 		Time.timeScale = Time.timeScale == 1.0f ? 0.0f : 1.0f;
-		instance.pauseImage.sprite = Time.timeScale == 1.0f ? instance.pauseSprite : instance.unpauseSprite;
-		Cursor.visible = Time.timeScale == 1.0f ? false : true;
+		Cursor.visible = Time.timeScale == 0.0f; 
+		PauseManager.instance.gameObject.SetActive (Time.timeScale == 0.0f);
+		HUDManager.instance.TogglePauseButtonImage ();
 	}
 
 	public void ToggleOverlay() {
-		foreach (GameObject showItem in instance.showOnPause)
-			showItem.SetActive (!showItem.activeSelf);
-	}
-
-	public void ToggleMute() {
-		SoundManager.instance.ToggleMasterMute();
-		instance.muteImage.sprite = SoundManager.instance.isMuted ? instance.muteSprite : instance.unmuteSprite;
+		foreach (GameObject overlayItem in instance.overlayObjects)
+			overlayItem.SetActive (!overlayItem.activeSelf);
 	}
 
 	private void UpdateSoundConfiguration() {
-		if (SceneManager.GetActiveScene ().buildIndex > 0) {		// MainMenu is buildIndex 0
+		if (!isSceneMainMenu) {
 			musicSlider.value = SoundManager.instance.musicVolume;
 			sfxSlider.value = SoundManager.instance.sfxVolume;
 		}
-		instance.muteImage.sprite = SoundManager.instance.isMuted ? instance.muteSprite : instance.unmuteSprite;
 	}
 }

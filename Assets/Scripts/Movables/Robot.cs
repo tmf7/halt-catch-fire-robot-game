@@ -130,7 +130,7 @@ public class Robot : Throwable {
 			if (health > maxHealth) {
 				health = maxHealth;
 				currentState = RobotStates.STATE_FINDBOX;
-				GameManager.instance.RobotRepairComplete ();
+				HUDManager.instance.RobotRepairComplete ();
 			}
 		}
 

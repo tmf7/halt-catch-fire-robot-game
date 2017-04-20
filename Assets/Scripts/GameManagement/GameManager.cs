@@ -1,49 +1,37 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
-
 using System.Collections.Generic;
-using UnityEngine.UI;					//Allows us to use UI.
+using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour {
-/*	
-	public float levelStartDelay = 2f;						//Time to wait before starting level, in seconds.
-*/	
+
 	public static GameManager 	instance = null;
 	public Gradient 			redWaveGradient;
 	public Gradient				blueWaveGradient;
 	public Gradient				greenWaveGradient;
-	public int					levelDuration = 30;
 	public float				globalSpawnDelay = 5.0f;
 	public int 					maxRobots = 10;
 	public int					maxBoxes = 20;
-	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for somthing closer if currently queried item is within this range
+	public float 				acceptableSearchRangeSqr = 9.0f;		// stop looking for somthing closer if currently queried item is within this range
 	public bool 				spawningRobots = false;
 
 	// heierarchy organization
-	private Transform 		boxHolder;		
-	private Transform		robotHolder;
-	private List<Box> 		allBoxes;
-	private List<Robot> 	allRobots;
-	private List<RobotDoor>	allDoors;
-	private List<Transform>	deliveryPoints;
-	private List<Transform> hazardPoints;
+	private Transform 			boxHolder;		
+	private Transform			robotHolder;
 
-	// player stats
-	private Text 	boxesText;
-	private Text 	robotsText;
-	private Text 	repairText;
-	private Text 	timeText;
-	private Text 	spawnText;
+	private List<Box> 			allBoxes;
+	private List<Robot> 		allRobots;
+	private List<RobotDoor>		allDoors;
+	private List<Transform>		deliveryPoints;
+	private List<Transform> 	hazardPoints;
 
-	private int 	boxesCollected = 0;
-	private int 	robotsFired = 0;
-	private int 	robotsRepaired = 0;
-	private float	nextRobotSpawnTime;
-	private float	levelEndTime;
-	private int 	robotsToSpawnThisCycle;
-	private int 	robotsAddedThisCycle;
+	// respawn handling
+	private List<Text> 			spawnTexts;
+	private float				nextRobotSpawnTime;
+	private int 				robotsToSpawnThisCycle;
+	private int 				robotsAddedThisCycle;
 
 	public int robotCount {
 		get {
@@ -64,15 +52,11 @@ public class GameManager : MonoBehaviour {
             Destroy(gameObject);	
 
 		DontDestroyOnLoad(gameObject);
-		nextRobotSpawnTime = Time.time + globalSpawnDelay;
+		spawnTexts = new List<Text> ();
 	}
 
 	void Update() {
 		if (SceneManager.GetActiveScene ().buildIndex > 0) {
-			boxesText.text = "Boxes Collected: " + boxesCollected;
-			robotsText.text = "Robots Fired: " + robotsFired + "/" + RobotNames.Instance.numRobotNames;		// FIXME: this should just start at names.Length, then count down with each death (easier to understand)
-			repairText.text = "Repairs Made: " + robotsRepaired;
-			timeText.text = "Shift Change In: " + (levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad));
 			UpdateRespawnText ();
 			CheckIfGameOver ();
 			CheckIfLevelOver ();
@@ -81,7 +65,7 @@ public class GameManager : MonoBehaviour {
 
 	// regulate robot spawn rate
 	private void UpdateRespawnText() {
-		if (robotCount < maxRobots && robotsFired < RobotNames.Instance.maxNames) {
+		if (robotCount < maxRobots && !HUDManager.instance.allRobotsFired) {
 			if (Time.time > nextRobotSpawnTime) {
 				if (!spawningRobots && robotCount < maxRobots) {
 					robotsToSpawnThisCycle = maxRobots - robotCount;
@@ -110,17 +94,25 @@ public class GameManager : MonoBehaviour {
 				}
 			}
 
-			int recruitTime = Mathf.RoundToInt (nextRobotSpawnTime - Time.time);
-			if (recruitTime < 0)
-				recruitTime = 0;
-			spawnText.text = "New Recruits In: " + recruitTime;
+			int spawnTime = Mathf.RoundToInt (nextRobotSpawnTime - Time.time);
+			if (spawnTime < 0) {
+				HideSpawnText ();
+			} else {
+				foreach (Text spawnText in spawnTexts)
+					spawnText.text = spawnTime.ToString ();
+			}
 		} else {
-			spawnText.text = "";
+			HideSpawnText ();
 		}
 	}
 
+	private void HideSpawnText() {
+		foreach (Text spawnText in spawnTexts)
+			spawnText.text = "";
+	}
+
 	private void CheckIfGameOver() {
-		if (robotsFired >= RobotNames.Instance.maxNames) {
+		if (HUDManager.instance.allRobotsFired) {
 			// TODO: cut to the GameOver screen with final stats and story ending
 			// TODO: reset robotsFired and the obituaries AFTER the final obituaries have been shown and return to MainMenu
 			AssesTheLivingAndDead ();
@@ -129,7 +121,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private void CheckIfLevelOver() {
-		if (Time.time > levelEndTime) {
+		if (HUDManager.instance.isLevelTimeUp) {
 			AssesTheLivingAndDead ();
 			UIManager.instance.LoadLevel (0);		// TODO: replace this return to MainMenu with a transition to intermission
 		}
@@ -153,27 +145,12 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-/*
-	public void GameOver() {
-		//Set levelText to display number of levels passed and game over message
-		levelText.text = "After " + level + " days, you starved.";
-		
-		//Enable black background image gameObject.
-		levelImage.SetActive(true);
-		
-		//Disable this GameManager.
-		enabled = false;
-	}
-*/
-		
 	public void InitLevel() {
-		Cursor.visible = false;
-
-		boxesText = GameObject.Find ("BoxesText").GetComponent<Text>();
-		robotsText = GameObject.Find ("RobotsText").GetComponent<Text>();
-		repairText = GameObject.Find ("RepairText").GetComponent<Text>();
-		timeText = GameObject.Find ("TimeText").GetComponent<Text>();
-		spawnText = GameObject.Find ("SpawnText").GetComponent<Text>();
+		// each RobotDoor has its own spawn text
+		spawnTexts.Clear();
+		GameObject[] spawnTextObjs = GameObject.FindGameObjectsWithTag ("SpawnText");
+		foreach (GameObject spawnTextObj in spawnTextObjs)
+			spawnTexts.Add(spawnTextObj.GetComponent<Text>());
 
 		boxHolder = new GameObject ("Boxes").transform;
 		robotHolder = new GameObject ("Robots").transform;
@@ -200,7 +177,11 @@ public class GameManager : MonoBehaviour {
 			hazardPoints.Add (furnaces[i].transform);
 		for (int i = 0; i < pits.Length; i++)
 			hazardPoints.Add (pits[i].transform);
-		levelEndTime = Time.time + levelDuration;
+
+		Cursor.visible = false;
+		spawningRobots = false;
+		nextRobotSpawnTime = Time.time + globalSpawnDelay;
+		HUDManager.instance.StartLevelTimer ();
 	}
 
 	public void AddBox(Box newBox) {
@@ -219,16 +200,12 @@ public class GameManager : MonoBehaviour {
 	public void Remove(Throwable item) {
 		if (item is Box) {
 			if ((item as Box).hasExited)
-				boxesCollected++;
+				HUDManager.instance.CollectBox ();
 			allBoxes.Remove (item as Box);
 		} else if (item is Robot) {
-			robotsFired++;
+			HUDManager.instance.FireRobot ();
 			allRobots.Remove (item as Robot);
 		}
-	}
-
-	public void RobotRepairComplete() {
-		robotsRepaired++;
 	}
 
 	public Transform GetClosestBoxTarget(Robot robot) {

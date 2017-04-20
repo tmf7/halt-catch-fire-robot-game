@@ -60,12 +60,12 @@ public class SoundManager : MonoBehaviour {
 	}
 
 	public void ToggleMasterMute() {
-		musicSource.mute = !musicSource.mute;
-		if (!musicSource.mute) {
-			musicSource.volume = savedMusicVolume;
-			sfxMixer.SetFloat ("Attenuation", savedSfxAttenuation);
+		instance.musicSource.mute = !instance.musicSource.mute;
+		if (!instance.musicSource.mute) {
+			instance.musicSource.volume = instance.savedMusicVolume;
+			instance.sfxMixer.SetFloat ("Attenuation", instance.savedSfxAttenuation);
 		} else {
-			sfxMixer.SetFloat ("Attenuation", -80.0f);
+			instance.sfxMixer.SetFloat ("Attenuation", -80.0f);
 		}
 	}
 

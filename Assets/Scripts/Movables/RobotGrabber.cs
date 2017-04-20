@@ -4,6 +4,8 @@ using UnityEngine.UI;
 
 public class RobotGrabber : MonoBehaviour {
 
+	public static RobotGrabber 	instance = null;
+
 	public LayerMask			grabbleMask;
 	public float				grabRadius = 10.0f;
 	public float				mouseJointDistance = 0.1f;
@@ -14,13 +16,19 @@ public class RobotGrabber : MonoBehaviour {
     private DistanceJoint2D 	joint;
 	private SpriteRenderer		spriteRenderer;
 
+	void Awake() {
+		if (instance == null)
+			instance = this;
+		else if (instance != this)
+			Destroy(gameObject);	
+
+		DontDestroyOnLoad(gameObject);
+	}
+
 	void Start () {
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 
-		// UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
-		// UNITY_STANDALONE || UNITY_WEBPLAYER
-
-		#if UNITY_EDITOR
+		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
 			spriteRenderer.enabled = true;
 		#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
 			spriteRenderer.enabled = false;
@@ -32,7 +40,7 @@ public class RobotGrabber : MonoBehaviour {
         Vector3 worldPosition = Camera.main.ScreenToWorldPoint(mousePos);
 		worldPosition.z = 0.0f;
 
-		#if UNITY_EDITOR
+		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
 
 		if (Time.timeScale == 0.0f || worldPosition.y > 7.0f) {		// FIXME: magic number specific to the current y-position of the HUD interface
 			Cursor.visible = true;
