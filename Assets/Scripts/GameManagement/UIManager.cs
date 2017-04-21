@@ -8,12 +8,13 @@ using Random = UnityEngine.Random;
 public class UIManager : MonoBehaviour {
 
 	public static UIManager instance = null;
+	public float 			transitionTime = 0.5f;
 
 	private GameObject[]	overlayObjects;
-	private Animator		screenFadeAnimator;
-	private ScreenFader		screenFader;
+	private Animator 		screenFaderAnimator;
 	private Slider			musicSlider;
 	private Slider			sfxSlider;
+	private int				levelToLoad;
 
 	void Awake() {
 		if (instance == null)
@@ -25,8 +26,8 @@ public class UIManager : MonoBehaviour {
 	}
 
 	void Start() {
-		screenFadeAnimator = GetComponentInChildren<Animator> ();
-		screenFader = GetComponentInChildren<ScreenFader> ();
+		screenFaderAnimator = GetComponent<Animator> ();
+		screenFaderAnimator.speed = 1.0f / transitionTime;
 		InitScene ();
 	}
 
@@ -45,10 +46,6 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
-	public void TransitionScreenToVisible() {
-		instance.screenFadeAnimator.SetTrigger ("FadeToClear");
-	}
-
 	public void QuitGame() {
 		Application.Quit ();
 	}
@@ -60,23 +57,17 @@ public class UIManager : MonoBehaviour {
 	// scene 0 in the build must be set to the MainMenu scene
 	public void LoadRandomLevel() {
 		int buildIndex = Random.Range (1, SceneManager.sceneCountInBuildSettings);
-		LoadLevel (buildIndex);
-	}
-		
-	public void LoadLevel(int buildIndex) {
-		if (Time.timeScale == 0.0f)
-			TogglePause();
-		GameManager.instance.enabled = false;
-		instance.screenFadeAnimator.SetTrigger ("FadeToBlack");
-		instance.StartCoroutine(AwaitTransition(buildIndex));
+		FadeToLevel (buildIndex);
 	}
 
-	private IEnumerator AwaitTransition(int buildIndex) {
-		instance.screenFader.fadeComplete = false;
-		while (!instance.screenFader.fadeComplete) {
-			yield return null;
-		}
-		SceneManager.LoadScene (buildIndex, LoadSceneMode.Single);
+	public void FadeToLevel (int buildIndex) {
+		instance.levelToLoad = buildIndex;
+		GameManager.instance.enabled = false;
+		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
+	}
+
+	public void LoadLevel () {
+		SceneManager.LoadScene (levelToLoad);
 	}
 
 	//this is called only once, and the paramter tell it to be called only after the scene was loaded
@@ -90,13 +81,15 @@ public class UIManager : MonoBehaviour {
 	//This is called each time a scene is loaded.
 	static private void OnSceneLoaded(Scene arg0, LoadSceneMode arg1) {
 		instance.InitScene();
-		instance.TransitionScreenToVisible ();
+		instance.screenFaderAnimator.SetTrigger ("FadeToClear");
 	}
 
 
 	// FIXME: this function may no longer be necessary given the persistence of the musicSlider, sfxSlider, and the different pauseMenu visibility setup via an object.enabled
 	void InitScene() {
-
+		if (Time.timeScale == 0.0f)
+			TogglePause();
+		
 		// TODO: show and play intermission and gameover stuff
 
 		if (!isSceneMainMenu) {

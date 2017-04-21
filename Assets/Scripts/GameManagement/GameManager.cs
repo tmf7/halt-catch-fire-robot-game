@@ -116,14 +116,14 @@ public class GameManager : MonoBehaviour {
 			// TODO: cut to the GameOver screen with final stats and story ending
 			// TODO: reset robotsFired and the obituaries AFTER the final obituaries have been shown and return to MainMenu
 			AssesTheLivingAndDead ();
-			UIManager.instance.LoadLevel(0);		// TODO: replace this return to MainMenu with a transition to intermission
+			UIManager.instance.FadeToLevel(0);		// TODO: replace this return to MainMenu with a transition to intermission
 		}
 	}
 
 	private void CheckIfLevelOver() {
 		if (HUDManager.instance.isLevelTimeUp) {
 			AssesTheLivingAndDead ();
-			UIManager.instance.LoadLevel (0);		// TODO: replace this return to MainMenu with a transition to intermission
+			UIManager.instance.FadeToLevel (0);		// TODO: replace this return to MainMenu with a transition to intermission
 		}
 	}
 
