@@ -9,6 +9,7 @@ public class Loader : MonoBehaviour	{
 	public GameObject pauseManagerPrefab;
 	public GameObject hudManagerPrefab;
 	public GameObject robotGrabberPrefab;
+	public GameObject transitionManagerPrefab;
 
 	void Awake () {
 
@@ -26,6 +27,9 @@ public class Loader : MonoBehaviour	{
 		
 		if (SoundManager.instance == null)
 			Instantiate(soundManagerPrefab);
+		
+		if (TransitionManager.instance == null)
+			Instantiate (transitionManagerPrefab);
 
 		if (UIManager.instance == null)
 			Instantiate (UIManagerPrefab);

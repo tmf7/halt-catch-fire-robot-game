@@ -31,6 +31,24 @@ public class HUDManager : MonoBehaviour {
 		}
 	}
 
+	public int robotsFiredThisLevel {
+		get { 
+			return robotsFired;			// TODO: separate this per level (temporary knowledge)
+		}
+	}
+
+	public int repairsThisLevel {
+		get { 
+			return robotsRepaired;		// TODO: separate this per level (temporary knowledge)
+		}
+	}
+
+	public int boxesThisLevel {
+		get { 
+			return boxesCollected;		// TODO: separate this per level (temporary knowledge)
+		}
+	}
+
 	void Awake() {
 		if (instance == null)
 			instance = this;

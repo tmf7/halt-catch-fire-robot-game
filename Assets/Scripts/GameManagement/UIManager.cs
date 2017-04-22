@@ -4,16 +4,19 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
+using System;
 
 public class UIManager : MonoBehaviour {
 
 	public static UIManager instance = null;
 	public float 			transitionTime = 0.5f;
+	public int				storyToTell = 0;
 
 	private GameObject[]	overlayObjects;
 	private Animator 		screenFaderAnimator;
 	private Slider			musicSlider;
 	private Slider			sfxSlider;
+	private Action 			faderCallback;
 	private int				levelToLoad;
 
 	void Awake() {
@@ -63,11 +66,32 @@ public class UIManager : MonoBehaviour {
 	public void FadeToLevel (int buildIndex) {
 		instance.levelToLoad = buildIndex;
 		GameManager.instance.enabled = false;
+		instance.faderCallback = instance.LoadLevel;
 		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
+	}
+
+	public void FadeToStory() {
+		GameManager.instance.enabled = false;
+		instance.faderCallback = instance.ShowStory;
+		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
+	}
+
+	// FadeToBlack animation invokes this, which must be set prior to transition
+	public void ExecuteFaderCommand() {
+		instance.faderCallback ();
 	}
 
 	public void LoadLevel () {
 		SceneManager.LoadScene (levelToLoad);
+	}
+
+	public void ShowStory() {
+		HUDManager.instance.gameObject.SetActive (false);
+		TransitionManager.instance.gameObject.SetActive (true);
+		TransitionManager.instance.DisplayStoryText (storyToTell);
+		SoundManager.instance.PlayIntermissionMusic ();
+		storyToTell++;
+		instance.screenFaderAnimator.SetTrigger ("FadeToClear");
 	}
 
 	//this is called only once, and the paramter tell it to be called only after the scene was loaded
@@ -111,6 +135,7 @@ public class UIManager : MonoBehaviour {
 		}
 		instance.UpdateSoundConfiguration ();
 		PauseManager.instance.gameObject.SetActive (false);
+		TransitionManager.instance.gameObject.SetActive (false);
 		instance.overlayObjects = GameObject.FindGameObjectsWithTag("Overlay");
 		instance.ToggleOverlay ();
 	}
