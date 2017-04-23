@@ -31,7 +31,7 @@ public class UIManager : MonoBehaviour {
 	void Start() {
 		screenFaderAnimator = GetComponent<Animator> ();
 		screenFaderAnimator.speed = 1.0f / transitionTime;
-		instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();			// FIXME: this is a test (instead of in InitScene), these sliders are part of the (default active) PauseManager
+		instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
 		instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
 		InitScene ();
 	}
@@ -128,20 +128,14 @@ public class UIManager : MonoBehaviour {
 			HUDManager.instance.gameObject.SetActive (true);
 			RobotGrabber.instance.gameObject.SetActive (true);
 			SoundManager.instance.PlayGameMusic ();
-
-			// FIXME: this should only need to happen once the first time PauseManager and UIManager initialize because they are both persistant
-//			PauseManager.instance.gameObject.SetActive (true);
-//			instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
-//			instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
-
 			GameManager.instance.InitLevel ();
-			TransitionManager.instance.SwapTransitionForDialogCanvas();
+			TransitionManager.instance.StartInGameDialogue();
 			Cursor.visible = false;
 		} else {
 			GameManager.instance.enabled = false;
 			HUDManager.instance.gameObject.SetActive (false);
 			RobotGrabber.instance.gameObject.SetActive (false);
-			TransitionManager.instance.gameObject.SetActive (false);
+			TransitionManager.instance.DisableTransitionManager ();
 			SoundManager.instance.PlayMenuMusic ();
 			Cursor.visible = true;
 		}

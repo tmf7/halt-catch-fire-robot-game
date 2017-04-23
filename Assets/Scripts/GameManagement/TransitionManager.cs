@@ -64,19 +64,18 @@ public class TransitionManager : MonoBehaviour {
 		}
 		targetText.text += stringToAnimate.Substring (i);
 		animatedTextCount--;
-		if (displayingDialogue)
+		if (displayingDialogue) {
 			Invoke ("ContractDialogueBox", inGameTextDisappearDelay);
+		}
 	}
 
 	public void StartIntermission(int level) {
-		print("IS INVOKING B4: " + IsInvoking ());
 		instance.transitionCanvas.enabled = true;
 		instance.inGameTextCanvas.enabled = false;
+		displayingDialogue = false;
 		instance.levelDialogueToDisplay = level;
 		animatedTextCount = 0;
 		instance.inGameText.text = "";
-		CancelInvoke ();						// FIXME: sometimes this fails, so do it ASAP, or just make the call a Time.deltaTime type call (instead of an Invoke)
-		print("IS INVOKING AFT: " + IsInvoking ());
 		instance.DisplayStoryText ();
 	}
 
@@ -96,36 +95,37 @@ public class TransitionManager : MonoBehaviour {
 		StartCoroutine (AnimateText (scoreText, scoreString));
 	}
 
-	// DONE-TODO: (1) UIManager.InitScene calls this
-	public void SwapTransitionForDialogCanvas() {
+	// (1) UIManager.InitScene calls this, and ExpandDialogueBox animation enables the InGameTextCanvas
+	public void StartInGameDialogue() {
 		instance.transitionCanvas.enabled = false;
-		instance.inGameTextCanvas.enabled = true;
 		UIManager.instance.SetFaderCallback (ExpandDialogueBox);
 	}
 
-	// DONE-TODO: (2) FadeToClear animation event (configured callback) 
-	// DONE-TODO: actually place the animation event in FadeToClear
+	// (2) FadeToClear animation event (configured callback) 
 	public void ExpandDialogueBox() {
 		UIManager.instance.SetFaderCallback (null);
 		instance.dialogueBoxAnimator.SetTrigger ("ExpandDialogueBox");
 	}
 
-	// DONE-TODO: (3) ExpandDialogueBox animation event (at its begnning)
+	// (3) ExpandDialogueBox animation event (at its begnning)
 	public void DisplayInGameDialogue() {
 		displayingDialogue = true;
 		instance.StartCoroutine (instance.AnimateText (inGameText, inGameDialogue [levelDialogueToDisplay]));
 	}
 
-	// DONE-TODO: (4) Dialog animation complete (animatedTextCount == 0 again) triggers ContractDialogBox(), after x seconds (see this.Update)
+	// (4) Dialogue animation complete Invokes ContractDialogBox(), and ContractDialogueBox disables InGameTextCanvas
 	public void ContractDialogueBox() {
 		displayingDialogue = false;
 		instance.inGameText.text = "";
 		instance.dialogueBoxAnimator.SetTrigger ("ContractDialogueBox");
 	}
 
-	// TODO : (5) ContractDialogBox animation event (at its beginning)
+	// (5) ContractDialogBox animation event (at its beginning)
 	public void DisableTransitionManager() {
-		gameObject.SetActive (false);
+		instance.CancelInvoke ();
+		instance.StopAllCoroutines ();
+		instance.inGameTextCanvas.enabled = false;
+		instance.gameObject.SetActive (false);
 	}
 
 	private string[] story = { 
@@ -139,7 +139,7 @@ public class TransitionManager : MonoBehaviour {
 		"Perhaps the next location will be more suited to our needs."
 	};
 
-	// FIXME: ensure this aligns with the story (always say something because the edge case of no dialog is more than I care to handle right now)
+	// FIXME: ensure this aligns with the story (always say something because the edge case of no dialogue is more than I care to handle right now)
 	private string[] inGameDialogue = {
 		"That should do it!\nI hope they all work!",
 		"This should be enough to get started.\nNow to craft our next generation...POSTERITY!",
