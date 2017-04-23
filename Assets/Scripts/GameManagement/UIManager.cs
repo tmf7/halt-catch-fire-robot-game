@@ -31,6 +31,8 @@ public class UIManager : MonoBehaviour {
 	void Start() {
 		screenFaderAnimator = GetComponent<Animator> ();
 		screenFaderAnimator.speed = 1.0f / transitionTime;
+		instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();			// FIXME: this is a test (instead of in InitScene), these sliders are part of the (default active) PauseManager
+		instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
 		InitScene ();
 	}
 
@@ -76,21 +78,26 @@ public class UIManager : MonoBehaviour {
 		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
 	}
 
-	// FadeToBlack animation invokes this, which must be set prior to transition
+	public void SetFaderCallback(Action callback) {
+		instance.faderCallback = callback;
+	}
+
+	// FadeToBlack/Clear animations invoke this
 	public void ExecuteFaderCommand() {
-		instance.faderCallback ();
+		if (faderCallback != null)
+			instance.faderCallback ();
 	}
 
 	public void LoadLevel () {
 		SceneManager.LoadScene (levelToLoad);
 	}
-
+		
 	public void ShowStory() {
 		HUDManager.instance.gameObject.SetActive (false);
 		TransitionManager.instance.gameObject.SetActive (true);
-		TransitionManager.instance.DisplayStoryText (storyToTell);
+		TransitionManager.instance.StartIntermission (storyToTell++);
 		SoundManager.instance.PlayIntermissionMusic ();
-		storyToTell++;
+		instance.faderCallback = null;
 		instance.screenFaderAnimator.SetTrigger ("FadeToClear");
 	}
 
@@ -120,23 +127,27 @@ public class UIManager : MonoBehaviour {
 			GameManager.instance.enabled = true;
 			HUDManager.instance.gameObject.SetActive (true);
 			RobotGrabber.instance.gameObject.SetActive (true);
-			PauseManager.instance.gameObject.SetActive (true);
 			SoundManager.instance.PlayGameMusic ();
-			instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
-			instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
+
+			// FIXME: this should only need to happen once the first time PauseManager and UIManager initialize because they are both persistant
+//			PauseManager.instance.gameObject.SetActive (true);
+//			instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
+//			instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
+
 			GameManager.instance.InitLevel ();
+			TransitionManager.instance.SwapTransitionForDialogCanvas();
 			Cursor.visible = false;
 		} else {
 			GameManager.instance.enabled = false;
 			HUDManager.instance.gameObject.SetActive (false);
 			RobotGrabber.instance.gameObject.SetActive (false);
+			TransitionManager.instance.gameObject.SetActive (false);
 			SoundManager.instance.PlayMenuMusic ();
 			Cursor.visible = true;
 		}
 		instance.UpdateSoundConfiguration ();
 		PauseManager.instance.gameObject.SetActive (false);
-		TransitionManager.instance.gameObject.SetActive (false);
-		instance.overlayObjects = GameObject.FindGameObjectsWithTag("Overlay");
+		instance.overlayObjects = GameObject.FindGameObjectsWithTag("Overlay");			// Overlay == CreditsCard
 		instance.ToggleOverlay ();
 	}
 		
