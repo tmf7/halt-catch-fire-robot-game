@@ -113,35 +113,37 @@ public class GameManager : MonoBehaviour {
 
 	private void CheckIfGameOver() {
 		if (HUDManager.instance.allRobotsFired) {
-			// TODO: cut to the GameOver screen with final stats and story ending
+			// TODO: perform the same SlimeBot spawn animation as for LevelOver (it's assessing the damage)
 			// TODO: reset robotsFired and the obituaries AFTER the final obituaries have been shown and return to MainMenu
-			AssesTheLivingAndDead ();
-			UIManager.instance.FadeToLevel(0);		// TODO: replace this return to MainMenu with a transition to intermission
+			// TODO: animate the obituaries and final score on the last screen (exploding factory)
+			UIManager.instance.FadeToGameOver ();
 		}
 	}
 
 	private void CheckIfLevelOver() {
 		if (HUDManager.instance.isLevelTimeUp) {
-			AssesTheLivingAndDead ();				// FIXME (?): only do this at GameOver
-			UIManager.instance.FadeToStory ();		// TODO: replace this return to MainMenu with a transition to intermission
+			// TODO: make all surviving robots StopMoving() and DropItem() (if any), and Robot.enabled = false (no Updates, but still draw)
+			// TODO: one RobotDoor spawns the SlimeBot, which just Vector3.MoveTowards a SlimeBotTarget transform in a Coroutine
+			// TODO: once that SlimeBotTarget is hit, THEN FadeToStory (in the exit of the Coroutine)
+			// TODO: empty the Slimebot script, and just have that one Coroutine...or just in Update... which calls FadeToStory
+			// TODO: possibly fade the entire screen EXCEPT the slimebot as it walks
+			AccountForSurvivingRobots ();
+			PrintObituariesTest ();
+			UIManager.instance.FadeToStory ();
 		}
-	}
-
-	private void AssesTheLivingAndDead() {
-		AccountForSurvivingRobots ();
-		PrintObituariesTest();
 	}
 
 	private void AccountForSurvivingRobots() {
 		foreach (Robot robot in allRobots) {
-			RobotNames.Instance.AddRobotSurvivalTime (robot.name, Time.time - robot.spawnTime, false);
+			RobotNames.Instance.AddRobotSurvivalTime (robot.name, Time.time - robot.spawnTime);
 		}
 	}
 
+	// TODO: move this to the TransitionManager for when the final screen needs to animate the obituaries text
 	private void PrintObituariesTest () {
-		Dictionary<string, int> obituaries = RobotNames.Instance.GetObituaries();
-		foreach (KeyValuePair<string, int> deadRobot in obituaries) {
-			print (deadRobot.Key + " SURVIVED " + deadRobot.Value + " SECONDS.");
+		List<string> obituaries = RobotNames.Instance.GetObituaries();
+		foreach (string deadRobot in obituaries) {
+			print (deadRobot);		// Bread delivered 23 boxes, and after 92 seconds fell in a pit.
 		}
 	}
 

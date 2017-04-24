@@ -8,14 +8,11 @@ public class RobotNames {
 	public int maxNames = 60;
 
 	private static RobotNames instance = null;
-	private  Dictionary<string, Name> robotNames;
+	private  Dictionary<string, Name> robotNames = new Dictionary<string, Name>();
 	private int numNamesUsed = 0;
 
 	private RobotNames() {
-		robotNames = new Dictionary<string, Name>();
-		foreach (string name in rawNames) {
-			robotNames.Add (name, new Name (name));
-		}
+		ResetNames ();
 	}
 
 	public static RobotNames Instance {
@@ -45,20 +42,46 @@ public class RobotNames {
 		}
 	}
 
-	public void AddRobotSurvivalTime(string name, float timeSurvived, bool died) {
-		float currentTimeSurvived = robotNames [name].timeSurvived;
-		robotNames [name] = new Name (name, true, died, currentTimeSurvived + timeSurvived);
+	public void AddRobotSurvivalTime(string name, float timeSurvived, bool died = false, MethodOfDeath howRobotDied = MethodOfDeath.SURVIVED) {
+		Name robotName = robotNames [name];
+		robotNames [name] = new Name (name, true, died, robotName.timeSurvived + timeSurvived, robotName.boxesDelivered, howRobotDied);
 	}
 
-	// TODO: call this after each level for the intermission/summary screen
-	public Dictionary<string, int> GetObituaries() {
-		Dictionary<string, int> obituaries = new Dictionary<string, int> ();
+	public void AddRobotBoxDelivery(string name) {
+		Name robotName = robotNames [name];
+		robotNames [name] = new Name (name, true, false, robotName.timeSurvived, robotName.boxesDelivered + 1);
+	}
 
+	// TODO: call this at GameOver
+	public List<string> GetObituaries() {
+		List<string> obituaries = new List<string> ();
+
+		// sort by boxesDelivered then timeSurvived
+		List<Name> sortedNames = new List<Name> ();
 		foreach (KeyValuePair<string, Name> pair in robotNames) {
-			if (pair.Value.died)
-				obituaries.Add (pair.Value.name, Mathf.RoundToInt(pair.Value.timeSurvived));
+			sortedNames.Add (pair.Value);
+		}
+		NameComparer nc = new NameComparer ();
+		sortedNames.Sort (nc);
+
+		foreach (Name robot in sortedNames) {
+			if (robot.died)
+				obituaries.Add (robot.name + " delivered " + robot.boxesDelivered + " boxes, and survived " + Mathf.RoundToInt(robot.timeSurvived) + " seconds before " + GetDeathString(robot.howDied));
 		}
 		return obituaries;
+	}
+
+	private string GetDeathString(MethodOfDeath howRobotDied) {
+		switch (howRobotDied) {
+			case MethodOfDeath.DEATH_BY_CRUSHER:
+				return "being crushed.";
+			case MethodOfDeath.DEATH_BY_FIRE:
+				return "being fired.";
+			case MethodOfDeath.DEATH_BY_PIT:
+				return "falling in a pit.";
+			default:
+				return "... living more.";
+		}
 	}
 
 	public string GetUnusedName() {
@@ -96,13 +119,24 @@ public class RobotNames {
 		public bool used;
 		public bool died;
 		public float timeSurvived;
+		public int boxesDelivered;
+		public MethodOfDeath howDied;
 
-		public Name(string _name, bool _used = false, bool _died = false, float _timeSurvived = 0.0f) {
+		public Name(string _name, bool _used = false, bool _died = false, float _timeSurvived = 0.0f, int _boxesDelivered = 0, MethodOfDeath _howDied = MethodOfDeath.SURVIVED) {
 			name = _name;
 			used = _used;
 			died = _died;
 			timeSurvived = _timeSurvived;
-		}
+			boxesDelivered = _boxesDelivered;
+			howDied = _howDied;
+		} 
+	};
+
+	public enum MethodOfDeath {
+		SURVIVED,
+		DEATH_BY_CRUSHER,
+		DEATH_BY_PIT,
+		DEATH_BY_FIRE
 	};
 
 	// 60 names
@@ -168,4 +202,14 @@ public class RobotNames {
 		"Zeek",
 		"Allons-y Alonso"
 	};
+
+	public class NameComparer: Comparer<Name> {
+		public override int Compare (Name a, Name b) {
+			if (a.boxesDelivered > b.boxesDelivered || (a.boxesDelivered == b.boxesDelivered && a.timeSurvived > b.timeSurvived))
+				return -1;
+			else if (a.boxesDelivered < b.boxesDelivered || (a.boxesDelivered == b.boxesDelivered && a.timeSurvived < b.timeSurvived))
+				return 1;
+			return 0;
+		}
+	}
 }

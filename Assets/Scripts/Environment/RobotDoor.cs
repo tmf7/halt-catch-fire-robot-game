@@ -17,7 +17,7 @@ public class RobotDoor : MonoBehaviour {
 	private Animator animator;
 
 	void Awake() {
-		source = GetComponent<AudioSource> ();	// FIXME: make the GameManager or SoundManager's buttonClickSource (rename globalSfxSource) make the door open sound ONCE for each spawn cycle (instead of ALL making the sound)
+		source = GetComponent<AudioSource> ();
 		animator = GetComponent<Animator> ();
 	}
 

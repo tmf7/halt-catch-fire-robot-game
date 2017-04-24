@@ -43,9 +43,7 @@ public class BinaryHeap<T> where T : IHeapItem<T> {
 	public bool Contains(T item) {
 		return Equals (items[item.HeapIndex], item);
 	}
-
-
-	// FIXME: use my sortdown method
+		
 	void SortDown(T item) {
 		while (true) {
 			int childIndexLeft = item.HeapIndex * 2 + 1;

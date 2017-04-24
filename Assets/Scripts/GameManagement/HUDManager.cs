@@ -31,23 +31,12 @@ public class HUDManager : MonoBehaviour {
 		}
 	}
 
-	public int robotsFiredThisLevel {
-		get { 
-			return robotsFired;			// TODO: separate this per level (temporary knowledge)
-		}
-	}
-
-	public int repairsThisLevel {
-		get { 
-			return robotsRepaired;		// TODO: separate this per level (temporary knowledge)
-		}
-	}
-
-	public int boxesThisLevel {
-		get { 
-			return boxesCollected;		// TODO: separate this per level (temporary knowledge)
-		}
-	}
+	[HideInInspector]
+	public int robotsFiredThisLevel = 0;
+	[HideInInspector]
+	public int repairsThisLevel = 0;
+	[HideInInspector]
+	public int boxesThisLevel = 0;
 
 	void Awake() {
 		if (instance == null)
@@ -66,9 +55,9 @@ public class HUDManager : MonoBehaviour {
 	}
 		
 	void Update() {
-		boxesText.text = "Boxes Shipped: " + boxesCollected;
-		robotsText.text = "Robots Left: " + (RobotNames.Instance.maxNames - robotsFired);	
-		timeText.text = "Time: " + (levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad));
+		boxesText.text = "Boxes Shipped: " + boxesCollected.ToString();
+		robotsText.text = "Robots Left: " + (RobotNames.Instance.maxNames - robotsFired).ToString();	
+		timeText.text = "Time: " + (levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad)).ToString();
 	}
 
 	public void TogglePauseButtonImage() {
@@ -77,17 +66,27 @@ public class HUDManager : MonoBehaviour {
 
 	public void StartLevelTimer() {
 		levelEndTime = Time.time + levelDuration;
+		ResetLevelStats ();
 	}
 
 	public void CollectBox() {
 		boxesCollected++;
+		boxesThisLevel++;
 	}
 
 	public void FireRobot() {
 		robotsFired++;
+		robotsFiredThisLevel++;
 	}
 
 	public void RobotRepairComplete() {
 		robotsRepaired++;
+		repairsThisLevel++;
+	}
+
+	public void ResetLevelStats() {
+		repairsThisLevel = 0;
+		robotsFiredThisLevel = 0;
+		boxesThisLevel = 0;
 	}
 }

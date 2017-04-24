@@ -58,6 +58,9 @@ public class Robot : Throwable {
 			}
 		}
 	}
+
+	[HideInInspector]
+	public RobotNames.MethodOfDeath howDied = RobotNames.MethodOfDeath.SURVIVED;
 		
 	public enum RobotStates {
 		STATE_FINDBOX,
@@ -71,7 +74,7 @@ public class Robot : Throwable {
 
 	// pathing
 	private LineRenderer 		line;
-	private Grid				grid;			// FIXME: Grid could be made a singleton with static access to its instance to prevent multiple references for each ROBOT
+	private Grid				grid;
 	private Vector3[] 			path;
 	private int 				targetIndex;
 	private Vector3 			currentWaypoint;
@@ -134,8 +137,10 @@ public class Robot : Throwable {
 			}
 		}
 
-		if (health <= 0) 
-			Explode();
+		if (health <= 0) { 
+			howDied = RobotNames.MethodOfDeath.DEATH_BY_FIRE;
+			Explode ();
+		}
 	
 		if (grounded && !fellInPit && !isBeingCarried)
 			SearchForTarget ();
@@ -189,8 +194,6 @@ public class Robot : Throwable {
 		carryItemDistance = circleCollider.radius + carriedRadius;
 	}
 
-	// FIXME: this function may be interfering with releaseing on the conveyor belts from time to time
-	// causeing the robot to push into the center of the BoxExit oddly
 	private void UpdateCarriedItem() {
 		if (!isCarryingItem || target == null)
 			return;
@@ -209,9 +212,6 @@ public class Robot : Throwable {
 		StopMoving ();
 	}
 
-	// FIXME: if a Homicidal robot is told to DropItem, then it will revert state, which it shouldn't
-	// revert state should only occur upon **Item delivery** or **Item stealing** (not player grabbing)
-	// if not delivering and grabbed by player...the old state is...what?
 	public void StopDelivering() {
 		isDelivering = false;
 		StopMoving ();
@@ -241,7 +241,6 @@ public class Robot : Throwable {
 
 		switch (currentState) {
 			case RobotStates.STATE_FINDBOX:
-				// TODO: change the robot visual here
 				spriteRenderer.color = Color.white;
 				line.colorGradient = GameManager.instance.blueWaveGradient;
 				stateSpeedMultiplier = 1.0f;
@@ -249,7 +248,6 @@ public class Robot : Throwable {
 									  : GameManager.instance.GetClosestBoxTarget (this);
 				break;
 			case RobotStates.STATE_SUICIDAL:
-				// TODO: change the robot visual here
 				spriteRenderer.color = Color.cyan;
 				currentSpeech.sprite = suidicalSpeechSprite;
 				line.colorGradient = GameManager.instance.greenWaveGradient;
@@ -257,7 +255,6 @@ public class Robot : Throwable {
 				target = GameManager.instance.GetClosestHazardTarget (this);
 				break;
 			case RobotStates.STATE_HOMICIDAL:
-				// TODO: change the robot visual here (skull overhead and slimebot sprite)
 				spriteRenderer.color = Color.red;
 				currentSpeech.sprite = homicidalSpeechSprite;
 				line.colorGradient = GameManager.instance.redWaveGradient;
@@ -268,7 +265,6 @@ public class Robot : Throwable {
 			case RobotStates.STATE_ONFIRE: 
 				StopMoving();
 				// TODO: onFire overwrites currentState fully (no deliveries, no homicide, no suicide, different targets though)
-				// TODO: change the robot visual here
 				// TODO: run around like a crazy person
 				currentSpeech.sprite = onFireSpeechSprite;
 				break;
@@ -367,8 +363,6 @@ public class Robot : Throwable {
 			if (carriedItem != null && carriedItem.GetCarrier () != this) {
 				carriedItem = null;
 				StopDelivering ();
-			//	SetState (GetRandomState());		// FIXME: if a homicidal robot's robot is stolen it should go back to finding boxes, this line came from: if a carried BOX is properly delivered
-													// then give the robot a chance to freak out. But then it should stay in one of the broken states until repaired
 			}
 			return carriedItem != null;
 		}
@@ -381,8 +375,7 @@ public class Robot : Throwable {
 	}
 
 	// stop pathing to a box/robot that this has targeted, but has since been grabbed by another robot
-	// FIXME(?): homicidal robots will likely still target robots grabbed by the player
-	// FIXME: for some reason multiple robots will oscillate between targeting a box... and stutter step/pathfind as a result
+	// FIXME(?): homicidal robots still target robots grabbed by the player
 	public void CheckIfTargetLost() {
 		if (isTargetThrowable) {
 			Robot targeter = target.GetComponent<Throwable> ().GetTargeter ();
@@ -394,6 +387,9 @@ public class Robot : Throwable {
 
 	// helper function for Throwables checking if they've been delivered by their carrier
 	public bool CheckHitTarget(string possibleTargetTag) {
+		if (target != null && possibleTargetTag == target.tag && target.tag == "BoxExit")
+			RobotNames.Instance.AddRobotBoxDelivery (name);
+		
 		return target == null || possibleTargetTag == target.tag;
 	}
 
@@ -440,8 +436,10 @@ public class Robot : Throwable {
 				onFire = true;
 		}
 
-		if (collision.collider.tag == "Crusher")
+		if (collision.collider.tag == "Crusher") {
+			howDied = RobotNames.MethodOfDeath.DEATH_BY_CRUSHER;
 			Explode ();
+		}
 
 		if (collision.collider.tag == "Robot") {
 			if (!onFire && collision.collider.GetComponent<Robot> ().onFire)
@@ -450,8 +448,10 @@ public class Robot : Throwable {
 	}
 
 	void OnCollisionStay2D(Collision2D collision) {
-		if (collision.collider.tag == "Crusher")
+		if (collision.collider.tag == "Crusher"){
+			howDied = RobotNames.MethodOfDeath.DEATH_BY_CRUSHER;
 			Explode ();
+		}
 	}
 
 	void OnTriggerStay2D(Collider2D hitTrigger) {

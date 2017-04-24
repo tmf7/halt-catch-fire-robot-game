@@ -173,7 +173,6 @@ public abstract class Throwable : MonoBehaviour {
 			dropShadow.transform.position = transform.position + Vector3.down * shadowOffset;
 
 			// coming in for a landing
-			// possibly FIXME: I moved the isFalling logic to the shadowController class and made the shadowController a private member of Throwable
 			if (isFalling && shadowOffset < deadlyHeight)
 				gameObject.layer = (int)Mathf.Log (groundedResetMask, 2);
 
@@ -191,6 +190,10 @@ public abstract class Throwable : MonoBehaviour {
 			efxSource.volume = currentPitfallScale;
 			yield return null;
 		}
+
+		if (this is Robot)
+			(this as Robot).howDied = RobotNames.MethodOfDeath.DEATH_BY_PIT;
+
 		Remove();
 	}
 
@@ -207,7 +210,7 @@ public abstract class Throwable : MonoBehaviour {
 	protected void Remove() {
 		if (this is Robot) {
 			(this as Robot).DropItem ();
-			RobotNames.Instance.AddRobotSurvivalTime(name, Time.time - (this as Robot).spawnTime, true);
+			RobotNames.Instance.AddRobotSurvivalTime(name, Time.time - (this as Robot).spawnTime, true, (this as Robot).howDied);
 		}
 		
 		GameManager.instance.Remove (this);

@@ -72,6 +72,11 @@ public class UIManager : MonoBehaviour {
 		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
 	}
 
+	public void FadeToGameOver() {
+		storyToTell = 4;
+		FadeToStory ();
+	}
+
 	public void FadeToStory() {
 		DisableCurrentScene ();
 		Cursor.visible = true;
@@ -123,14 +128,11 @@ public class UIManager : MonoBehaviour {
 		SceneManager.sceneLoaded += OnSceneLoaded;
 	}
 
-	//This is called each time a scene is loaded.
 	static private void OnSceneLoaded(Scene arg0, LoadSceneMode arg1) {
 		instance.InitScene();
 		instance.screenFaderAnimator.SetTrigger ("FadeToClear");
 	}
 
-
-	// FIXME: this function may no longer be necessary given the persistence of the musicSlider, sfxSlider, and the different pauseMenu visibility setup via an object.enabled
 	void InitScene() {
 		if (Time.timeScale == 0.0f)
 			TogglePause();
