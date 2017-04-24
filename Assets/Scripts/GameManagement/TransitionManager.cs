@@ -17,10 +17,10 @@ public class TransitionManager : MonoBehaviour {
 //	private Text 	obituariesText;
 	private Button 	continueButton;
 	private int 	animatedTextCount = 0;
-	private int		levelDialogueToDisplay = 0;
+	private int		levelTextToDisplay = 0;
 	private float	inGameTextDisappearDelay = 2.0f;
 	private bool 	userHitSkip = false;
-	private bool	displayingDialogue = false;
+	private bool	isDialogueBoxAnimating = false;
 
 	void Awake() {
 		if (instance == null)
@@ -64,16 +64,12 @@ public class TransitionManager : MonoBehaviour {
 		}
 		targetText.text += stringToAnimate.Substring (i);
 		animatedTextCount--;
-		if (displayingDialogue) {
-			Invoke ("ContractDialogueBox", inGameTextDisappearDelay);
-		}
 	}
 
 	public void StartIntermission(int level) {
 		instance.transitionCanvas.enabled = true;
 		instance.inGameTextCanvas.enabled = false;
-		displayingDialogue = false;
-		instance.levelDialogueToDisplay = level;
+		instance.levelTextToDisplay = level;
 		animatedTextCount = 0;
 		instance.inGameText.text = "";
 		instance.DisplayStoryText ();
@@ -81,8 +77,8 @@ public class TransitionManager : MonoBehaviour {
 
 	// 0-5 in order, then  GameOver is 6 and 7
 	public void DisplayStoryText() {
-		StartCoroutine (AnimateText (storyText, story [levelDialogueToDisplay]));
-		if (levelDialogueToDisplay > 0)
+		StartCoroutine (AnimateText (storyText, story [levelTextToDisplay]));
+		if (levelTextToDisplay > 0)
 			DisplayScoreText ();
 		else
 			scoreText.text = "";
@@ -95,37 +91,46 @@ public class TransitionManager : MonoBehaviour {
 		StartCoroutine (AnimateText (scoreText, scoreString));
 	}
 
-	// (1) UIManager.InitScene calls this, and ExpandDialogueBox animation enables the InGameTextCanvas
+	public IEnumerator ExpandDialogueBox() {
+		isDialogueBoxAnimating = true;
+		dialogueBoxAnimator.SetTrigger ("ExpandDialogueBox");
+
+		while (isDialogueBoxAnimating)
+			yield return null;
+	}
+
+	public IEnumerator ContractDialogueBox() {
+		inGameText.text = "";
+		isDialogueBoxAnimating = true;
+		dialogueBoxAnimator.SetTrigger ("ContractDialogueBox");
+
+		while (isDialogueBoxAnimating)
+			yield return null;
+	}
+
+	public void DialogueBoxAnimationComplete() {
+		instance.isDialogueBoxAnimating = false;
+	}
+
 	public void StartInGameDialogue() {
-		instance.transitionCanvas.enabled = false;
-		UIManager.instance.SetFaderCallback (ExpandDialogueBox);
+		instance.StartCoroutine (instance.StartInGameDialogueCoroutine ());
+	}
+		
+	// ExpandDialogueBox animation enables the InGameTextCanvas
+	// ContractDialogueBox animation disable the InGameTextCanvas
+	public IEnumerator StartInGameDialogueCoroutine() {
+		transitionCanvas.enabled = false;
+		yield return StartCoroutine (ExpandDialogueBox ());
+		yield return StartCoroutine (AnimateText (inGameText, inGameDialogue [levelTextToDisplay]));
+		yield return new WaitForSeconds (inGameTextDisappearDelay);
+		yield return StartCoroutine (ContractDialogueBox ());
+		DisableTransitionManager ();
 	}
 
-	// (2) FadeToClear animation event (configured callback) 
-	public void ExpandDialogueBox() {
-		UIManager.instance.SetFaderCallback (null);
-		instance.dialogueBoxAnimator.SetTrigger ("ExpandDialogueBox");
-	}
-
-	// (3) ExpandDialogueBox animation event (at its begnning)
-	public void DisplayInGameDialogue() {
-		displayingDialogue = true;
-		instance.StartCoroutine (instance.AnimateText (inGameText, inGameDialogue [levelDialogueToDisplay]));
-	}
-
-	// (4) Dialogue animation complete Invokes ContractDialogBox(), and ContractDialogueBox disables InGameTextCanvas
-	public void ContractDialogueBox() {
-		displayingDialogue = false;
-		instance.inGameText.text = "";
-		instance.dialogueBoxAnimator.SetTrigger ("ContractDialogueBox");
-	}
-
-	// (5) ContractDialogBox animation event (at its beginning)
 	public void DisableTransitionManager() {
-		instance.CancelInvoke ();
-		instance.StopAllCoroutines ();
-		instance.inGameTextCanvas.enabled = false;
-		instance.gameObject.SetActive (false);
+		StopAllCoroutines ();
+		inGameTextCanvas.enabled = false;
+		gameObject.SetActive (false);
 	}
 
 	private string[] story = { 

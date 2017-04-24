@@ -16,8 +16,8 @@ public class UIManager : MonoBehaviour {
 	private Animator 		screenFaderAnimator;
 	private Slider			musicSlider;
 	private Slider			sfxSlider;
-	private Action 			faderCallback;
-	private int				levelToLoad;
+	private bool			isFading = false;
+	private bool			inTransition = false;
 
 	void Awake() {
 		if (instance == null)
@@ -37,7 +37,7 @@ public class UIManager : MonoBehaviour {
 	}
 
     void Update() {
-		if (Input.GetButtonDown ("Cancel")) { 		// set to escape key in project settings, other simultaneous keys can be added (eg: Pause/Break key)
+		if (Input.GetButtonDown ("Cancel") && !inTransition) { 		// set to escape key in project settings, other simultaneous keys can be added (eg: Pause/Break key)
 			if (isSceneMainMenu)
 				ToggleOverlay ();
 			else
@@ -59,17 +59,45 @@ public class UIManager : MonoBehaviour {
 		SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
+	public IEnumerator FadeToBlack() {
+		inTransition = true;
+		isFading = true;
+		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
+
+		while (isFading)
+			yield return null;
+	}
+
+	public IEnumerator FadeToClear() {
+		isFading = true;
+		instance.screenFaderAnimator.SetTrigger ("FadeToClear");
+
+		while (isFading)
+			yield return null;
+	}
+
+	public void FadeComplete() {
+		instance.isFading = false;
+	}
+
+
 	// scene 0 in the build must be set to the MainMenu scene
 	public void LoadRandomLevel() {
 		int buildIndex = Random.Range (1, SceneManager.sceneCountInBuildSettings);
 		FadeToLevel (buildIndex);
 	}
 
-	public void FadeToLevel (int buildIndex) {
-		instance.levelToLoad = buildIndex;
+	public void FadeToLevel(int buildIndex) {
+		instance.StartCoroutine (instance.FadeToLevelCoroutine (buildIndex));
+	}
+		
+	public IEnumerator FadeToLevelCoroutine (int buildIndex) {
 		GameManager.instance.enabled = false;
-		instance.faderCallback = instance.LoadLevel;
-		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
+		yield return instance.StartCoroutine (instance.FadeToBlack ());
+
+		SceneManager.LoadScene (buildIndex);
+
+		yield return instance.StartCoroutine (instance.FadeToClear ());
 	}
 
 	public void FadeToGameOver() {
@@ -78,35 +106,23 @@ public class UIManager : MonoBehaviour {
 	}
 
 	public void FadeToStory() {
+		instance.StartCoroutine (instance.FadeToStoryCoroutine ());
+	}
+
+	public IEnumerator FadeToStoryCoroutine () {
+		GameManager.instance.enabled = false;
+
+		yield return instance.StartCoroutine (instance.FadeToBlack ());
+
 		DisableCurrentScene ();
 		Cursor.visible = true;
 		RobotGrabber.instance.gameObject.SetActive (false);
-		GameManager.instance.enabled = false;
-		instance.faderCallback = instance.ShowStory;
-		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
-	}
-
-	public void SetFaderCallback(Action callback) {
-		instance.faderCallback = callback;
-	}
-
-	// FadeToBlack/Clear animations invoke this
-	public void ExecuteFaderCommand() {
-		if (faderCallback != null)
-			instance.faderCallback ();
-	}
-
-	public void LoadLevel () {
-		SceneManager.LoadScene (levelToLoad);
-	}
-		
-	public void ShowStory() {
 		HUDManager.instance.gameObject.SetActive (false);
 		TransitionManager.instance.gameObject.SetActive (true);
 		TransitionManager.instance.StartIntermission (storyToTell++);
 		SoundManager.instance.PlayIntermissionMusic ();
-		instance.faderCallback = null;
-		instance.screenFaderAnimator.SetTrigger ("FadeToClear");
+
+		yield return instance.StartCoroutine (instance.FadeToClear ());
 	}
 
 	// HACK: prevents scene from continuing to process while intermission plays overtop before the next scene loads
@@ -130,7 +146,6 @@ public class UIManager : MonoBehaviour {
 
 	static private void OnSceneLoaded(Scene arg0, LoadSceneMode arg1) {
 		instance.InitScene();
-		instance.screenFaderAnimator.SetTrigger ("FadeToClear");
 	}
 
 	void InitScene() {
@@ -155,6 +170,7 @@ public class UIManager : MonoBehaviour {
 			SoundManager.instance.PlayMenuMusic ();
 			Cursor.visible = true;
 		}
+		instance.inTransition = false;
 		instance.UpdateSoundConfiguration ();
 		PauseManager.instance.gameObject.SetActive (false);
 		instance.overlayObjects = GameObject.FindGameObjectsWithTag("Overlay");			// Overlay == CreditsCard
@@ -163,7 +179,7 @@ public class UIManager : MonoBehaviour {
 		
 	public void TogglePause() {
 		Time.timeScale = Time.timeScale == 1.0f ? 0.0f : 1.0f;
-		RobotGrabber.instance.enabled = Time.timeScale == 1.0f;
+		RobotGrabber.instance.enabled = Time.timeScale == 1.0f;	
 		Cursor.visible = Time.timeScale == 0.0f; 
 		PauseManager.instance.gameObject.SetActive (Time.timeScale == 0.0f);
 		HUDManager.instance.TogglePauseButtonImage ();
