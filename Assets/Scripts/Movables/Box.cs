@@ -45,6 +45,7 @@ public class Box : Throwable {
 	}
 
 	public void ExitBox() {
+		HUDManager.instance.CollectBox ();
 		GetComponent<BoxCollider2D> ().enabled = false;
 		SetHeight (2.0f * deadlyHeight);
 		rb2D.velocity = new Vector2( 0.0f, exitSpeed);

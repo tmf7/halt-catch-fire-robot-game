@@ -73,6 +73,9 @@ public class UIManager : MonoBehaviour {
 	}
 
 	public void FadeToStory() {
+		DisableCurrentScene ();
+		Cursor.visible = true;
+		RobotGrabber.instance.gameObject.SetActive (false);
 		GameManager.instance.enabled = false;
 		instance.faderCallback = instance.ShowStory;
 		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
@@ -99,6 +102,17 @@ public class UIManager : MonoBehaviour {
 		SoundManager.instance.PlayIntermissionMusic ();
 		instance.faderCallback = null;
 		instance.screenFaderAnimator.SetTrigger ("FadeToClear");
+	}
+
+	// HACK: prevents scene from continuing to process while intermission plays overtop before the next scene loads
+	public void DisableCurrentScene() {
+		GameObject[] allSceneObjects = SceneManager.GetActiveScene ().GetRootGameObjects ();
+		foreach (GameObject item in allSceneObjects) {
+			if (item.tag == "MainCamera")
+				continue;
+
+			item.SetActive (false);
+		}
 	}
 
 	//this is called only once, and the paramter tell it to be called only after the scene was loaded
@@ -147,6 +161,7 @@ public class UIManager : MonoBehaviour {
 		
 	public void TogglePause() {
 		Time.timeScale = Time.timeScale == 1.0f ? 0.0f : 1.0f;
+		RobotGrabber.instance.enabled = Time.timeScale == 1.0f;
 		Cursor.visible = Time.timeScale == 0.0f; 
 		PauseManager.instance.gameObject.SetActive (Time.timeScale == 0.0f);
 		HUDManager.instance.TogglePauseButtonImage ();

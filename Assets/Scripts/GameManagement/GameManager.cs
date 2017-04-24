@@ -122,8 +122,8 @@ public class GameManager : MonoBehaviour {
 
 	private void CheckIfLevelOver() {
 		if (HUDManager.instance.isLevelTimeUp) {
-			AssesTheLivingAndDead ();
-			UIManager.instance.FadeToLevel (0);		// TODO: replace this return to MainMenu with a transition to intermission
+			AssesTheLivingAndDead ();				// FIXME (?): only do this at GameOver
+			UIManager.instance.FadeToStory ();		// TODO: replace this return to MainMenu with a transition to intermission
 		}
 	}
 
@@ -199,8 +199,6 @@ public class GameManager : MonoBehaviour {
 
 	public void Remove(Throwable item) {
 		if (item is Box) {
-			if ((item as Box).hasExited)
-				HUDManager.instance.CollectBox ();
 			allBoxes.Remove (item as Box);
 		} else if (item is Robot) {
 			HUDManager.instance.FireRobot ();
@@ -239,7 +237,7 @@ public class GameManager : MonoBehaviour {
 		float minRangeSqr = float.MaxValue;
 
 		foreach (Robot robot in allRobots) {
-			if (robot.isBeingCarried || robot.isTargeted || robot.fellInPit)
+			if (robot == homicidalRobot || robot.isBeingCarried || robot.isTargeted || robot.fellInPit)
 				continue;
 
 			float rangeSqr = (robot.transform.position - homicidalRobot.transform.position).sqrMagnitude;

@@ -243,7 +243,6 @@ public class Robot : Throwable {
 			case RobotStates.STATE_FINDBOX:
 				// TODO: change the robot visual here
 				spriteRenderer.color = Color.white;
-				currentSpeech.enabled = false;
 				line.colorGradient = GameManager.instance.blueWaveGradient;
 				stateSpeedMultiplier = 1.0f;
 				target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
@@ -252,7 +251,6 @@ public class Robot : Throwable {
 			case RobotStates.STATE_SUICIDAL:
 				// TODO: change the robot visual here
 				spriteRenderer.color = Color.cyan;
-				currentSpeech.enabled = true;
 				currentSpeech.sprite = suidicalSpeechSprite;
 				line.colorGradient = GameManager.instance.greenWaveGradient;
 				stateSpeedMultiplier = 0.5f;
@@ -261,7 +259,6 @@ public class Robot : Throwable {
 			case RobotStates.STATE_HOMICIDAL:
 				// TODO: change the robot visual here (skull overhead and slimebot sprite)
 				spriteRenderer.color = Color.red;
-				currentSpeech.enabled = true;
 				currentSpeech.sprite = homicidalSpeechSprite;
 				line.colorGradient = GameManager.instance.redWaveGradient;
 				stateSpeedMultiplier = 2.0f;
@@ -273,10 +270,11 @@ public class Robot : Throwable {
 				// TODO: onFire overwrites currentState fully (no deliveries, no homicide, no suicide, different targets though)
 				// TODO: change the robot visual here
 				// TODO: run around like a crazy person
-				currentSpeech.enabled = true;
 				currentSpeech.sprite = onFireSpeechSprite;
 				break;
 		}
+
+		currentSpeech.enabled = currentState != RobotStates.STATE_FINDBOX;
 
 		if (target == null && currentState != RobotStates.STATE_ONFIRE)
 			GoCrazy ();
@@ -481,6 +479,12 @@ public class Robot : Throwable {
 
 	// Debug Drawing
 	public void OnDrawGizmos() {
+		if (isTargeted) {
+			Gizmos.color = Color.cyan;
+			Gizmos.DrawCube (transform.position, Vector3.one);
+		}
+
+		/*
 		if (path != null) {
 			for (int i = targetIndex; i < path.Length; i++) {
 				Gizmos.color = Color.black;
@@ -493,6 +497,7 @@ public class Robot : Throwable {
 				}
 			}
 		}
+		*/
 	}
 
 	protected override void OnLanding () {
