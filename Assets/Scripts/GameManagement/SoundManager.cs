@@ -6,9 +6,10 @@ using UnityEngine.Audio;
 public class SoundManager : MonoBehaviour {
 
 	public AudioSource musicSource;
-	public AudioSource buttonClickSource;
+	public AudioSource globalSFxSource;
 	public AudioClip selectSound;
 	public AudioClip clickSound;
+	public AudioClip levelEndSound;
 	public AudioClip menuMusic;
 	public AudioClip gameMusic;
 	public AudioClip intermissionSound;
@@ -30,13 +31,19 @@ public class SoundManager : MonoBehaviour {
 	}
 
 	public void PlaySelectSound() {
-		instance.buttonClickSource.clip = selectSound;
-		instance.buttonClickSource.Play ();
+		instance.globalSFxSource.clip = selectSound;
+		instance.globalSFxSource.Play ();
 	}
 
 	public void PlayClickSound() {
-		instance.buttonClickSource.clip = clickSound;
-		instance.buttonClickSource.Play ();
+		instance.globalSFxSource.clip = clickSound;
+		instance.globalSFxSource.Play ();
+	}
+
+	public void PlayLevelEndSound() {
+		instance.musicSource.Stop ();
+		instance.globalSFxSource.clip = levelEndSound;
+		instance.globalSFxSource.Play ();
 	}
 
 	public void PlayMenuMusic() {

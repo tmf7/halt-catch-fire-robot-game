@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour {
 	public int					maxBoxes = 20;
 	public float 				acceptableSearchRangeSqr = 9.0f;		// stop looking for somthing closer if currently queried item is within this range
 	public bool 				spawningRobots = false;
+	public bool					levelEnded = false;
 
 	// heierarchy organization
 	private Transform 			boxHolder;		
@@ -56,16 +57,15 @@ public class GameManager : MonoBehaviour {
 	}
 
 	void Update() {
-		if (!UIManager.instance.isSceneMainMenu) {
+		if (!levelEnded) {
 			UpdateRespawnText ();
-			CheckIfGameOver ();
 			CheckIfLevelOver ();
 		}
 	}
 
 	// regulate robot spawn rate
 	private void UpdateRespawnText() {
-		if (robotCount < maxRobots && !HUDManager.instance.allRobotsFired) {
+		if (robotCount < maxRobots && !HUDManager.instance.allRobotsFired && HUDManager.instance.levelTimeRemaining > Mathf.RoundToInt(globalSpawnDelay)) {
 			if (Time.time > nextRobotSpawnTime) {
 				if (!spawningRobots && robotCount < maxRobots) {
 					robotsToSpawnThisCycle = maxRobots - robotCount;
@@ -111,25 +111,11 @@ public class GameManager : MonoBehaviour {
 			spawnText.text = "";
 	}
 
-	private void CheckIfGameOver() {
-		if (HUDManager.instance.allRobotsFired) {
-			// TODO: perform the same SlimeBot spawn animation as for LevelOver (it's assessing the damage)
-			// TODO: reset robotsFired and the obituaries AFTER the final obituaries have been shown and return to MainMenu
-			// TODO: animate the obituaries and final score on the last screen (exploding factory)
-			UIManager.instance.FadeToGameOver ();
-		}
-	}
-
 	private void CheckIfLevelOver() {
-		if (HUDManager.instance.isLevelTimeUp) {
-			// TODO: make all surviving robots StopMoving() and DropItem() (if any), and Robot.enabled = false (no Updates, but still draw)
-			// TODO: one RobotDoor spawns the SlimeBot, which just Vector3.MoveTowards a SlimeBotTarget transform in a Coroutine
-			// TODO: once that SlimeBotTarget is hit, THEN FadeToStory (in the exit of the Coroutine)
-			// TODO: empty the Slimebot script, and just have that one Coroutine...or just in Update... which calls FadeToStory
-			// TODO: possibly fade the entire screen EXCEPT the slimebot as it walks
+		if (HUDManager.instance.allRobotsFired || HUDManager.instance.isLevelTimeUp) {
+			levelEnded = true;
 			AccountForSurvivingRobots ();
-			PrintObituariesTest ();
-			UIManager.instance.FadeToStory ();
+			StartCoroutine(allDoors [0].SpawnSlimeBot ());
 		}
 	}
 
@@ -182,8 +168,17 @@ public class GameManager : MonoBehaviour {
 
 		Cursor.visible = false;
 		spawningRobots = false;
+		levelEnded = false;
 		nextRobotSpawnTime = Time.time + globalSpawnDelay;
 		HUDManager.instance.StartLevelTimer ();
+	}
+
+	// TODO: actually have them return to the staging area very quickly, then disable
+	public void StopAllRobots() {
+		foreach (Robot robot in allRobots) {
+			robot.DropItem ();
+			robot.enabled = false;
+		}
 	}
 
 	public void AddBox(Box newBox) {

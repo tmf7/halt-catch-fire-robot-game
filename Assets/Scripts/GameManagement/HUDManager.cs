@@ -31,6 +31,12 @@ public class HUDManager : MonoBehaviour {
 		}
 	}
 
+	public int levelTimeRemaining {
+		get { 
+			return isLevelTimeUp ? 0 : levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad);
+		}
+	}
+
 	[HideInInspector]
 	public int robotsFiredThisLevel = 0;
 	[HideInInspector]
@@ -56,8 +62,8 @@ public class HUDManager : MonoBehaviour {
 		
 	void Update() {
 		boxesText.text = "Boxes Shipped: " + boxesCollected.ToString();
-		robotsText.text = "Robots Left: " + (RobotNames.Instance.maxNames - robotsFired).ToString();	
-		timeText.text = "Time: " + (levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad)).ToString();
+		robotsText.text = "Robots Left: " + (RobotNames.Instance.maxNames - robotsFired).ToString();
+		timeText.text = "Time: " + levelTimeRemaining.ToString();
 	}
 
 	public void TogglePauseButtonImage() {

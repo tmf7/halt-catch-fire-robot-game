@@ -4,28 +4,47 @@ using UnityEngine;
 
 public class RobotDoor : MonoBehaviour {
 
-	public AudioClip doorSlideSound;
-	public Robot 	robotPrefab;
-	public float 	spawnDelay = 0.5f;
+	public AudioClip 	doorSlideSound;
+	public Robot 		robotPrefab;
+	public SlimeRobot 	slimeRobotPrefab;
+	public float 		spawnDelay = 0.5f;
 
 	[HideInInspector]
-	public bool	isClosed = true;
+	public bool			isClosed = true;
 	[HideInInspector]
-	public bool 	spawnEnabled = true;
+	public bool 		spawnEnabled = true;
 
 	private AudioSource source;
-	private Animator animator;
+	private Animator	animator;
+	private bool		spawnSlimeBot = false;
 
 	void Awake() {
 		source = GetComponent<AudioSource> ();
 		animator = GetComponent<Animator> ();
 	}
 
+	public IEnumerator SpawnSlimeBot() {
+		spawnSlimeBot = true;
+		GameManager.instance.StopAllRobots();
+		SoundManager.instance.PlayLevelEndSound ();
+
+		// spawn SlimeRobot once the levelEnded bell has stopped
+		while (SoundManager.instance.globalSFxSource.isPlaying)
+			yield return null;
+
+		TriggerDoorOpen ();
+	}
+
 	// RobotDoorOpen animation event triggers this co-routine
 	IEnumerator SpawnRobots() {
-		while (spawnEnabled && (GameManager.instance.robotCount < GameManager.instance.maxRobots) && !RobotNames.Instance.atMaxNames) {
-			Robot spawnedRobot = Instantiate<Robot> (robotPrefab, animator.transform.position, Quaternion.identity);
-			GameManager.instance.AddRobot (spawnedRobot);
+		if (!spawnSlimeBot) {
+			while (spawnEnabled && (GameManager.instance.robotCount < GameManager.instance.maxRobots) && !RobotNames.Instance.atMaxNames) {
+				Robot spawnedRobot = Instantiate<Robot> (robotPrefab, animator.transform.position, Quaternion.identity);
+				GameManager.instance.AddRobot (spawnedRobot);
+				yield return new WaitForSeconds (spawnDelay);
+			}
+		} else {
+			Instantiate<SlimeRobot> (slimeRobotPrefab, animator.transform.position, Quaternion.identity);
 			yield return new WaitForSeconds (spawnDelay);
 		}
 		TriggerDoorClose ();
