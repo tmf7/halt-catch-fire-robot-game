@@ -1,18 +1,18 @@
 fileFormatVersion: 2
-guid: 6e172ecfc3c763c4aac74a513a3f4ccf
-timeCreated: 1493195558
+guid: a474ab22d34e81548a7c35adbedb7066
+timeCreated: 1493240066
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
-    21300000: BoxSprites_12_0
-    21300002: BoxSprites_12_1
-    21300004: BoxSprites_12_2
-    21300006: BoxSprites_12_3
-    21300008: BoxSprites_12_7
-    21300010: BoxSprites_12_6
-    21300012: BoxSprites_12_5
-    21300014: BoxSprites_12_4
-    21300016: BoxSprites_12_8
+    21300000: Normal_Box
+    21300002: TimedBox_0
+    21300004: TimedBox_1
+    21300006: TimedBox_2
+    21300008: SlowBox_4
+    21300010: SlowBox_3
+    21300012: SlowBox_2
+    21300014: SlowBox_1
+    21300016: SlowBox_0
   serializedVersion: 4
   mipmaps:
     mipMapMode: 0
@@ -119,11 +119,11 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: BoxSprites_12_0
+      name: Normal_Box
       rect:
         serializedVersion: 2
-        x: 20
-        y: 452
+        x: 35
+        y: 22
         width: 20
         height: 28
       alignment: 0
@@ -132,11 +132,11 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: BoxSprites_12_1
+      name: TimedBox_0
       rect:
         serializedVersion: 2
-        x: 20
-        y: 412
+        x: 102
+        y: 22
         width: 20
         height: 28
       alignment: 0
@@ -145,11 +145,11 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: BoxSprites_12_2
+      name: TimedBox_1
       rect:
         serializedVersion: 2
-        x: 60
-        y: 412
+        x: 142
+        y: 22
         width: 20
         height: 28
       alignment: 0
@@ -158,11 +158,11 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: BoxSprites_12_3
+      name: TimedBox_2
       rect:
         serializedVersion: 2
-        x: 106
-        y: 412
+        x: 180
+        y: 21
         width: 20
         height: 28
       alignment: 0
@@ -171,11 +171,11 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: BoxSprites_12_8
+      name: SlowBox_4
       rect:
         serializedVersion: 2
-        x: 173
-        y: 369
+        x: 449
+        y: 20
         width: 33
         height: 32
       alignment: 0
@@ -184,11 +184,11 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: BoxSprites_12_7
+      name: SlowBox_3
       rect:
         serializedVersion: 2
-        x: 134
-        y: 369
+        x: 403
+        y: 20
         width: 33
         height: 32
       alignment: 0
@@ -197,11 +197,11 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: BoxSprites_12_6
+      name: SlowBox_2
       rect:
         serializedVersion: 2
-        x: 97
-        y: 369
+        x: 357
+        y: 18
         width: 33
         height: 32
       alignment: 0
@@ -210,11 +210,11 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: BoxSprites_12_5
+      name: SlowBox_1
       rect:
         serializedVersion: 2
-        x: 56
-        y: 369
+        x: 305
+        y: 19
         width: 33
         height: 32
       alignment: 0
@@ -223,11 +223,11 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: BoxSprites_12_4
+      name: SlowBox_0
       rect:
         serializedVersion: 2
-        x: 11
-        y: 369
+        x: 252
+        y: 19
         width: 33
         height: 32
       alignment: 0
