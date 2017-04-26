@@ -5,7 +5,7 @@ using Random = UnityEngine.Random;
 
 public class RobotNames {
 
-	public int maxNames = 60;
+	public int maxNames = 15;
 
 	private static RobotNames instance = null;
 	private  Dictionary<string, Name> robotNames = new Dictionary<string, Name>();
@@ -29,13 +29,8 @@ public class RobotNames {
 		}
 	}
 
-	public bool atMaxNames {
-		get { 
-			return numNamesUsed >= maxNames;
-		}
-	}
-
 	public void ResetNames() {
+		numNamesUsed = 0;
 		robotNames.Clear ();
 		foreach (string name in rawNames) {
 			robotNames.Add (name, new Name (name));
@@ -80,7 +75,7 @@ public class RobotNames {
 			case MethodOfDeath.DEATH_BY_PIT:
 				return "falling in a pit.";
 			default:
-				return "... living more.";
+				return "... living more?";
 		}
 	}
 
@@ -96,11 +91,15 @@ public class RobotNames {
 
 		if (!used) {
 			robotNames [tryName] = new Name (tryName, true);
+			numNamesUsed++;
 			return robotNames [tryName].name;
 		} else {	// the list is running low, stop trying randomly, just find an unused one
 			foreach (KeyValuePair<string, Name> pair in robotNames) {
-				if (!pair.Value.used)
+				if (!pair.Value.used) {
+					robotNames[pair.Value.name] = new Name (pair.Value.name, true);
+					numNamesUsed++;
 					return pair.Value.name;
+				}
 			}
 		}
 		return "Ghost";		// GameOver should occur before this happens (Ghost has no Name properties for the obituaries and will cause game breaking exceptions)

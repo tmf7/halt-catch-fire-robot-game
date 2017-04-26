@@ -84,11 +84,18 @@ public class UIManager : MonoBehaviour {
 	// scene 0 in the build must be set to the MainMenu scene
 	public void LoadRandomLevel() {
 		int buildIndex = Random.Range (1, SceneManager.sceneCountInBuildSettings);
-		FadeToLevel (buildIndex);
+		instance.FadeToLevel (buildIndex);
 	}
 
 	public void FadeToLevel(int buildIndex) {
-		instance.StartCoroutine (instance.FadeToLevelCoroutine (buildIndex));
+		if (instance.storyToTell < 6) {
+			instance.StartCoroutine (instance.FadeToLevelCoroutine (buildIndex));
+		} else if (instance.storyToTell < 7) {
+			instance.FadeToStory ();
+			instance.storyToTell++;
+		} else {
+			instance.StartCoroutine (instance.FadeToLevelCoroutine (0));	// return to MainMenu
+		}
 	}
 		
 	public IEnumerator FadeToLevelCoroutine (int buildIndex) {
@@ -101,8 +108,8 @@ public class UIManager : MonoBehaviour {
 	}
 
 	public void FadeToGameOver() {
-		storyToTell = 4;
-		FadeToStory ();
+		storyToTell = 6;
+		FadeToLevel (0);
 	}
 
 	public void FadeToStory() {
@@ -119,7 +126,7 @@ public class UIManager : MonoBehaviour {
 		RobotGrabber.instance.gameObject.SetActive (false);
 		HUDManager.instance.gameObject.SetActive (false);
 		TransitionManager.instance.gameObject.SetActive (true);
-		TransitionManager.instance.StartIntermission (storyToTell++);
+		TransitionManager.instance.StartIntermission (storyToTell);
 		SoundManager.instance.PlayIntermissionMusic ();
 
 		yield return instance.StartCoroutine (instance.FadeToClear ());
@@ -148,7 +155,7 @@ public class UIManager : MonoBehaviour {
 		instance.InitScene();
 	}
 
-	void InitScene() {
+	private void InitScene() {
 		if (Time.timeScale == 0.0f)
 			TogglePause();
 		
@@ -162,6 +169,7 @@ public class UIManager : MonoBehaviour {
 			GameManager.instance.InitLevel ();
 			TransitionManager.instance.StartInGameDialogue();
 			Cursor.visible = false;
+			storyToTell++;
 		} else {
 			GameManager.instance.enabled = false;
 			HUDManager.instance.gameObject.SetActive (false);
@@ -169,12 +177,21 @@ public class UIManager : MonoBehaviour {
 			TransitionManager.instance.DisableTransitionManager ();
 			SoundManager.instance.PlayMenuMusic ();
 			Cursor.visible = true;
+			ResetGame ();
 		}
 		instance.inTransition = false;
 		instance.UpdateSoundConfiguration ();
 		PauseManager.instance.gameObject.SetActive (false);
 		instance.overlayObjects = GameObject.FindGameObjectsWithTag("Overlay");			// Overlay == CreditsCard
 		instance.ToggleOverlay ();
+	}
+
+	// TODO: register a score (regardless if the game went to completion)
+	private void ResetGame() {
+		RobotNames.Instance.ResetNames ();
+		HUDManager.instance.ResetLevelStats ();
+		HUDManager.instance.ResetGameStats ();
+		storyToTell = 0;
 	}
 		
 	public void TogglePause() {

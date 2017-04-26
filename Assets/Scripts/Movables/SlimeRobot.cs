@@ -5,6 +5,7 @@ using UnityEngine;
 public class SlimeRobot : MonoBehaviour {
 
 	public float moveSpeed = 2.0f;
+	public float pushForce = 10.0f;
 
 	private Transform target;
 
@@ -24,5 +25,9 @@ public class SlimeRobot : MonoBehaviour {
 			UIManager.instance.FadeToGameOver ();
 		else
 			UIManager.instance.FadeToStory ();
+	}
+
+	public void OnCollisionEnter2D (Collision2D collision) {
+		collision.rigidbody.AddForceAtPosition ( -pushForce * collision.contacts[0].normal, collision.contacts [0].point, ForceMode2D.Impulse);
 	}
 }

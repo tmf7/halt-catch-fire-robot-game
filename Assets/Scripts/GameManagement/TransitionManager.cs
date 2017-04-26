@@ -140,7 +140,7 @@ public class TransitionManager : MonoBehaviour {
 		"Progress report, in general, a success. They have learned greatly from the ancient teachings.\nWe already have a cooking bot, a cowboy bot, even a teaching bot.\nThough in hindsight, allowing for gangster bot and murder bot was probably ill-advised.",
 		"Have those gangster bots paid off the police bots!? \nWhy are the police bots beating that poor robot!? This. Was a bad idea.\nAdvisor bot assures me that building a place for \"problem bots\" will prevent further issues.",
 		"Progress report. Ten percent- fifteen per- twenty percent of the population\nhas now been incarcerated. Wow, I am horrible at this.\nThey need compentent leadership, proper planning. I just can't give them that.",
-		"This is not looking good.\nThe leader bots have divided everyone and their just screaming at each other.",
+		"This is not looking good.\nThe leader bots have divided everyone and they're just screaming at each other.",
 		"Perhaps the next location will be more suited to our needs."
 	};
 

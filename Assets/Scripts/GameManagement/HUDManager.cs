@@ -31,6 +31,12 @@ public class HUDManager : MonoBehaviour {
 		}
 	}
 
+	public int robotsRemaining {
+		get { 
+			return RobotNames.Instance.maxNames - robotsFired;
+		}
+	}
+
 	public int levelTimeRemaining {
 		get { 
 			return isLevelTimeUp ? 0 : levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad);
@@ -62,7 +68,7 @@ public class HUDManager : MonoBehaviour {
 		
 	void Update() {
 		boxesText.text = "Boxes Shipped: " + boxesCollected.ToString();
-		robotsText.text = "Robots Left: " + (RobotNames.Instance.maxNames - robotsFired).ToString();
+		robotsText.text = "Robots Left: " + robotsRemaining.ToString();
 		timeText.text = "Time: " + levelTimeRemaining.ToString();
 	}
 
@@ -88,6 +94,12 @@ public class HUDManager : MonoBehaviour {
 	public void RobotRepairComplete() {
 		robotsRepaired++;
 		repairsThisLevel++;
+	}
+
+	public void ResetGameStats() {
+		robotsRepaired = 0;
+		boxesCollected = 0;
+		robotsFired = 0;
 	}
 
 	public void ResetLevelStats() {

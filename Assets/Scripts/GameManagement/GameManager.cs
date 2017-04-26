@@ -65,7 +65,7 @@ public class GameManager : MonoBehaviour {
 
 	// regulate robot spawn rate
 	private void UpdateRespawnText() {
-		if (robotCount < maxRobots && !HUDManager.instance.allRobotsFired && HUDManager.instance.levelTimeRemaining > Mathf.RoundToInt(globalSpawnDelay)) {
+		if (robotCount < maxRobots && robotCount < HUDManager.instance.robotsRemaining && HUDManager.instance.levelTimeRemaining > Mathf.RoundToInt(globalSpawnDelay)) {
 			if (Time.time > nextRobotSpawnTime) {
 				if (!spawningRobots && robotCount < maxRobots) {
 					robotsToSpawnThisCycle = maxRobots - robotCount;
@@ -173,7 +173,7 @@ public class GameManager : MonoBehaviour {
 		HUDManager.instance.StartLevelTimer ();
 	}
 
-	// TODO: actually have them return to the staging area very quickly, then disable
+	// FIXME: actually have them return to the staging area very quickly, then disable FINDING TARGETS, but still keep the script enabled (throwing etc)
 	public void StopAllRobots() {
 		foreach (Robot robot in allRobots) {
 			robot.DropItem ();
