@@ -175,10 +175,8 @@ public class GameManager : MonoBehaviour {
 
 	// FIXME: actually have them return to the staging area very quickly, then disable FINDING TARGETS, but still keep the script enabled (throwing etc)
 	public void StopAllRobots() {
-		foreach (Robot robot in allRobots) {
+		foreach (Robot robot in allRobots)
 			robot.DropItem ();
-			robot.enabled = false;
-		}
 	}
 
 	public void AddBox(Box newBox) {

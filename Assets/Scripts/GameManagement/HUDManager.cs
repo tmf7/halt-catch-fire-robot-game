@@ -13,6 +13,7 @@ public class HUDManager : MonoBehaviour {
 	private Text 	robotsText;
 	private Text 	timeText;
 	private float	levelEndTime;
+	private float	lastTimeRemainingValue;
 	private int 	boxesCollected = 0;
 	private int 	robotsFired = 0;
 	private int 	robotsRepaired = 0;
@@ -67,9 +68,12 @@ public class HUDManager : MonoBehaviour {
 	}
 		
 	void Update() {
+		if (!GameManager.instance.levelEnded)
+			lastTimeRemainingValue = levelTimeRemaining;
+		
 		boxesText.text = "Boxes Shipped: " + boxesCollected.ToString();
 		robotsText.text = "Robots Left: " + robotsRemaining.ToString();
-		timeText.text = "Time: " + levelTimeRemaining.ToString();
+		timeText.text = "Time: " + (GameManager.instance.levelEnded ? lastTimeRemainingValue : levelTimeRemaining).ToString();
 	}
 
 	public void TogglePauseButtonImage() {

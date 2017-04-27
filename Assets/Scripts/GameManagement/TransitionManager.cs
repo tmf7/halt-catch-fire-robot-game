@@ -6,7 +6,8 @@ using UnityEngine.UI;
 public class TransitionManager : MonoBehaviour {
 	
 	public static TransitionManager instance = null;
-	public float 					secondsPerLetter = 0.1f;
+	public float					obituaryScrollSpeed = 0.02f;
+	public float 					secondsPerLetter = 0.02f;
 	public Sprite					beginningAndEndSprite;
 	public Sprite					midGameSprite;
 	public Sprite 					nuclearBlastSprite;
@@ -14,10 +15,12 @@ public class TransitionManager : MonoBehaviour {
 	private Animator dialogueBoxAnimator;
 	private Canvas 	transitionCanvas;
 	private Canvas 	inGameTextCanvas;
+	private ScrollRect obituariesScrollRect;
 	private Image	transitionImage;
 	private Text 	storyText;
 	private Text 	scoreText;
 	private Text 	inGameText;
+	private Text	obituariesText;
 //	private Text 	obituariesText;
 	private Button 	continueButton;
 	private int 	animatedTextCount = 0;
@@ -39,10 +42,12 @@ public class TransitionManager : MonoBehaviour {
 		dialogueBoxAnimator = GetComponent<Animator> ();
 		transitionCanvas = GameObject.Find ("TransitionCanvas").GetComponent<Canvas> ();
 		inGameTextCanvas = GameObject.Find ("InGameTextCanvas").GetComponent<Canvas> ();
+		obituariesScrollRect = GameObject.Find ("ScrollViewObject").GetComponent<ScrollRect> ();
 		transitionImage = transitionCanvas.GetComponentInChildren<Image> ();
 		storyText = GameObject.Find ("StoryText").GetComponent<Text>();
 		scoreText = GameObject.Find ("ScoreText").GetComponent<Text>();
 		inGameText = GameObject.Find ("InGameText").GetComponent<Text>();
+		obituariesText = GameObject.Find ("ObituariesText").GetComponent<Text> ();
 		continueButton = GetComponentInChildren<Button> ();
 	}
 
@@ -93,14 +98,34 @@ public class TransitionManager : MonoBehaviour {
 			scoreText.text = "";
 		
 		yield return StartCoroutine (AnimateText (storyText, story [levelTextToDisplay]));
+
+		// GameOver, time to destroy the factory
 		if (levelTextToDisplay == 7) {
 			yield return new WaitForSeconds (1.0f);
 			yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToBlack (true));
 			yield return new WaitForSeconds (0.5f);
+
 			transitionImage.sprite = nuclearBlastSprite;
 			yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToClear());
+
 			SoundManager.instance.PlayBombSound ();
 			UIManager.instance.StartCoroutine (UIManager.instance.ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera")));
+			StartCoroutine (ScrollObituaries ());
+		}
+	}
+
+	private IEnumerator ScrollObituaries() {
+		List<string> obituaries = RobotNames.Instance.GetObituaries ();
+		string masterObituary = null;
+		foreach (string obituary in obituaries)
+			masterObituary += "\n" + obituary;
+		
+		obituariesText.text = masterObituary;
+		while (obituariesScrollRect.verticalNormalizedPosition > 0.0f) {
+			obituariesScrollRect.verticalNormalizedPosition -= Time.deltaTime * obituaryScrollSpeed;
+			print (obituariesScrollRect.verticalNormalizedPosition);
+			Canvas.ForceUpdateCanvases ();
+			yield return null;
 		}
 	}
 		

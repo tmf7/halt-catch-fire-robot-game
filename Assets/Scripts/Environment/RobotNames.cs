@@ -61,7 +61,7 @@ public class RobotNames {
 
 		foreach (Name robot in sortedNames) {
 			if (robot.died)
-				obituaries.Add (robot.name + " delivered " + robot.boxesDelivered + " boxes, and survived " + Mathf.RoundToInt(robot.timeSurvived) + " seconds before " + GetDeathString(robot.howDied));
+				obituaries.Add (robot.name + "\t\tdelivered\t" + robot.boxesDelivered + "\tboxes, and survived\t\t" + Mathf.RoundToInt(robot.timeSurvived) + "\tseconds before\t" + GetDeathString(robot.howDied));
 		}
 		return obituaries;
 	}

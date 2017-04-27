@@ -11,6 +11,9 @@ public class UIManager : MonoBehaviour {
 	public static UIManager instance = null;
 	public float 			transitionTime = 0.5f;
 	public int				storyToTell = 0;
+	public const float 		shakeDuration = 3.0f;
+	public const float 		shakeSpeed = 20.0f;
+	public const float 		shakeIntensity = 0.25f;
 
 	private GameObject[]	overlayObjects;
 	private Animator 		screenFaderAnimator;
@@ -150,26 +153,25 @@ public class UIManager : MonoBehaviour {
 	}
 
 	void OnGUI () {
-		if (GUI.Button (new Rect (20, 40, 80, 20), "SHAKE")) {
-			UIManager.instance.StartCoroutine(UIManager.instance.ShakeObject(GameObject.FindGameObjectWithTag("MainCamera"), _duration, _speed, _intensity));
-		}
+		if (GUI.Button (new Rect (100, 100, 80, 40), "SHAKE"))
+			instance.StartCoroutine (ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera")));
 	}
 
-	public const float _duration = 3.0f;
-	public const float _speed = 20.0f;
-	public const float _intensity = 0.25f;
-
-	public IEnumerator ShakeObject (GameObject obj, float duration = _duration, float speed = _speed, float intensity = _intensity) {
+	public IEnumerator ShakeObject (GameObject obj, float duration = shakeDuration, float speed = shakeSpeed, float intensity = shakeIntensity) {
 		Vector3 originalPosition = obj.transform.position;
 		float elapsed = 0.0f;
 		while (elapsed < duration) {
-			float damping = Mathf.Clamp01 ((duration - elapsed) / duration);
-			float dampedMag = damping * intensity;
-			float xOffset = (dampedMag * Mathf.PerlinNoise (Time.time * speed, 0.0f)) - (dampedMag / 2.0f);	
-			float yOffset = (dampedMag * Mathf.PerlinNoise (0.0f, Time.time * speed)) - (dampedMag / 2.0f);
-			obj.transform.localPosition = new Vector3 (originalPosition.x + xOffset, originalPosition.y + yOffset, originalPosition.z);
-			elapsed += Time.deltaTime;
-			yield return null;
+			if (obj != null) {
+				float damping = Mathf.Clamp01 ((duration - elapsed) / duration);
+				float dampedMag = damping * intensity;
+				float xOffset = (dampedMag * Mathf.PerlinNoise (Time.time * speed, 0.0f)) - (dampedMag / 2.0f);	
+				float yOffset = (dampedMag * Mathf.PerlinNoise (0.0f, Time.time * speed)) - (dampedMag / 2.0f);
+				obj.transform.localPosition = new Vector3 (originalPosition.x + xOffset, originalPosition.y + yOffset, originalPosition.z);
+				elapsed += Time.deltaTime;
+				yield return null;
+			} else {
+				yield break;
+			}
 		}
 		obj.transform.position = originalPosition;
 	}

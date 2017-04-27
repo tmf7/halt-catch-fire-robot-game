@@ -227,7 +227,7 @@ public class Robot : Throwable {
 
 	void SearchForTarget() {
 
-		if (currentState == RobotStates.STATE_REPAIRING || isBeingCarried || !grid.NodeFromWorldPoint(transform.position).walkable) {
+		if (currentState == RobotStates.STATE_REPAIRING || isBeingCarried || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
 			StopMoving ();
 			return;
 		}
