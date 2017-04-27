@@ -7,10 +7,13 @@ public class TransitionManager : MonoBehaviour {
 	
 	public static TransitionManager instance = null;
 	public float 					secondsPerLetter = 0.1f;
+	public Sprite					beginningAndEndImage;
+	public Sprite					midGameImage;
 
 	private Animator dialogueBoxAnimator;
 	private Canvas 	transitionCanvas;
 	private Canvas 	inGameTextCanvas;
+	private Image	transitionImage;
 	private Text 	storyText;
 	private Text 	scoreText;
 	private Text 	inGameText;
@@ -35,6 +38,7 @@ public class TransitionManager : MonoBehaviour {
 		dialogueBoxAnimator = GetComponent<Animator> ();
 		transitionCanvas = GameObject.Find ("TransitionCanvas").GetComponent<Canvas> ();
 		inGameTextCanvas = GameObject.Find ("InGameTextCanvas").GetComponent<Canvas> ();
+		transitionImage = transitionCanvas.GetComponentInChildren<Image> ();
 		storyText = GameObject.Find ("StoryText").GetComponent<Text>();
 		scoreText = GameObject.Find ("ScoreText").GetComponent<Text>();
 		inGameText = GameObject.Find ("InGameText").GetComponent<Text>();
@@ -66,22 +70,30 @@ public class TransitionManager : MonoBehaviour {
 		animatedTextCount--;
 	}
 
-	public void StartIntermission(int level) {
+	public void StartIntermission(int storyToTell) {
 		instance.transitionCanvas.enabled = true;
+		if (storyToTell == 0 || storyToTell == 7)
+			instance.transitionImage.sprite = beginningAndEndImage;
+		else
+			instance.transitionImage.sprite = midGameImage;
+
 		instance.inGameTextCanvas.enabled = false;
-		instance.levelTextToDisplay = level;
+		instance.levelTextToDisplay = storyToTell;
 		animatedTextCount = 0;
 		instance.inGameText.text = "";
-		instance.DisplayStoryText ();
+		instance.StartCoroutine(instance.DisplayStoryText ());
 	}
 
 	// 0-5 in order, then  GameOver is 6 and 7
-	public void DisplayStoryText() {
-		StartCoroutine (AnimateText (storyText, story [levelTextToDisplay]));
-		if (levelTextToDisplay > 0)
+	public IEnumerator DisplayStoryText() {
+		if (levelTextToDisplay > 0 && levelTextToDisplay < 7)
 			DisplayScoreText ();
 		else
 			scoreText.text = "";
+		
+		yield return StartCoroutine (AnimateText (storyText, story [levelTextToDisplay]));
+		if (levelTextToDisplay == 7)
+			UIManager.instance.StartCoroutine(UIManager.instance.ShakeObject(GameObject.FindGameObjectWithTag("MainCamera"), 3.0f, 1.0f, 1.0f));
 	}
 		
 	public void DisplayScoreText() {

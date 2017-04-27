@@ -143,6 +143,33 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
+	void OnGUI () {
+		if (GUI.Button (new Rect (20, 40, 80, 20), "SHAKE")) {
+			UIManager.instance.StartCoroutine(UIManager.instance.ShakeObject(GameObject.FindGameObjectWithTag("MainCamera"), duration, speed, intensity));
+		}
+	}
+
+	public float duration = 3.0f;
+	public float speed = 10.0f;
+	public float intensity = 0.5f;
+
+	public IEnumerator ShakeObject (GameObject obj, float duration, float speed, float intensity) {
+		Vector3 originalPosition = obj.transform.position;
+		Vector2 perlinOrigin = Random.Range(float.MinValue, float.MaxValue) * new Vector2 (Random.value, Random.value);
+
+		float elapsed = 0.0f;
+		while (elapsed < duration) {
+			float damping = Mathf.Clamp01 ((duration - elapsed) / duration);
+			float dampedMag = damping * intensity;
+			float xOffset = (dampedMag * Mathf.PerlinNoise (Time.time * speed, 0.0f)) - (dampedMag / 2.0f);	
+			float yOffset = (dampedMag * Mathf.PerlinNoise (0.0f, Time.time * speed)) - (dampedMag / 2.0f);
+			obj.transform.localPosition = new Vector3 (originalPosition.x + xOffset, originalPosition.y + yOffset, originalPosition.z);
+			elapsed += Time.deltaTime;
+			yield return null;
+		}
+		obj.transform.position = originalPosition;
+	}
+
 	//this is called only once, and the paramter tell it to be called only after the scene was loaded
 	//(otherwise, our Scene Load callback would be called the very first load, and we don't want that)
 	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
