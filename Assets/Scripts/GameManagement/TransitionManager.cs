@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class TransitionManager : MonoBehaviour {
 	
 	public static TransitionManager instance = null;
-	public float					obituaryScrollSpeed = 0.02f;
+	public float					obituaryScrollSpeed = 0.0625f;
 	public float 					secondsPerLetter = 0.02f;
 	public Sprite					beginningAndEndSprite;
 	public Sprite					midGameSprite;
@@ -49,6 +49,7 @@ public class TransitionManager : MonoBehaviour {
 		inGameText = GameObject.Find ("InGameText").GetComponent<Text>();
 		obituariesText = GameObject.Find ("ObituariesText").GetComponent<Text> ();
 		continueButton = GetComponentInChildren<Button> ();
+		ResetTextActivity ();
 	}
 
 	void Update() {
@@ -74,6 +75,12 @@ public class TransitionManager : MonoBehaviour {
 		}
 		targetText.text += stringToAnimate.Substring (i);
 		animatedTextCount--;
+	}
+
+	public void ResetTextActivity() {
+		obituariesScrollRect.verticalNormalizedPosition = 1.0f;
+		obituariesScrollRect.gameObject.SetActive (false);
+		storyText.enabled = true;
 	}
 
 	public void StartIntermission(int storyToTell) {
@@ -116,15 +123,17 @@ public class TransitionManager : MonoBehaviour {
 
 	private IEnumerator ScrollObituaries() {
 		List<string> obituaries = RobotNames.Instance.GetObituaries ();
-		string masterObituary = null;
+		string masterObituary = "\n\n";
 		foreach (string obituary in obituaries)
-			masterObituary += "\n" + obituary;
+			masterObituary += "\n\n" + obituary + "\n\n";
 		
 		obituariesText.text = masterObituary;
+		storyText.enabled = false;
+		obituariesScrollRect.gameObject.SetActive (true);
+
 		while (obituariesScrollRect.verticalNormalizedPosition > 0.0f) {
-			obituariesScrollRect.verticalNormalizedPosition -= Time.deltaTime * obituaryScrollSpeed;
-			print (obituariesScrollRect.verticalNormalizedPosition);
-			Canvas.ForceUpdateCanvases ();
+			float newScrollPos = obituariesScrollRect.verticalNormalizedPosition - (Time.deltaTime * obituaryScrollSpeed);
+			obituariesScrollRect.verticalNormalizedPosition = newScrollPos;
 			yield return null;
 		}
 	}

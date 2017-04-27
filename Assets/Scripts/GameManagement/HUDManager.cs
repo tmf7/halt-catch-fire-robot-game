@@ -8,6 +8,13 @@ public class HUDManager : MonoBehaviour {
 	public static HUDManager 	instance = null;
 	public int					levelDuration = 30;
 
+	[HideInInspector]
+	public int robotsFiredThisLevel = 0;
+	[HideInInspector]
+	public int repairsThisLevel = 0;
+	[HideInInspector]
+	public int boxesThisLevel = 0;
+
 	// player stats
 	private Text 	boxesText;
 	private Text 	robotsText;
@@ -28,13 +35,13 @@ public class HUDManager : MonoBehaviour {
 
 	public bool allRobotsFired {
 		get { 
-			return robotsFired >= RobotNames.Instance.maxNames;
+			return robotsFired >= GameManager.instance.maxRobots;
 		}
 	}
 
 	public int robotsRemaining {
 		get { 
-			return RobotNames.Instance.maxNames - robotsFired;
+			return GameManager.instance.maxRobots - robotsFired;
 		}
 	}
 
@@ -43,13 +50,6 @@ public class HUDManager : MonoBehaviour {
 			return isLevelTimeUp ? 0 : levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad);
 		}
 	}
-
-	[HideInInspector]
-	public int robotsFiredThisLevel = 0;
-	[HideInInspector]
-	public int repairsThisLevel = 0;
-	[HideInInspector]
-	public int boxesThisLevel = 0;
 
 	void Awake() {
 		if (instance == null)
@@ -88,6 +88,8 @@ public class HUDManager : MonoBehaviour {
 	public void CollectBox() {
 		boxesCollected++;
 		boxesThisLevel++;
+		if (boxesCollected % 10 == 0)
+			GameManager.instance.IncreaseMaxRobots (2);			// FIXME: placeholder robot limit increase logic
 	}
 
 	public void FireRobot() {

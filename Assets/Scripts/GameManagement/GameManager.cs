@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour {
 	public Gradient				blueWaveGradient;
 	public Gradient				greenWaveGradient;
 	public float				globalSpawnDelay = 5.0f;
-	public int 					maxRobots = 10;
+	public int 					maxRobots = 3;
 	public int					maxBoxes = 20;
 	public float 				acceptableSearchRangeSqr = 9.0f;		// stop looking for somthing closer if currently queried item is within this range
 	public bool 				spawningRobots = false;
@@ -171,6 +171,13 @@ public class GameManager : MonoBehaviour {
 		levelEnded = false;
 		nextRobotSpawnTime = Time.time + globalSpawnDelay;
 		HUDManager.instance.StartLevelTimer ();
+	}
+
+	// TODO (?): change the maxAvailableNames in RobotNames to less than 60
+	public void IncreaseMaxRobots(int increaseBy) {
+		maxRobots += increaseBy;
+		if (maxRobots > RobotNames.Instance.maxAvailableNames)
+			maxRobots = RobotNames.Instance.maxAvailableNames;
 	}
 
 	// FIXME: actually have them return to the staging area very quickly, then disable FINDING TARGETS, but still keep the script enabled (throwing etc)

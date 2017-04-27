@@ -152,11 +152,6 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
-	void OnGUI () {
-		if (GUI.Button (new Rect (100, 100, 80, 40), "SHAKE"))
-			instance.StartCoroutine (ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera")));
-	}
-
 	public IEnumerator ShakeObject (GameObject obj, float duration = shakeDuration, float speed = shakeSpeed, float intensity = shakeIntensity) {
 		Vector3 originalPosition = obj.transform.position;
 		float elapsed = 0.0f;
@@ -224,6 +219,7 @@ public class UIManager : MonoBehaviour {
 		RobotNames.Instance.ResetNames ();
 		HUDManager.instance.ResetLevelStats ();
 		HUDManager.instance.ResetGameStats ();
+		TransitionManager.instance.ResetTextActivity ();
 		storyToTell = 0;
 	}
 		

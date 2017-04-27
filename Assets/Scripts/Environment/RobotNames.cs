@@ -5,8 +5,6 @@ using Random = UnityEngine.Random;
 
 public class RobotNames {
 
-	public int maxNames = 15;
-
 	private static RobotNames instance = null;
 	private  Dictionary<string, Name> robotNames = new Dictionary<string, Name>();
 	private int numNamesUsed = 0;
@@ -61,7 +59,7 @@ public class RobotNames {
 
 		foreach (Name robot in sortedNames) {
 			if (robot.died)
-				obituaries.Add (robot.name + "\t\tdelivered\t" + robot.boxesDelivered + "\tboxes, and survived\t\t" + Mathf.RoundToInt(robot.timeSurvived) + "\tseconds before\t" + GetDeathString(robot.howDied));
+				obituaries.Add (robot.name + " delivered " + robot.boxesDelivered + " boxes, " + GetDeathString(robot.howDied) + Mathf.RoundToInt(robot.timeSurvived) + " seconds.");
 		}
 		return obituaries;
 	}
@@ -69,13 +67,13 @@ public class RobotNames {
 	private string GetDeathString(MethodOfDeath howRobotDied) {
 		switch (howRobotDied) {
 			case MethodOfDeath.DEATH_BY_CRUSHER:
-				return "being crushed.";
+				return "and was crushed after ";
 			case MethodOfDeath.DEATH_BY_FIRE:
-				return "being fired.";
+				return "and got fired after ";
 			case MethodOfDeath.DEATH_BY_PIT:
-				return "falling in a pit.";
+				return "and fell in a pit after ";
 			default:
-				return "... living more?";
+				return "and continued living? ";
 		}
 	}
 
@@ -105,12 +103,10 @@ public class RobotNames {
 		return "Ghost";		// GameOver should occur before this happens (Ghost has no Name properties for the obituaries and will cause game breaking exceptions)
 	}
 
-	// GetUnusedName can be called maxNames times before GameOver
-	// this function increases maxNames UP TO 60 (the count of the robotNames dictionary)
-	public void IncreaseAvailableNames(int increaseBy) {
-		maxNames += increaseBy;
-		if (maxNames > robotNames.Count)
-			maxNames = robotNames.Count;
+	public int maxAvailableNames {
+		get {
+			return rawNames.Length;
+		}
 	}
 
 	public struct Name {
