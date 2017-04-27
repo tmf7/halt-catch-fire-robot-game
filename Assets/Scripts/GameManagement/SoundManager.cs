@@ -7,13 +7,17 @@ public class SoundManager : MonoBehaviour {
 
 	public AudioSource musicSource;
 	public AudioSource globalSFxSource;
+
 	public AudioClip selectSound;
 	public AudioClip clickSound;
 	public AudioClip levelEndSound;
+	public AudioClip bigExplosionSound;
+
 	public AudioClip menuMusic;
 	public AudioClip gameMusic;
 	public AudioClip intermissionSound;
 	public AudioClip gameOverMusic;
+
 	public AudioMixer sfxMixer;			// control the volume only
 
 	public static SoundManager instance = null;
@@ -37,6 +41,12 @@ public class SoundManager : MonoBehaviour {
 
 	public void PlayClickSound() {
 		instance.globalSFxSource.clip = clickSound;
+		instance.globalSFxSource.Play ();
+	}
+
+	public void PlayBombSound() {
+		instance.musicSource.Stop ();
+		instance.globalSFxSource.clip = bigExplosionSound;
 		instance.globalSFxSource.Play ();
 	}
 

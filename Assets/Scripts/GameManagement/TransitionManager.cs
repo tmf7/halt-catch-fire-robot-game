@@ -7,8 +7,9 @@ public class TransitionManager : MonoBehaviour {
 	
 	public static TransitionManager instance = null;
 	public float 					secondsPerLetter = 0.1f;
-	public Sprite					beginningAndEndImage;
-	public Sprite					midGameImage;
+	public Sprite					beginningAndEndSprite;
+	public Sprite					midGameSprite;
+	public Sprite 					nuclearBlastSprite;
 
 	private Animator dialogueBoxAnimator;
 	private Canvas 	transitionCanvas;
@@ -73,9 +74,9 @@ public class TransitionManager : MonoBehaviour {
 	public void StartIntermission(int storyToTell) {
 		instance.transitionCanvas.enabled = true;
 		if (storyToTell == 0 || storyToTell == 7)
-			instance.transitionImage.sprite = beginningAndEndImage;
+			instance.transitionImage.sprite = beginningAndEndSprite;
 		else
-			instance.transitionImage.sprite = midGameImage;
+			instance.transitionImage.sprite = midGameSprite;
 
 		instance.inGameTextCanvas.enabled = false;
 		instance.levelTextToDisplay = storyToTell;
@@ -92,8 +93,15 @@ public class TransitionManager : MonoBehaviour {
 			scoreText.text = "";
 		
 		yield return StartCoroutine (AnimateText (storyText, story [levelTextToDisplay]));
-		if (levelTextToDisplay == 7)
-			UIManager.instance.StartCoroutine(UIManager.instance.ShakeObject(GameObject.FindGameObjectWithTag("MainCamera"), 3.0f, 1.0f, 1.0f));
+		if (levelTextToDisplay == 7) {
+			yield return new WaitForSeconds (1.0f);
+			yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToBlack (true));
+			yield return new WaitForSeconds (0.5f);
+			transitionImage.sprite = nuclearBlastSprite;
+			yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToClear());
+			SoundManager.instance.PlayBombSound ();
+			UIManager.instance.StartCoroutine (UIManager.instance.ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera")));
+		}
 	}
 		
 	public void DisplayScoreText() {

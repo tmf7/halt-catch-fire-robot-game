@@ -14,6 +14,7 @@ public class UIManager : MonoBehaviour {
 
 	private GameObject[]	overlayObjects;
 	private Animator 		screenFaderAnimator;
+	private Image			screenFaderImage;
 	private Slider			musicSlider;
 	private Slider			sfxSlider;
 	private bool			isFading = false;
@@ -30,6 +31,7 @@ public class UIManager : MonoBehaviour {
 
 	void Start() {
 		screenFaderAnimator = GetComponent<Animator> ();
+		screenFaderImage = GetComponentInChildren<Image> ();
 		screenFaderAnimator.speed = 1.0f / transitionTime;
 		instance.musicSlider = GameObject.Find ("MusicSlider").GetComponent<Slider> ();
 		instance.sfxSlider = GameObject.Find ("SFxSlider").GetComponent<Slider> ();
@@ -59,9 +61,13 @@ public class UIManager : MonoBehaviour {
 		SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-	public IEnumerator FadeToBlack() {
+	public IEnumerator FadeToBlack(bool whiteInstead = false) {
 		inTransition = true;
 		isFading = true;
+		if (whiteInstead)
+			screenFaderImage.color = Color.white;
+		else
+			screenFaderImage.color = Color.black;
 		instance.screenFaderAnimator.SetTrigger ("FadeToBlack");
 
 		while (isFading)
@@ -145,18 +151,16 @@ public class UIManager : MonoBehaviour {
 
 	void OnGUI () {
 		if (GUI.Button (new Rect (20, 40, 80, 20), "SHAKE")) {
-			UIManager.instance.StartCoroutine(UIManager.instance.ShakeObject(GameObject.FindGameObjectWithTag("MainCamera"), duration, speed, intensity));
+			UIManager.instance.StartCoroutine(UIManager.instance.ShakeObject(GameObject.FindGameObjectWithTag("MainCamera"), _duration, _speed, _intensity));
 		}
 	}
 
-	public float duration = 3.0f;
-	public float speed = 10.0f;
-	public float intensity = 0.5f;
+	public const float _duration = 3.0f;
+	public const float _speed = 20.0f;
+	public const float _intensity = 0.25f;
 
-	public IEnumerator ShakeObject (GameObject obj, float duration, float speed, float intensity) {
+	public IEnumerator ShakeObject (GameObject obj, float duration = _duration, float speed = _speed, float intensity = _intensity) {
 		Vector3 originalPosition = obj.transform.position;
-		Vector2 perlinOrigin = Random.Range(float.MinValue, float.MaxValue) * new Vector2 (Random.value, Random.value);
-
 		float elapsed = 0.0f;
 		while (elapsed < duration) {
 			float damping = Mathf.Clamp01 ((duration - elapsed) / duration);
