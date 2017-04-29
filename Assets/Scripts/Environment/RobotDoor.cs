@@ -28,7 +28,6 @@ public class RobotDoor : MonoBehaviour {
 		GameManager.instance.StopAllRobots();
 		SoundManager.instance.PlayLevelEndSound ();
 
-		// spawn SlimeRobot once the levelEnded bell has stopped
 		while (SoundManager.instance.globalSFxSource.isPlaying)
 			yield return null;
 
@@ -50,7 +49,7 @@ public class RobotDoor : MonoBehaviour {
 		TriggerDoorClose ();
 	}
 		
-	//  GameManager should invokes this on all doors once the global spawnDelay has elapsed
+	//  GameManager invokes this on all doors once the global spawnDelay has elapsed
 	public void TriggerDoorOpen() {
 		isClosed = false;
 		animator.SetTrigger ("OpenDoor");

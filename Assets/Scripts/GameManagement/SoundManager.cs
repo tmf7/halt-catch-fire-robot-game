@@ -57,6 +57,7 @@ public class SoundManager : MonoBehaviour {
 	}
 
 	public void PlayMenuMusic() {
+		instance.musicSource.loop = true;
 		instance.musicSource.clip = menuMusic;
 		instance.musicSource.Play ();
 	}
@@ -72,6 +73,7 @@ public class SoundManager : MonoBehaviour {
 	}
 
 	public void PlayGameOverMusic() {
+		instance.musicSource.loop = false;
 		instance.musicSource.clip = gameOverMusic;
 		instance.musicSource.Play ();
 	}

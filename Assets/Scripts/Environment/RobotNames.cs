@@ -7,7 +7,7 @@ public class RobotNames {
 
 	private static RobotNames instance = null;
 	private  Dictionary<string, Name> robotNames = new Dictionary<string, Name>();
-	private int numNamesUsed = 0;
+	private int survivorNamesUsed = 0;
 
 	private RobotNames() {
 		ResetNames ();
@@ -28,11 +28,15 @@ public class RobotNames {
 	}
 
 	public void ResetNames() {
-		numNamesUsed = 0;
+		survivorNamesUsed = 0;
 		robotNames.Clear ();
 		foreach (string name in rawNames) {
 			robotNames.Add (name, new Name (name));
 		}
+	}
+
+	public void ResetSurvivorNamesUsed() {
+		survivorNamesUsed = 0;
 	}
 
 	public void AddRobotSurvivalTime(string name, float timeSurvived, bool died = false, MethodOfDeath howRobotDied = MethodOfDeath.SURVIVED) {
@@ -45,21 +49,20 @@ public class RobotNames {
 		robotNames [name] = new Name (name, true, false, robotName.timeSurvived, robotName.boxesDelivered + 1);
 	}
 
-	// TODO: call this at GameOver
 	public List<string> GetObituaries() {
 		List<string> obituaries = new List<string> ();
 
 		// sort by boxesDelivered then timeSurvived
 		List<Name> sortedNames = new List<Name> ();
 		foreach (KeyValuePair<string, Name> pair in robotNames) {
-			sortedNames.Add (pair.Value);
+			if (pair.Value.died)
+				sortedNames.Add (pair.Value);
 		}
 		NameComparer nc = new NameComparer ();
 		sortedNames.Sort (nc);
 
 		foreach (Name robot in sortedNames) {
-			if (robot.died)
-				obituaries.Add (robot.name + " delivered " + robot.boxesDelivered + " boxes, " + GetDeathString(robot.howDied) + Mathf.RoundToInt(robot.timeSurvived) + " seconds.");
+			obituaries.Add (robot.name + " delivered " + robot.boxesDelivered + " boxes, " + GetDeathString(robot.howDied) + Mathf.RoundToInt(robot.timeSurvived) + " seconds.");
 		}
 		return obituaries;
 	}
@@ -72,12 +75,26 @@ public class RobotNames {
 				return "and got fired after ";
 			case MethodOfDeath.DEATH_BY_PIT:
 				return "and fell in a pit after ";
+			case MethodOfDeath.DEATH_BY_BOMB:
+				return "and was obliterated after ";
 			default:
-				return "and continued living? ";
+				return "and continued to live? after ";
 		}
 	}
 
-	public string GetUnusedName() {
+	public string TryGetSurvivorName () {
+		int skipNameCount = 0;
+		foreach (KeyValuePair<string, Name> pair in robotNames) {
+			if (pair.Value.used && survivorNamesUsed <= skipNameCount++) {
+				survivorNamesUsed++;
+				return pair.Value.name;
+			}
+		}
+		survivorNamesUsed++;
+		return GetUnusedName ();
+	}
+
+	private string GetUnusedName() {
 		string tryName = null;
 		int tryCount = 0;
 		bool used = false;
@@ -89,13 +106,11 @@ public class RobotNames {
 
 		if (!used) {
 			robotNames [tryName] = new Name (tryName, true);
-			numNamesUsed++;
 			return robotNames [tryName].name;
 		} else {	// the list is running low, stop trying randomly, just find an unused one
 			foreach (KeyValuePair<string, Name> pair in robotNames) {
 				if (!pair.Value.used) {
 					robotNames[pair.Value.name] = new Name (pair.Value.name, true);
-					numNamesUsed++;
 					return pair.Value.name;
 				}
 			}
@@ -131,7 +146,8 @@ public class RobotNames {
 		SURVIVED,
 		DEATH_BY_CRUSHER,
 		DEATH_BY_PIT,
-		DEATH_BY_FIRE
+		DEATH_BY_FIRE,
+		DEATH_BY_BOMB
 	};
 
 	// 60 names

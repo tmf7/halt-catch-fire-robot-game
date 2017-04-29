@@ -207,7 +207,7 @@ public abstract class Throwable : MonoBehaviour {
 		Remove();
 	}
 
-	protected void Remove() {
+	public void Remove() {
 		if (this is Robot) {
 			(this as Robot).DropItem ();
 			RobotNames.Instance.AddRobotSurvivalTime(name, Time.time - (this as Robot).spawnTime, true, (this as Robot).howDied);
@@ -217,7 +217,6 @@ public abstract class Throwable : MonoBehaviour {
 		Destroy(shadowController);
 		Destroy(dropShadow);
 		Destroy(gameObject);
-//		Destroy (this);
 	}
 
 	void OnTriggerEnter2D(Collider2D hitTrigger) {

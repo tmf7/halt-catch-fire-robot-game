@@ -7,6 +7,7 @@ public class HUDManager : MonoBehaviour {
 
 	public static HUDManager 	instance = null;
 	public int					levelDuration = 30;
+	public int 					robotsEarnedToAdd = 2;
 
 	[HideInInspector]
 	public int robotsFiredThisLevel = 0;
@@ -24,6 +25,7 @@ public class HUDManager : MonoBehaviour {
 	private int 	boxesCollected = 0;
 	private int 	robotsFired = 0;
 	private int 	robotsRepaired = 0;
+	private int 	robotIncreaseThreshold = 10;
 
 	private ImageSwapButton pauseButton;
 
@@ -41,9 +43,12 @@ public class HUDManager : MonoBehaviour {
 
 	public int robotsRemaining {
 		get { 
-			return GameManager.instance.maxRobots - robotsFired;
-		}
-	}
+			return GameManager.instance.maxRobots - robotsFired;			// FIXME: maxRobots shouldn't be the operative parameter except during initialization
+		}																	// because the threshold may increase beyond what the current count inLevel is, preventing replenishment???
+	}																		// eg: maxRobots has become 20, robots fired is 12, so 8 are on screen... or should be
+
+																			// FIXME: new robots aren't issued in the last 5-10 seconds of gameplay, so there'll be a visual discrepsancy
+																			// between "Robots Left" and robots ACTUALLY in play
 
 	public int levelTimeRemaining {
 		get { 
@@ -72,7 +77,7 @@ public class HUDManager : MonoBehaviour {
 			lastTimeRemainingValue = levelTimeRemaining;
 		
 		boxesText.text = "Boxes Shipped: " + boxesCollected.ToString();
-		robotsText.text = "Robots Left: " + robotsRemaining.ToString();
+		robotsText.text = "Robots Left: " + GameManager.instance.robotCount.ToString();
 		timeText.text = "Time: " + (GameManager.instance.levelEnded ? lastTimeRemainingValue : levelTimeRemaining).ToString();
 	}
 
@@ -88,8 +93,12 @@ public class HUDManager : MonoBehaviour {
 	public void CollectBox() {
 		boxesCollected++;
 		boxesThisLevel++;
-		if (boxesCollected % 10 == 0)
-			GameManager.instance.IncreaseMaxRobots (2);			// FIXME: placeholder robot limit increase logic
+		if (boxesCollected % robotIncreaseThreshold == 0) {
+			GameManager.instance.IncreaseMaxRobots (robotsEarnedToAdd);
+			// TODO: start at 3, increase by 2 every 10 up to 10, then every 30
+			// allow the threshold to oscillate if the robotCount drops
+			// ? make the threshold visible ?
+		}
 	}
 
 	public void FireRobot() {

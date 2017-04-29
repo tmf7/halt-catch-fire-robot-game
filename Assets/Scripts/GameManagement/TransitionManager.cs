@@ -6,28 +6,27 @@ using UnityEngine.UI;
 public class TransitionManager : MonoBehaviour {
 	
 	public static TransitionManager instance = null;
-	public float					obituaryScrollSpeed = 0.0625f;
+	public float					visibleTimePerObituary = 1.0f;
 	public float 					secondsPerLetter = 0.02f;
 	public Sprite					beginningAndEndSprite;
 	public Sprite					midGameSprite;
 	public Sprite 					nuclearBlastSprite;
 
-	private Animator dialogueBoxAnimator;
-	private Canvas 	transitionCanvas;
-	private Canvas 	inGameTextCanvas;
-	private ScrollRect obituariesScrollRect;
-	private Image	transitionImage;
-	private Text 	storyText;
-	private Text 	scoreText;
-	private Text 	inGameText;
-	private Text	obituariesText;
-//	private Text 	obituariesText;
-	private Button 	continueButton;
-	private int 	animatedTextCount = 0;
-	private int		levelTextToDisplay = 0;
-	private float	inGameTextDisappearDelay = 2.0f;
-	private bool 	userHitSkip = false;
-	private bool	isDialogueBoxAnimating = false;
+	private Animator 				dialogueBoxAnimator;
+	private Canvas 					transitionCanvas;
+	private Canvas 					inGameTextCanvas;
+	private ScrollRect 				obituariesScrollRect;
+	private Image					transitionImage;
+	private Text 					storyText;
+	private Text 					scoreText;
+	private Text 					inGameText;
+	private Text					obituariesText;
+	private Button 					continueButton;
+	private int 					animatedTextCount = 0;
+	private int						levelTextToDisplay = 0;
+	private float					inGameTextDisappearDelay = 2.0f;
+	private bool 					userHitSkip = false;
+	private bool					isDialogueBoxAnimating = false;
 
 	void Awake() {
 		if (instance == null)
@@ -101,35 +100,56 @@ public class TransitionManager : MonoBehaviour {
 	public IEnumerator DisplayStoryText() {
 		if (levelTextToDisplay > 0 && levelTextToDisplay < 7)
 			DisplayScoreText ();
-		else
+		else {
+			continueButton.gameObject.SetActive (levelTextToDisplay == 0);
 			scoreText.text = "";
+		}
 		
 		yield return StartCoroutine (AnimateText (storyText, story [levelTextToDisplay]));
+		if (levelTextToDisplay == 7) 
+			StartCoroutine(PlayGameOver ());
+	}
 
-		// GameOver, time to destroy the factory
-		if (levelTextToDisplay == 7) {
-			yield return new WaitForSeconds (1.0f);
-			yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToBlack (true));
-			yield return new WaitForSeconds (0.5f);
+	private IEnumerator PlayGameOver () {
+		yield return new WaitForSeconds (1.0f);
+		yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToBlack (true));
 
-			transitionImage.sprite = nuclearBlastSprite;
-			yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToClear());
+		yield return new WaitForSeconds (0.5f);
+		storyText.enabled = false;
+		transitionImage.sprite = nuclearBlastSprite;
+		GameManager.instance.KillAllRobots ();
 
-			SoundManager.instance.PlayBombSound ();
-			UIManager.instance.StartCoroutine (UIManager.instance.ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera")));
-			StartCoroutine (ScrollObituaries ());
-		}
+		yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToClear());
+
+		SoundManager.instance.PlayBombSound ();
+		UIManager.instance.StartCoroutine (UIManager.instance.ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera")));
+		StartCoroutine (ScrollObituaries ());
+
+		SoundManager.instance.PlayGameOverMusic ();
+		while (SoundManager.instance.musicSource.isPlaying)
+			yield return null;
+
+		continueButton.gameObject.SetActive (true);
 	}
 
 	private IEnumerator ScrollObituaries() {
 		List<string> obituaries = RobotNames.Instance.GetObituaries ();
+		float verticalUnitsPerLine = 14.0f; 				// emperical from 77 lines at 1000 vertical unity units for 0.05 y-scale
+		float textBoxHeight = 2 * verticalUnitsPerLine;		// 2 newlines
 		string masterObituary = "\n\n";
-		foreach (string obituary in obituaries)
-			masterObituary += "\n\n" + obituary + "\n\n";
-		
+
+		foreach (string obituary in obituaries) {
+			masterObituary += "\n\n" + obituary + "\n\n";	// each obituary is one line
+			textBoxHeight += verticalUnitsPerLine * 5.0f;	// resulting in 5 lines
+		}
+
+		obituariesText.rectTransform.sizeDelta = new Vector2(obituariesText.rectTransform.sizeDelta.x, textBoxHeight);
 		obituariesText.text = masterObituary;
-		storyText.enabled = false;
 		obituariesScrollRect.gameObject.SetActive (true);
+
+		// FIXME: the scrollSpeed cant be too slow or it doesn't scroll at all
+		float totalScrollTime = visibleTimePerObituary * obituaries.Count ;
+		float obituaryScrollSpeed = 1.0f / totalScrollTime;
 
 		while (obituariesScrollRect.verticalNormalizedPosition > 0.0f) {
 			float newScrollPos = obituariesScrollRect.verticalNormalizedPosition - (Time.deltaTime * obituaryScrollSpeed);

@@ -104,7 +104,7 @@ public class Robot : Throwable {
 		circleCollider = GetComponent<CircleCollider2D> ();
 		currentSpeech = GetComponentInChildren<Image> ();
 		currentSpeech.enabled = false;
-		name = RobotNames.Instance.GetUnusedName();
+		name = RobotNames.Instance.TryGetSurvivorName();
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
 		grid = GameObject.FindObjectOfType<Grid> ();
 		homicidalLow = 1.0f - (homicideChance + suicideChance);

@@ -33,6 +33,7 @@ public class GameManager : MonoBehaviour {
 	private float				nextRobotSpawnTime;
 	private int 				robotsToSpawnThisCycle;
 	private int 				robotsAddedThisCycle;
+	private int					initialMaxRobots = 3;
 
 	public int robotCount {
 		get {
@@ -67,8 +68,8 @@ public class GameManager : MonoBehaviour {
 	private void UpdateRespawnText() {
 		if (robotCount < maxRobots && robotCount < HUDManager.instance.robotsRemaining && HUDManager.instance.levelTimeRemaining > Mathf.RoundToInt(globalSpawnDelay)) {
 			if (Time.time > nextRobotSpawnTime) {
-				if (!spawningRobots && robotCount < maxRobots) {
-					robotsToSpawnThisCycle = maxRobots - robotCount;
+				if (!spawningRobots) {
+					robotsToSpawnThisCycle = HUDManager.instance.robotsRemaining - robotCount;
 					robotsAddedThisCycle = 0;
 					spawningRobots = true;
 
@@ -95,7 +96,7 @@ public class GameManager : MonoBehaviour {
 			}
 
 			int spawnTime = Mathf.RoundToInt (nextRobotSpawnTime - Time.time);
-			if (spawnTime < 0) {
+			if (spawnTime <= 0) {
 				HideSpawnText ();
 			} else {
 				foreach (Text spawnText in spawnTexts)
@@ -122,14 +123,6 @@ public class GameManager : MonoBehaviour {
 	private void AccountForSurvivingRobots() {
 		foreach (Robot robot in allRobots) {
 			RobotNames.Instance.AddRobotSurvivalTime (robot.name, Time.time - robot.spawnTime);
-		}
-	}
-
-	// TODO: move this to the TransitionManager for when the final screen needs to animate the obituaries text
-	private void PrintObituariesTest () {
-		List<string> obituaries = RobotNames.Instance.GetObituaries();
-		foreach (string deadRobot in obituaries) {
-			print (deadRobot);		// Bread delivered 23 boxes, and after 92 seconds fell in a pit.
 		}
 	}
 
@@ -169,18 +162,27 @@ public class GameManager : MonoBehaviour {
 		Cursor.visible = false;
 		spawningRobots = false;
 		levelEnded = false;
-		nextRobotSpawnTime = Time.time + globalSpawnDelay;
+		nextRobotSpawnTime = Time.time;
 		HUDManager.instance.StartLevelTimer ();
 	}
 
-	// TODO (?): change the maxAvailableNames in RobotNames to less than 60
+	public void ResetMaxRobots () {
+		maxRobots = initialMaxRobots;
+	}
+
 	public void IncreaseMaxRobots(int increaseBy) {
 		maxRobots += increaseBy;
 		if (maxRobots > RobotNames.Instance.maxAvailableNames)
 			maxRobots = RobotNames.Instance.maxAvailableNames;
 	}
 
-	// FIXME: actually have them return to the staging area very quickly, then disable FINDING TARGETS, but still keep the script enabled (throwing etc)
+	public void KillAllRobots() {
+		while (allRobots.Count > 0) {
+			allRobots[0].howDied = RobotNames.MethodOfDeath.DEATH_BY_BOMB;
+			allRobots[0].Remove ();
+		}
+	}
+
 	public void StopAllRobots() {
 		foreach (Robot robot in allRobots)
 			robot.DropItem ();

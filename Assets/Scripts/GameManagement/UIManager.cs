@@ -187,12 +187,11 @@ public class UIManager : MonoBehaviour {
 		if (Time.timeScale == 0.0f)
 			TogglePause();
 		
-		// TODO: show and play intermission and gameover stuff
-
 		if (!isSceneMainMenu) {
 			GameManager.instance.enabled = true;
 			HUDManager.instance.gameObject.SetActive (true);
 			RobotGrabber.instance.gameObject.SetActive (true);
+			RobotNames.Instance.ResetSurvivorNamesUsed ();
 			SoundManager.instance.PlayGameMusic ();
 			GameManager.instance.InitLevel ();
 			TransitionManager.instance.StartInGameDialogue();
@@ -217,6 +216,7 @@ public class UIManager : MonoBehaviour {
 	// TODO: register a score (regardless if the game went to completion)
 	private void ResetGame() {
 		RobotNames.Instance.ResetNames ();
+		GameManager.instance.ResetMaxRobots ();
 		HUDManager.instance.ResetLevelStats ();
 		HUDManager.instance.ResetGameStats ();
 		TransitionManager.instance.ResetTextActivity ();
