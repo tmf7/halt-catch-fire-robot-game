@@ -124,6 +124,7 @@ public class TransitionManager : MonoBehaviour {
 		SoundManager.instance.PlayBombSound ();
 		UIManager.instance.StartCoroutine (UIManager.instance.ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera")));
 		StartCoroutine (ScrollObituaries ());
+		DisplayScoreText ();
 
 		SoundManager.instance.PlayGameOverMusic ();
 		while (SoundManager.instance.musicSource.isPlaying)
@@ -159,9 +160,15 @@ public class TransitionManager : MonoBehaviour {
 	}
 		
 	public void DisplayScoreText() {
-		string scoreString = "ROBOTS FIRED THIS LEVEL: " + HUDManager.instance.robotsFiredThisLevel;
-		scoreString += "\nREPAIRS MADE THIS LEVEL: " + HUDManager.instance.repairsThisLevel;
-		scoreString += "\nBOXES PROCESSED THIS LEVEL: " + HUDManager.instance.boxesThisLevel;
+		string scoreString = "DEFAULT SCORE STRING";
+		if (levelTextToDisplay == 7) {
+			scoreString = "TOTAL REPAIRS MADE: " + HUDManager.instance.totalRobotsRepaired;
+			scoreString += "\nTOTAL BOXES ORBITED: " + HUDManager.instance.totalBoxesCollected;
+		} else {
+			scoreString = "ROBOTS FIRED THIS LEVEL: " + HUDManager.instance.robotsFiredThisLevel;
+			scoreString += "\nREPAIRS MADE THIS LEVEL: " + HUDManager.instance.repairsThisLevel;
+			scoreString += "\nBOXES ORBITED THIS LEVEL: " + HUDManager.instance.boxesThisLevel;
+		}
 		StartCoroutine (AnimateText (scoreText, scoreString));
 	}
 
@@ -219,11 +226,11 @@ public class TransitionManager : MonoBehaviour {
 	};
 
 	private string[] inGameDialogue = {
-		"That should do it!\nI hope they all work!",
-		"A few broken bots?\nHardly a problem!",
+		"I hope these new robots\ncan launch the boxes\nwithout any issues!",
+		"A few broken robots?\nHardly a problem!",
 		"This should be enough to get started.\nNow to craft our next generation...POSTERITY!",
 		"I know! I'll simply make more police bots,\nthey will most definitely handle the problem!",
 		"Looks like we'll need quite a few more hands\nto help build this \"problem hold place\".",
-		"I know! I can build robots who can! Okay.\nTOTALLY know what I'm doing this time."
+		"I know! I can build leader bots! Okay.\nTOTALLY know what I'm doing this time."
 	};
 }

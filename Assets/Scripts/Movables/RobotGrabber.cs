@@ -97,7 +97,7 @@ public class RobotGrabber : MonoBehaviour {
 				grabbedRobot.grabbedByPlayer = true;
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 
-				// create a hinge on the robot sprite at its top-center for a cleaner effect
+				// create a joint on the robot sprite
 				joint = closestHit.gameObject.AddComponent<DistanceJoint2D> ();
 				joint.autoConfigureConnectedAnchor = false;
 				joint.autoConfigureDistance = false;
@@ -122,7 +122,7 @@ public class RobotGrabber : MonoBehaviour {
 		if (!Input.GetMouseButton (0)) {
 			if (grabbedRobot != null) {
 				Vector3 dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
-				if (dropForce.sqrMagnitude <= (joint.distance * joint.distance))
+				if (dropForce.sqrMagnitude <= 2.0f * (joint.distance * joint.distance))
 					dropForce = Vector3.zero;
 					
 				grabbedRobot.dropForce = forceMultiplier * dropForce;

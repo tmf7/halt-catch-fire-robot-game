@@ -190,6 +190,7 @@ public class UIManager : MonoBehaviour {
 		if (!isSceneMainMenu) {
 			GameManager.instance.enabled = true;
 			HUDManager.instance.gameObject.SetActive (true);
+			HUDManager.instance.ResetSprinklerCooldown ();
 			RobotGrabber.instance.gameObject.SetActive (true);
 			RobotNames.Instance.ResetSurvivorNamesUsed ();
 			SoundManager.instance.PlayGameMusic ();

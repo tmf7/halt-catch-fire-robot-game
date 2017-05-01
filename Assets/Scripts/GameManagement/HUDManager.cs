@@ -15,6 +15,10 @@ public class HUDManager : MonoBehaviour {
 	public int repairsThisLevel = 0;
 	[HideInInspector]
 	public int boxesThisLevel = 0;
+	[HideInInspector]
+	public bool 	playSprinklerSystem = false;
+	[HideInInspector]
+	public bool 	resetSprinklerCooldown = false;
 
 	// player stats
 	private Text 	boxesText;
@@ -43,16 +47,25 @@ public class HUDManager : MonoBehaviour {
 
 	public int robotsRemaining {
 		get { 
-			return GameManager.instance.maxRobots - robotsFired;			// FIXME: maxRobots shouldn't be the operative parameter except during initialization
-		}																	// because the threshold may increase beyond what the current count inLevel is, preventing replenishment???
-	}																		// eg: maxRobots has become 20, robots fired is 12, so 8 are on screen... or should be
-
-																			// FIXME: new robots aren't issued in the last 5-10 seconds of gameplay, so there'll be a visual discrepsancy
-																			// between "Robots Left" and robots ACTUALLY in play
-
+			return GameManager.instance.maxRobots - robotsFired;			
+		}																	
+	}														
+		
 	public int levelTimeRemaining {
 		get { 
 			return isLevelTimeUp ? 0 : levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad);
+		}
+	}
+
+	public int totalRobotsRepaired {
+		get { 
+			return robotsRepaired;
+		}
+	}
+
+	public int totalBoxesCollected {
+		get { 
+			return boxesCollected;
 		}
 	}
 
@@ -76,9 +89,17 @@ public class HUDManager : MonoBehaviour {
 		if (!GameManager.instance.levelEnded)
 			lastTimeRemainingValue = levelTimeRemaining;
 		
-		boxesText.text = "Boxes Shipped: " + boxesCollected.ToString();
+		boxesText.text = "Boxes Orbited: " + boxesCollected.ToString();
 		robotsText.text = "Robots Left: " + GameManager.instance.robotCount.ToString();
 		timeText.text = "Time: " + (GameManager.instance.levelEnded ? lastTimeRemainingValue : levelTimeRemaining).ToString();
+	}
+
+	public void StartSprinklerSystem () {
+		instance.playSprinklerSystem = true;
+	}
+
+	public void ResetSprinklerCooldown() {
+		instance.resetSprinklerCooldown = true;
 	}
 
 	public void TogglePauseButtonImage() {

@@ -8,6 +8,7 @@ public class Robot : Throwable {
 
 	public ParticleSystem firePrefab;
 	public ParticleSystem robotBeamPrefab;
+	public GameObject 	  steamPuffPrefab;
 
 	public AudioClip 	repairingSound;
 	public AudioClip	catchFireSound;
@@ -55,6 +56,7 @@ public class Robot : Throwable {
 				PlaySingleSoundFx (catchFireSound);
 			} else if (onFire) {
 				Destroy (fireInstance.gameObject);
+				GenerateSteamPuff ();
 			}
 		}
 	}
@@ -102,9 +104,15 @@ public class Robot : Throwable {
 		line.enabled = false;
 		animator = GetComponent<Animator> ();
 		circleCollider = GetComponent<CircleCollider2D> ();
+
+		// InfoCanvas initialization
 		currentSpeech = GetComponentInChildren<Image> ();
 		currentSpeech.enabled = false;
+		Text[] robotNamePlate = GetComponentsInChildren<Text> ();
 		name = RobotNames.Instance.TryGetSurvivorName();
+		robotNamePlate[0].text = name;
+		robotNamePlate[1].text = name;
+
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
 		grid = GameObject.FindObjectOfType<Grid> ();
 		homicidalLow = 1.0f - (homicideChance + suicideChance);
@@ -124,6 +132,9 @@ public class Robot : Throwable {
 			else
 				PlaySingleSoundFx (slowThrownSound);
 		}
+
+		if (onFire && HUDManager.instance.playSprinklerSystem)
+			onFire = false;
 
 		if (onFire) 
 			health -= Time.deltaTime * damageRate;
@@ -201,6 +212,10 @@ public class Robot : Throwable {
 		Vector3 carryDir = (target.position - transform.position).normalized;
 		Vector3 carryPos = transform.position + carryDir * carryItemDistance;
 		carriedItem.transform.position = new Vector3(carryPos.x, carryPos.y, 0.0f);
+	}
+
+	public void GenerateSteamPuff() {
+		Instantiate<GameObject> (steamPuffPrefab, transform.position, Quaternion.identity);
 	}
 
 	public RobotStates GetState() {

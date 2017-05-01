@@ -176,6 +176,13 @@ public class GameManager : MonoBehaviour {
 			maxRobots = RobotNames.Instance.maxAvailableNames;
 	}
 
+	public void ExtinguishAllRobots () {
+		foreach (Robot robot in allRobots) {
+			if (robot.onFire)
+				robot.onFire = false;
+		}	
+	}
+
 	public void KillAllRobots() {
 		while (allRobots.Count > 0) {
 			allRobots[0].howDied = RobotNames.MethodOfDeath.DEATH_BY_BOMB;
