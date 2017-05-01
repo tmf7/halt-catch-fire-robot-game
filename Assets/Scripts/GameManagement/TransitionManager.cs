@@ -122,7 +122,7 @@ public class TransitionManager : MonoBehaviour {
 		yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToClear());
 
 		SoundManager.instance.PlayBombSound ();
-		UIManager.instance.StartCoroutine (UIManager.instance.ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera")));
+		UIManager.instance.ShakeObject (GameObject.FindGameObjectWithTag ("MainCamera"));
 		StartCoroutine (ScrollObituaries ());
 		DisplayScoreText ();
 
@@ -200,12 +200,15 @@ public class TransitionManager : MonoBehaviour {
 	// ExpandDialogueBox animation enables the InGameTextCanvas
 	// ContractDialogueBox animation disable the InGameTextCanvas
 	public IEnumerator StartInGameDialogueCoroutine() {
-		transitionCanvas.enabled = false;
 		yield return StartCoroutine (ExpandDialogueBox ());
 		yield return StartCoroutine (AnimateText (inGameText, inGameDialogue [levelTextToDisplay]));
 		yield return new WaitForSeconds (inGameTextDisappearDelay);
 		yield return StartCoroutine (ContractDialogueBox ());
 		DisableTransitionManager ();
+	}
+
+	public void DisableStoryCanvas() {
+		transitionCanvas.enabled = false;
 	}
 
 	public void DisableTransitionManager() {

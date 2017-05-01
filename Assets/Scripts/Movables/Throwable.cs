@@ -46,6 +46,9 @@ public abstract class Throwable : MonoBehaviour {
 	private Robot				whoIsCarrying;
 	private Robot				whoHasTargeted;
 
+	private static readonly float maxThrowThrottleFactor = 0.0625f;
+	private static readonly float thresholdAngle = 180.0f * Mathf.Deg2Rad;
+
 	void Awake() {
 		efxSource = GetComponent<AudioSource> ();
 		dropShadow = Instantiate<GameObject> (dropShadowPrefab, transform.position, Quaternion.identity);
@@ -68,10 +71,20 @@ public abstract class Throwable : MonoBehaviour {
 	}
 
 	public void RandomThrow() {
+		float airTime = Random.Range (airTimes.minimum, airTimes.maximum);
 		float throwSpeed = Random.Range (throwSpeeds.minimum, throwSpeeds.maximum);
 		float throwAngle = Random.Range (throwAnglesDeg.minimum * Mathf.Deg2Rad, throwAnglesDeg.maximum * Mathf.Deg2Rad);
-		float airTime = Random.Range (airTimes.minimum, airTimes.maximum);
-		rb2D.velocity = new Vector2 (throwSpeed * Mathf.Cos (throwAngle), throwSpeed * Mathf.Sin (throwAngle));
+		Vector2 throwDir = new Vector2 (Mathf.Cos (throwAngle), Mathf.Sin (throwAngle));
+
+		// don't give the throwable more downward speed than it needs
+		if (throwAngle > thresholdAngle) {
+			float dot = Vector2.Dot (throwDir, Vector2.down);			// 0 to 1 to 0
+			float lerpFactor = 1.0f - dot; 								// 1 to 0 to 1
+			float throttleFactor = Mathf.Lerp(maxThrowThrottleFactor, 1.0f, lerpFactor); 
+			throwSpeed *= throttleFactor;			
+		}
+
+		rb2D.velocity = throwSpeed * throwDir;
 		SetHeight (2.0f * deadlyHeight);
 		Throw (rb2D.velocity.y, airTime);
 	}

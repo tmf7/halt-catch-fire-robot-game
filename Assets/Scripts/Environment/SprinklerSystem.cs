@@ -9,20 +9,19 @@ public class SprinklerSystem : MonoBehaviour {
 	private AudioSource source;
 	private ParticleSystem[] sprinklerSystem;
 	private Animator coolDownAnimator;
-	private int coolDownStateNameHash;
 	private bool buttonCooldown = false;
 
 	void Start () {
 		GameObject sprinklerHandler = GameObject.Find ("SprinklerHandler");
-
 		sprinklerSystem = sprinklerHandler.GetComponentsInChildren<ParticleSystem> ();
 		source = GetComponent<AudioSource> ();
 		coolDownAnimator = GetComponent<Animator> ();
-		coolDownStateNameHash = coolDownAnimator.GetCurrentAnimatorStateInfo (0).fullPathHash;
 	}
+
 
 	void Update() {
 		if (HUDManager.instance.playSprinklerSystem && !buttonCooldown) {
+			coolDownAnimator.SetTrigger ("Cooldown");
 			buttonCooldown = true;
 
 			foreach (ParticleSystem sprinkler in sprinklerSystem)
@@ -33,8 +32,6 @@ public class SprinklerSystem : MonoBehaviour {
 			source.pitch = pitch;
 			source.clip = sprinklerSounds [randomIndex];
 			source.Play ();
-
-			coolDownAnimator.Play (coolDownStateNameHash, 0, 0.0f);
 		}
 
 		if (HUDManager.instance.resetSprinklerCooldown) {

@@ -15,6 +15,7 @@ public class UIManager : MonoBehaviour {
 	public const float 		shakeSpeed = 20.0f;
 	public const float 		shakeIntensity = 0.25f;
 
+	private IEnumerator 	shakeCoroutineInstance = null;
 	private GameObject[]	overlayObjects;
 	private Animator 		screenFaderAnimator;
 	private Image			screenFaderImage;
@@ -152,7 +153,14 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
-	public IEnumerator ShakeObject (GameObject obj, float duration = shakeDuration, float speed = shakeSpeed, float intensity = shakeIntensity) {
+	public void ShakeObject (GameObject obj, float duration = shakeDuration, float speed = shakeSpeed, float intensity = shakeIntensity) {
+		if (shakeCoroutineInstance != null)
+			instance.StopCoroutine (shakeCoroutineInstance);
+		shakeCoroutineInstance = instance.ShakeObjectCoroutine (obj, duration, speed, intensity);
+		instance.StartCoroutine (shakeCoroutineInstance);
+	}
+
+	public IEnumerator ShakeObjectCoroutine (GameObject obj, float duration, float speed, float intensity) {
 		Vector3 originalPosition = obj.transform.position;
 		float elapsed = 0.0f;
 		while (elapsed < duration) {
@@ -195,7 +203,8 @@ public class UIManager : MonoBehaviour {
 			RobotNames.Instance.ResetSurvivorNamesUsed ();
 			SoundManager.instance.PlayGameMusic ();
 			GameManager.instance.InitLevel ();
-			TransitionManager.instance.StartInGameDialogue();
+			TransitionManager.instance.DisableStoryCanvas ();
+//			TransitionManager.instance.StartInGameDialogue();
 			Cursor.visible = false;
 			storyToTell++;
 		} else {

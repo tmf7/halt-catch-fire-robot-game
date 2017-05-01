@@ -33,7 +33,7 @@ public class GameManager : MonoBehaviour {
 	private float				nextRobotSpawnTime;
 	private int 				robotsToSpawnThisCycle;
 	private int 				robotsAddedThisCycle;
-	private int					initialMaxRobots = 3;
+	private int					initialMaxRobots;
 
 	public int robotCount {
 		get {
@@ -55,6 +55,7 @@ public class GameManager : MonoBehaviour {
 
 		DontDestroyOnLoad(gameObject);
 		spawnTexts = new List<Text> ();
+		initialMaxRobots = maxRobots;
 	}
 
 	void Update() {
@@ -174,13 +175,6 @@ public class GameManager : MonoBehaviour {
 		maxRobots += increaseBy;
 		if (maxRobots > RobotNames.Instance.maxAvailableNames)
 			maxRobots = RobotNames.Instance.maxAvailableNames;
-	}
-
-	public void ExtinguishAllRobots () {
-		foreach (Robot robot in allRobots) {
-			if (robot.onFire)
-				robot.onFire = false;
-		}	
 	}
 
 	public void KillAllRobots() {
