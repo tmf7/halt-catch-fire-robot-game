@@ -10,7 +10,7 @@ public class Robot : Throwable {
 	public ParticleSystem robotBeamPrefab;
 	public GameObject 	  steamPuffPrefab;
 
-	public AudioClip 	repairingSound;
+	public AudioClip 	repairingSound;		// TODO: loop-play this as long the slider bar is being held
 	public AudioClip	catchFireSound;
 	public AudioClip 	playerGrabbedSound;
 	public AudioClip 	robotGrabbedSound;
@@ -215,7 +215,8 @@ public class Robot : Throwable {
 	}
 
 	public void GenerateSteamPuff() {
-		Instantiate<GameObject> (steamPuffPrefab, transform.position, Quaternion.identity);
+		HUDManager.instance.ExtinguishFire ();
+		Instantiate<GameObject> (steamPuffPrefab, transform.position, Quaternion.identity, transform);
 	}
 
 	public RobotStates GetState() {

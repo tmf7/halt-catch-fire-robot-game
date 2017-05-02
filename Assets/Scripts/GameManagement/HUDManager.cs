@@ -14,6 +14,8 @@ public class HUDManager : MonoBehaviour {
 	[HideInInspector]
 	public int repairsThisLevel = 0;
 	[HideInInspector]
+	public int firesPutOutThisLevel = 0;
+	[HideInInspector]
 	public int boxesThisLevel = 0;
 	[HideInInspector]
 	public bool 	playSprinklerSystem = false;
@@ -29,6 +31,7 @@ public class HUDManager : MonoBehaviour {
 	private int 	boxesCollected = 0;
 	private int 	robotsFired = 0;
 	private int 	robotsRepaired = 0;
+	private int 	firesPutOut = 0;
 	private int 	robotIncreaseThreshold = 10;
 
 	private ImageSwapButton pauseButton;
@@ -66,6 +69,12 @@ public class HUDManager : MonoBehaviour {
 	public int totalBoxesCollected {
 		get { 
 			return boxesCollected;
+		}
+	}
+
+	public int totalFiresPutOut {
+		get { 
+			return firesPutOut;
 		}
 	}
 
@@ -122,6 +131,11 @@ public class HUDManager : MonoBehaviour {
 		}
 	}
 
+	public void ExtinguishFire() {
+		firesPutOut++;
+		firesPutOutThisLevel++;
+	}
+
 	public void FireRobot() {
 		robotsFired++;
 		robotsFiredThisLevel++;
@@ -133,12 +147,14 @@ public class HUDManager : MonoBehaviour {
 	}
 
 	public void ResetGameStats() {
+		firesPutOut = 0;
 		robotsRepaired = 0;
 		boxesCollected = 0;
 		robotsFired = 0;
 	}
 
 	public void ResetLevelStats() {
+		firesPutOutThisLevel = 0;
 		repairsThisLevel = 0;
 		robotsFiredThisLevel = 0;
 		boxesThisLevel = 0;

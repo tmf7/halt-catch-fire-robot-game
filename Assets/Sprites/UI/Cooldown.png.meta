@@ -1,34 +1,34 @@
 fileFormatVersion: 2
-guid: 27960b036b923dd43812ed15b465cdb1
-timeCreated: 1493618826
+guid: 731d76a2897580c4283303f4cd2120bc
+timeCreated: 1493671284
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
-    21300000: PackedCooldown_0
-    21300002: PackedCooldown_1
-    21300004: PackedCooldown_2
-    21300006: PackedCooldown_3
-    21300008: PackedCooldown_4
-    21300010: PackedCooldown_5
-    21300012: PackedCooldown_6
-    21300014: PackedCooldown_7
-    21300016: PackedCooldown_8
-    21300018: PackedCooldown_9
-    21300020: PackedCooldown_10
-    21300022: PackedCooldown_11
-    21300024: PackedCooldown_12
-    21300026: PackedCooldown_13
-    21300028: PackedCooldown_14
-    21300030: PackedCooldown_15
-    21300032: PackedCooldown_16
-    21300034: PackedCooldown_17
-    21300036: PackedCooldown_18
-    21300038: PackedCooldown_19
-    21300040: PackedCooldown_20
-    21300042: PackedCooldown_21
-    21300044: PackedCooldown_22
-    21300046: PackedCooldown_23
-    21300048: PackedCooldown_24
+    21300000: Cooldown_0
+    21300002: Cooldown_1
+    21300004: Cooldown_2
+    21300006: Cooldown_3
+    21300008: Cooldown_4
+    21300010: Cooldown_5
+    21300012: Cooldown_6
+    21300014: Cooldown_7
+    21300016: Cooldown_8
+    21300018: Cooldown_9
+    21300020: Cooldown_10
+    21300022: Cooldown_11
+    21300024: Cooldown_12
+    21300026: Cooldown_13
+    21300028: Cooldown_14
+    21300030: Cooldown_15
+    21300032: Cooldown_16
+    21300034: Cooldown_17
+    21300036: Cooldown_18
+    21300038: Cooldown_19
+    21300040: Cooldown_20
+    21300042: Cooldown_21
+    21300044: Cooldown_22
+    21300046: Cooldown_23
+    21300048: Cooldown_24
   serializedVersion: 4
   mipmaps:
     mipMapMode: 0
@@ -135,7 +135,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: PackedCooldown_0
+      name: Cooldown_0
       rect:
         serializedVersion: 2
         x: 0
@@ -143,12 +143,12 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_1
+      name: Cooldown_1
       rect:
         serializedVersion: 2
         x: 48
@@ -156,12 +156,12 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_2
+      name: Cooldown_2
       rect:
         serializedVersion: 2
         x: 96
@@ -174,7 +174,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_3
+      name: Cooldown_3
       rect:
         serializedVersion: 2
         x: 144
@@ -187,7 +187,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_4
+      name: Cooldown_4
       rect:
         serializedVersion: 2
         x: 192
@@ -200,7 +200,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_5
+      name: Cooldown_5
       rect:
         serializedVersion: 2
         x: 0
@@ -208,12 +208,12 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_6
+      name: Cooldown_6
       rect:
         serializedVersion: 2
         x: 48
@@ -226,7 +226,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_7
+      name: Cooldown_7
       rect:
         serializedVersion: 2
         x: 96
@@ -239,7 +239,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_8
+      name: Cooldown_8
       rect:
         serializedVersion: 2
         x: 144
@@ -252,7 +252,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_9
+      name: Cooldown_9
       rect:
         serializedVersion: 2
         x: 192
@@ -260,12 +260,12 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_10
+      name: Cooldown_10
       rect:
         serializedVersion: 2
         x: 0
@@ -278,7 +278,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_11
+      name: Cooldown_11
       rect:
         serializedVersion: 2
         x: 48
@@ -291,7 +291,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_12
+      name: Cooldown_12
       rect:
         serializedVersion: 2
         x: 96
@@ -304,7 +304,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_13
+      name: Cooldown_13
       rect:
         serializedVersion: 2
         x: 144
@@ -317,7 +317,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_14
+      name: Cooldown_14
       rect:
         serializedVersion: 2
         x: 192
@@ -325,12 +325,12 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_15
+      name: Cooldown_15
       rect:
         serializedVersion: 2
         x: 0
@@ -343,7 +343,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_16
+      name: Cooldown_16
       rect:
         serializedVersion: 2
         x: 48
@@ -356,7 +356,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_17
+      name: Cooldown_17
       rect:
         serializedVersion: 2
         x: 96
@@ -369,7 +369,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_18
+      name: Cooldown_18
       rect:
         serializedVersion: 2
         x: 144
@@ -382,7 +382,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_19
+      name: Cooldown_19
       rect:
         serializedVersion: 2
         x: 192
@@ -390,12 +390,12 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_20
+      name: Cooldown_20
       rect:
         serializedVersion: 2
         x: 0
@@ -408,7 +408,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_21
+      name: Cooldown_21
       rect:
         serializedVersion: 2
         x: 48
@@ -421,7 +421,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_22
+      name: Cooldown_22
       rect:
         serializedVersion: 2
         x: 96
@@ -434,7 +434,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_23
+      name: Cooldown_23
       rect:
         serializedVersion: 2
         x: 144
@@ -447,7 +447,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: PackedCooldown_24
+      name: Cooldown_24
       rect:
         serializedVersion: 2
         x: 192
@@ -455,7 +455,7 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       tessellationDetail: 0

@@ -18,7 +18,7 @@ public class BoxThrower : MonoBehaviour {
 	void Update () {
 		throwOn = throwBoxes && GameManager.instance.boxCount < GameManager.instance.maxBoxes;
 
-		if (throwOn && (Time.time > nextThrowTime /*|| Time.timeSinceLevelLoad < throwDelay*/)) {
+		if (throwOn && (Time.time > nextThrowTime || Time.timeSinceLevelLoad < throwDelay)) {
 			nextThrowTime = Time.time + throwDelay;
 
 			Box thrownBox = Instantiate<Box> (boxPrefab, transform.position, Quaternion.identity);

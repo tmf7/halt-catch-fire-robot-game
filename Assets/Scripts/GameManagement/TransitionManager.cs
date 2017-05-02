@@ -17,10 +17,10 @@ public class TransitionManager : MonoBehaviour {
 	private Canvas 					inGameTextCanvas;
 	private ScrollRect 				obituariesScrollRect;
 	private Image					transitionImage;
-	private Text 					storyText;
-	private Text 					scoreText;
-	private Text 					inGameText;
-	private Text					obituariesText;
+	private Text[] 					storyText = new Text[2];
+	private Text[] 					scoreText = new Text[2];
+	private Text[] 					inGameText = new Text[2];
+	private Text[]					obituariesText = new Text[2];
 	private Button 					continueButton;
 	private int 					animatedTextCount = 0;
 	private int						levelTextToDisplay = 0;
@@ -43,10 +43,25 @@ public class TransitionManager : MonoBehaviour {
 		inGameTextCanvas = GameObject.Find ("InGameTextCanvas").GetComponent<Canvas> ();
 		obituariesScrollRect = GameObject.Find ("ScrollViewObject").GetComponent<ScrollRect> ();
 		transitionImage = transitionCanvas.GetComponentInChildren<Image> ();
-		storyText = GameObject.Find ("StoryText").GetComponent<Text>();
-		scoreText = GameObject.Find ("ScoreText").GetComponent<Text>();
-		inGameText = GameObject.Find ("InGameText").GetComponent<Text>();
-		obituariesText = GameObject.Find ("ObituariesText").GetComponent<Text> ();
+
+		// the string shadow and the string itself
+		// FIXME: there's probably a better way to give text drop shadows (eg: special fonts)
+		GameObject[] storyTextObjects = GameObject.FindGameObjectsWithTag ("StoryText");
+		storyText[0] = storyTextObjects[0].GetComponent<Text>();
+		storyText[1] = storyTextObjects[1].GetComponent<Text>();
+
+		GameObject[] scoreTextObjects = GameObject.FindGameObjectsWithTag ("ScoreText");
+		scoreText[0] = scoreTextObjects[0].GetComponent<Text>();
+		scoreText[1] = scoreTextObjects[1].GetComponent<Text>();
+
+		GameObject[] inGameTextObjects = GameObject.FindGameObjectsWithTag ("InGameText");
+		inGameText[0] = inGameTextObjects[0].GetComponent<Text>();
+		inGameText[1] = inGameTextObjects[1].GetComponent<Text>();
+
+		GameObject[] obituaryTextObjects = GameObject.FindGameObjectsWithTag ("ObituaryText");
+		obituariesText[0] = obituaryTextObjects[0].GetComponent<Text>();
+		obituariesText[1] = obituaryTextObjects[1].GetComponent<Text>();
+
 		continueButton = GetComponentInChildren<Button> ();
 		ResetTextActivity ();
 	}
@@ -62,24 +77,29 @@ public class TransitionManager : MonoBehaviour {
 		}
 	}
 
-	IEnumerator	AnimateText(Text targetText, string stringToAnimate) {
+	// targetText must contain 2 items (the main text, and its dropshadow text)
+	IEnumerator	AnimateText(Text[] targetText, string stringToAnimate) {
 		animatedTextCount++;
-		targetText.text = "";
+		targetText[0].text = "";
+		targetText[1].text = "";
 		int i = 0;
 		for( /* i */ ; i < stringToAnimate.Length; i++) {
 			if (userHitSkip)
 				break;
-			targetText.text += stringToAnimate [i];
+			targetText[0].text += stringToAnimate [i];
+			targetText[1].text += stringToAnimate [i];
 			yield return new WaitForSeconds(secondsPerLetter);
 		}
-		targetText.text += stringToAnimate.Substring (i);
+		targetText[0].text += stringToAnimate.Substring (i);
+		targetText[1].text += stringToAnimate.Substring (i);
 		animatedTextCount--;
 	}
 
 	public void ResetTextActivity() {
 		obituariesScrollRect.verticalNormalizedPosition = 1.0f;
 		obituariesScrollRect.gameObject.SetActive (false);
-		storyText.enabled = true;
+		storyText[0].enabled = true;
+		storyText[1].enabled = true;
 	}
 
 	public void StartIntermission(int storyToTell) {
@@ -92,7 +112,8 @@ public class TransitionManager : MonoBehaviour {
 		instance.inGameTextCanvas.enabled = false;
 		instance.levelTextToDisplay = storyToTell;
 		animatedTextCount = 0;
-		instance.inGameText.text = "";
+		instance.inGameText[0].text = "";
+		instance.inGameText[1].text = "";
 		instance.StartCoroutine(instance.DisplayStoryText ());
 	}
 
@@ -102,7 +123,8 @@ public class TransitionManager : MonoBehaviour {
 			DisplayScoreText ();
 		else {
 			continueButton.gameObject.SetActive (levelTextToDisplay == 0);
-			scoreText.text = "";
+			scoreText[0].text = "";
+			scoreText[1].text = "";
 		}
 		
 		yield return StartCoroutine (AnimateText (storyText, story [levelTextToDisplay]));
@@ -115,7 +137,8 @@ public class TransitionManager : MonoBehaviour {
 		yield return UIManager.instance.StartCoroutine (UIManager.instance.FadeToBlack (true));
 
 		yield return new WaitForSeconds (0.5f);
-		storyText.enabled = false;
+		storyText[0].enabled = false;
+		storyText[1].enabled = false;
 		transitionImage.sprite = nuclearBlastSprite;
 		GameManager.instance.KillAllRobots ();
 
@@ -144,8 +167,10 @@ public class TransitionManager : MonoBehaviour {
 			textBoxHeight += verticalUnitsPerLine * 5.0f;	// resulting in 5 lines
 		}
 
-		obituariesText.rectTransform.sizeDelta = new Vector2(obituariesText.rectTransform.sizeDelta.x, textBoxHeight);
-		obituariesText.text = masterObituary;
+		obituariesText[0].rectTransform.sizeDelta = new Vector2(obituariesText[0].rectTransform.sizeDelta.x, textBoxHeight);
+		obituariesText[0].text = masterObituary;
+		obituariesText[1].rectTransform.sizeDelta = new Vector2(obituariesText[0].rectTransform.sizeDelta.x, textBoxHeight);
+		obituariesText[1].text = masterObituary;
 		obituariesScrollRect.gameObject.SetActive (true);
 
 		// FIXME: the scrollSpeed cant be too slow or it doesn't scroll at all
@@ -162,12 +187,15 @@ public class TransitionManager : MonoBehaviour {
 	public void DisplayScoreText() {
 		string scoreString = "DEFAULT SCORE STRING";
 		if (levelTextToDisplay == 7) {
-			scoreString = "TOTAL REPAIRS MADE: " + HUDManager.instance.totalRobotsRepaired;
-			scoreString += "\nTOTAL BOXES ORBITED: " + HUDManager.instance.totalBoxesCollected;
+			scoreString = "TOTAL BOXES ORBITED: " + HUDManager.instance.totalBoxesCollected;
+			scoreString += "\nTOTAL FIRES EXTINGUISHED: " + HUDManager.instance.totalFiresPutOut;
+			scoreString += "\nTOTAL REPAIRS MADE: " + HUDManager.instance.totalRobotsRepaired;
 		} else {
-			scoreString = "ROBOTS FIRED THIS LEVEL: " + HUDManager.instance.robotsFiredThisLevel;
-			scoreString += "\nREPAIRS MADE THIS LEVEL: " + HUDManager.instance.repairsThisLevel;
-			scoreString += "\nBOXES ORBITED THIS LEVEL: " + HUDManager.instance.boxesThisLevel;
+			scoreString = "LEVEL PERFORMANCE:";
+			scoreString +=  "\nBOXES ORBITED: " + HUDManager.instance.boxesThisLevel;
+			scoreString += "\t\t\t\t\tFIRES EXTINGUISHED: " + HUDManager.instance.firesPutOutThisLevel;
+			scoreString += "\nREPAIRED ROBOTS: " + HUDManager.instance.repairsThisLevel;
+			scoreString += "\t\t\tTERMINATED ROBOTS: " + HUDManager.instance.robotsFiredThisLevel;
 		}
 		StartCoroutine (AnimateText (scoreText, scoreString));
 	}
@@ -181,7 +209,8 @@ public class TransitionManager : MonoBehaviour {
 	}
 
 	public IEnumerator ContractDialogueBox() {
-		inGameText.text = "";
+		inGameText[0].text = "";
+		inGameText[1].text = "";
 		isDialogueBoxAnimating = true;
 		dialogueBoxAnimator.SetTrigger ("ContractDialogueBox");
 

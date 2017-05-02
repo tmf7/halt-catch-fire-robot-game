@@ -25,8 +25,8 @@ public abstract class Throwable : MonoBehaviour {
 	public GameObject 			dropShadowPrefab;
 	public GameObject 			explosionPrefab;
 	public Range 				throwSpeeds = new Range(8.0f, 12.0f);
-	public Range 				throwAnglesDeg = new Range (30.0f, 150.0f);
 	public Range				airTimes = new Range(0.5f, 2.0f);
+	public int 					throwSectorCount = 10;
 	public float				smallestPitfallScale = 0.1f;
 	public float				pitfallRate = 0.9f;
 
@@ -45,7 +45,10 @@ public abstract class Throwable : MonoBehaviour {
 	private ShadowController 	shadowController;
 	private Robot				whoIsCarrying;
 	private Robot				whoHasTargeted;
+	private int 				previousSectorIndex = 0;
 
+	private static AnimationCurve throttleCurve;
+	private static List<Range>	  throwSectors;
 	private static readonly float maxThrowThrottleFactor = 0.0625f;
 	private static readonly float thresholdAngle = 180.0f * Mathf.Deg2Rad;
 
@@ -57,6 +60,25 @@ public abstract class Throwable : MonoBehaviour {
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 		rb2D = GetComponent<Rigidbody2D> ();
 		landingParticles = GetComponentInChildren<ParticleSystem> ();		// the landing particle system must be the first child of the throwable gameobject for this to work
+
+		if (Throwable.throwSectors == null) {
+			Throwable.throwSectors = new List<Range> ();
+			float throwSectorAngle = 359.9375f / throwSectorCount;
+			for (int i = 0; i < throwSectorCount; i++) {
+				float currentMinAngle = i * throwSectorAngle;
+				Throwable.throwSectors.Add (new Range (currentMinAngle, currentMinAngle + throwSectorAngle));
+			}
+		}
+
+		// sharp throttle spike near 270 degree downward throw
+		if (Throwable.throttleCurve == null) {
+			Throwable.throttleCurve = new AnimationCurve ();
+			Throwable.throttleCurve.AddKey (0.0f, 1.0f);
+			Throwable.throttleCurve.AddKey (0.33f, 0.8f);
+			Throwable.throttleCurve.AddKey (0.5f, 0.0f);
+			Throwable.throttleCurve.AddKey (0.66f, 0.8f);
+			Throwable.throttleCurve.AddKey (1.0f, 1.0f);
+		}
 	}
 
 	public void SetShadowParent(Transform parent) {
@@ -73,14 +95,22 @@ public abstract class Throwable : MonoBehaviour {
 	public void RandomThrow() {
 		float airTime = Random.Range (airTimes.minimum, airTimes.maximum);
 		float throwSpeed = Random.Range (throwSpeeds.minimum, throwSpeeds.maximum);
-		float throwAngle = Random.Range (throwAnglesDeg.minimum * Mathf.Deg2Rad, throwAnglesDeg.maximum * Mathf.Deg2Rad);
+
+		// dont throw in the same general direction twice in a row
+		int sectorIndex = 0;
+		while ((sectorIndex = Random.Range(0, throwSectorCount)) == previousSectorIndex)
+			;
+		
+		previousSectorIndex = sectorIndex;
+		float throwAngle = Random.Range (Throwable.throwSectors[sectorIndex].minimum, Throwable.throwSectors[sectorIndex].maximum);
+		throwAngle *= Mathf.Deg2Rad;
 		Vector2 throwDir = new Vector2 (Mathf.Cos (throwAngle), Mathf.Sin (throwAngle));
 
 		// don't give the throwable more downward speed than it needs
 		if (throwAngle > thresholdAngle) {
-			float dot = Vector2.Dot (throwDir, Vector2.down);			// 0 to 1 to 0
-			float lerpFactor = 1.0f - dot; 								// 1 to 0 to 1
-			float throttleFactor = Mathf.Lerp(maxThrowThrottleFactor, 1.0f, lerpFactor); 
+			float curveTime = Mathf.InverseLerp(Mathf.PI, 2 * Mathf.PI, throwAngle);		// 0 to 1
+			float lerpFactor = throttleCurve.Evaluate (curveTime);							// 1 to 0 to 1
+			float throttleFactor = Mathf.Lerp(maxThrowThrottleFactor, 1.0f, lerpFactor); 	// 1 to 0.0625 to 1
 			throwSpeed *= throttleFactor;			
 		}
 
