@@ -79,21 +79,6 @@ public class RobotGrabber : MonoBehaviour {
 
 				Collider2D closestHit = hits [closestHitIndex];
 				grabbedRobot = closestHit.GetComponent<Robot> ();
-/*
-				RaycastHit2D rayHit = Physics2D.GetRayIntersection (Camera.main.ScreenPointToRay (Input.mousePosition));
-
-				hit = rayHit.collider;
-				if (!hit || hit.tag != "Robot")
-					return;
-  
-				grabbedRobot = hit.gameObject.GetComponent<Robot> ();
-*/
-
-				if (grabbedRobot.GetState() == Robot.RobotStates.STATE_REPAIRING) {
-					grabbedRobot = null;
-					return;
-				}
-
 				grabbedRobot.grabbedByPlayer = true;
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 

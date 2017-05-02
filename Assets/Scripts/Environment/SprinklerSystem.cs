@@ -38,6 +38,13 @@ public class SprinklerSystem : MonoBehaviour {
 			CooldownComplete ();
 		}
 
+		// the game is paused, this longer sound is an exception
+		// to just letting clips play out
+		if (Time.timeScale == 1.0f)
+			source.UnPause ();
+		else
+			source.Pause ();
+
 		if (!sprinklerSystem [0].isPlaying)
 			source.Stop ();
 	}

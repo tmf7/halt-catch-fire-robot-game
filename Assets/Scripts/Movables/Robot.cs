@@ -6,19 +6,18 @@ using UnityEngine.UI;
 
 public class Robot : Throwable {
 
-	public ParticleSystem firePrefab;
+	public GameObject	firePrefab;
+	public GameObject 	steamPuffPrefab;
 	public ParticleSystem robotBeamPrefab;
-	public GameObject 	  steamPuffPrefab;
 
-	public AudioClip 	repairingSound;		// TODO: loop-play this as long the slider bar is being held
-	public AudioClip	catchFireSound;
+	public AudioClip 	repairingSound;			// TODO: loop-play this as long the slider bar is being held
 	public AudioClip 	playerGrabbedSound;
 	public AudioClip 	robotGrabbedSound;
 	public AudioClip	slowThrownSound;
 
 	public AudioClip[]	fastThrownSounds;
 	public AudioClip[]	robotReliefSounds;
-	public AudioClip	exitRepairZapSound;
+	public AudioClip	exitRepairZapSound;		// TODO: play this (and shake the robot, and use a particle effect) as a robot breaks
 
 	public Sprite 		onFireSpeechSprite;
 	public Sprite 		homicidalSpeechSprite;
@@ -28,14 +27,10 @@ public class Robot : Throwable {
 	public float 		speed = 2.0f;
 	public float 		slowdownDistance = 2.0f;
 	public float 		grabHeight = 10.0f;
-	public float		damageRate = 9.0f;
-	public float		healRate = 10.0f;
-	public float		maxHealth = 100.0f;
 	public float		robotScreamTolerance = 16.0f;
-
-	public float		homicideChance = 0.1f;
-	public float		suicideChance = 0.1f;		
-//	public float		findBoxChance = 0.8f;	// the remaining probability
+	public float		emotionalDistressRate = 0.1f;		// FIXME/TODO: 10 seconds to insanity (tie this to a difficulty slider on the pause menu)
+	public float		emotionalBreakdownDuration = 3.0f;
+	public float		emotionalStability = 0.0f;
 
 	[HideInInspector]
 	public float 		health = 100;
@@ -52,11 +47,11 @@ public class Robot : Throwable {
 			if (!onFire && value) {
 				DropItem ();
 				currentState = RobotStates.STATE_ONFIRE;
-				fireInstance = Instantiate<ParticleSystem> (firePrefab, transform.position, Quaternion.identity, transform);
-				PlaySingleSoundFx (catchFireSound);
+				fireInstance = Instantiate<GameObject> (firePrefab, transform.position, Quaternion.identity, transform);
 			} else if (onFire) {
-				Destroy (fireInstance.gameObject);
-				GenerateSteamPuff ();
+				Destroy (fireInstance);
+				HUDManager.instance.ExtinguishFire ();
+				Instantiate<GameObject> (steamPuffPrefab, transform.position, Quaternion.identity, transform);
 			}
 		}
 	}
@@ -68,8 +63,7 @@ public class Robot : Throwable {
 		STATE_FINDBOX,
 		STATE_SUICIDAL,
 		STATE_HOMICIDAL,
-		STATE_ONFIRE,
-		STATE_REPAIRING
+		STATE_ONFIRE
 	};
 	public RobotStates	currentState = RobotStates.STATE_FINDBOX;
 	private bool isDelivering = false;
@@ -90,11 +84,10 @@ public class Robot : Throwable {
 
 	// state machine
 	private float				stateSpeedMultiplier = 1.0f;
-	private float 				homicidalLow;
-	private float 				homicidalHigh;
 	private bool 				justReleased;
+	private bool				freakingOut;
 	private Throwable 			carriedItem;
-	private ParticleSystem 		fireInstance;
+	private GameObject 			fireInstance;
 	private CircleCollider2D 	circleCollider;
 	private Animator			animator;
 	private Image				currentSpeech;
@@ -115,12 +108,12 @@ public class Robot : Throwable {
 
 		sqrTargetSlowdownDistance = slowdownDistance * slowdownDistance;
 		grid = GameObject.FindObjectOfType<Grid> ();
-		homicidalLow = 1.0f - (homicideChance + suicideChance);
-		homicidalHigh = 1.0f - suicideChance;
 		spawnTime = Time.time;
 	}
 
 	void Update() {
+		UpdateEmotionalState ();
+
 		if (!CheckGrabbedStatus () && !grounded && !justReleased) {
 			justReleased = true;
 			SetHeight (grabHeight);
@@ -136,29 +129,14 @@ public class Robot : Throwable {
 		if (onFire && HUDManager.instance.playSprinklerSystem)
 			onFire = false;
 
-		if (onFire) 
-			health -= Time.deltaTime * damageRate;
-
-		if (currentState == RobotStates.STATE_REPAIRING) {
-			health += Time.deltaTime * healRate;
-			if (health > maxHealth) {
-				health = maxHealth;
-				currentState = RobotStates.STATE_FINDBOX;
-				HUDManager.instance.RobotRepairComplete ();
-			}
-		}
-
-		if (health <= 0) { 
-			howDied = RobotNames.MethodOfDeath.DEATH_BY_FIRE;
-			Explode ();
-		}
+		// FIXME: version 2.0 wont have special states to FIND nearest robots or hazards (maybe)
+		// and won't have a repair zone at all
+//		currentState == RobotStates.STATE_REPAIRING;
+//		currentState = RobotStates.STATE_FINDBOX;
+//		HUDManager.instance.RobotRepairComplete ();
 	
 		if (grounded && !fellInPit && !isBeingCarried)
 			SearchForTarget ();
-
-		// make the fire shrink too
-		if (fellInPit && onFire)
-			fireInstance.transform.localScale = new Vector3(currentPitfallScale, 1.0f, currentPitfallScale);
 
 		UpdateShadow ();
 		UpdateCarriedItem ();
@@ -214,11 +192,6 @@ public class Robot : Throwable {
 		carriedItem.transform.position = new Vector3(carryPos.x, carryPos.y, 0.0f);
 	}
 
-	public void GenerateSteamPuff() {
-		HUDManager.instance.ExtinguishFire ();
-		Instantiate<GameObject> (steamPuffPrefab, transform.position, Quaternion.identity, transform);
-	}
-
 	public RobotStates GetState() {
 		return currentState;
 	}
@@ -233,17 +206,29 @@ public class Robot : Throwable {
 		StopMoving ();
 	}
 
-	public void GoCrazy() {
-		float stateWeight = Random.Range(0.0f, 1.0f);
-		if (stateWeight > homicidalLow && stateWeight < homicidalHigh) 
-			currentState = RobotStates.STATE_HOMICIDAL;
-		else if (stateWeight >= homicidalHigh) 
-			currentState = RobotStates.STATE_SUICIDAL;
+	public void UpdateEmotionalState() {
+		if (emotionalStability < 1.0f) {
+			emotionalStability += emotionalDistressRate * Time.deltaTime;
+
+			float timeRemaining = (1.0f - emotionalStability) / emotionalDistressRate;
+			if (timeRemaining < emotionalBreakdownDuration && timeRemaining > 0.0f && !freakingOut) {
+				UIManager.instance.ShakeObject (this.gameObject, timeRemaining);
+				// TODO: begin looping (child) electric shock particle effect
+			}
+			freakingOut = timeRemaining < emotionalBreakdownDuration;
+				
+			if (emotionalStability >= 1.0f) {
+				emotionalStability = 1.0f;
+				// TODO: stop playing electric shock particle effect
+				float flipACoin = Random.Range (0, 2);
+				currentState = flipACoin == 0 ? RobotStates.STATE_HOMICIDAL : RobotStates.STATE_SUICIDAL;
+			}
+		}
 	}
 
 	void SearchForTarget() {
 
-		if (currentState == RobotStates.STATE_REPAIRING || isBeingCarried || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
+		if (isBeingCarried || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
 			StopMoving ();
 			return;
 		}
@@ -285,11 +270,7 @@ public class Robot : Throwable {
 				currentSpeech.sprite = onFireSpeechSprite;
 				break;
 		}
-
 		currentSpeech.enabled = currentState != RobotStates.STATE_FINDBOX;
-
-		if (target == null && currentState != RobotStates.STATE_ONFIRE)
-			GoCrazy ();
 	}
 
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful) {
@@ -470,27 +451,11 @@ public class Robot : Throwable {
 		}
 	}
 
-	void OnTriggerStay2D(Collider2D hitTrigger) {
-		if (hitTrigger.tag == "HealZone")
-			onFire = false;
-	}
-
 	// derived-class extension of OnTriggerEnter2D
 	// because Throwable implements OnTriggerEnter2D,
 	// which prevents derived classes from directly using it
 	protected override void HitTrigger2D (Collider2D hitTrigger) {
-		if (hitTrigger.tag == "HealZone" && currentState != RobotStates.STATE_REPAIRING) {
-			if (currentState != RobotStates.STATE_FINDBOX)
-				health = 50.0f;
-			if (health < maxHealth) {
-				currentState = RobotStates.STATE_REPAIRING;
-				StopMoving ();
-				PlaySingleSoundFx (repairingSound);
-			}
-		}
-			
-		if (hitTrigger.tag == "Electric" && efxSource.clip != exitRepairZapSound)
-			PlaySingleSoundFx (exitRepairZapSound);
+		// robot trigger stuff here
 	}
 
 	// Debug Drawing
@@ -499,8 +464,7 @@ public class Robot : Throwable {
 			Gizmos.color = Color.cyan;
 			Gizmos.DrawCube (transform.position, Vector3.one);
 		}
-
-		/*
+			
 		if (path != null) {
 			for (int i = targetIndex; i < path.Length; i++) {
 				Gizmos.color = Color.black;
@@ -513,12 +477,12 @@ public class Robot : Throwable {
 				}
 			}
 		}
-		*/
+
 	}
 
 	protected override void OnLanding () {
 		base.OnLanding ();
-		if (currentState != RobotStates.STATE_REPAIRING && !fellInPit && !onFire)		// bugfix for the landing sound overwriting status change sounds
+		if (!fellInPit)		// bugfix for the landing sound overwriting status change sounds
 			PlayRandomSoundFx (landingSounds);
 	}
 }

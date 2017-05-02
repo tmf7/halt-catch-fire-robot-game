@@ -55,6 +55,7 @@ public class Box : Throwable {
 		Invoke ("Remove", exitDelay);
 	}
 
+	// Debug drawing
 	void OnDrawGizmos() {
 		if (isTargeted) {
 			Gizmos.color = Color.cyan;

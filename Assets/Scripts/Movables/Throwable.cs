@@ -29,6 +29,7 @@ public abstract class Throwable : MonoBehaviour {
 	public int 					throwSectorCount = 10;
 	public float				smallestPitfallScale = 0.1f;
 	public float				pitfallRate = 0.9f;
+	public float 				currentPitfallScale = 1.0f;		// transform.localScale
 
 	[HideInInspector] 
 	public Vector3				dropForce;
@@ -40,7 +41,6 @@ public abstract class Throwable : MonoBehaviour {
 	protected SpriteRenderer	spriteRenderer;
 	protected Rigidbody2D 		rb2D;
 	protected bool 				landingResolved = true;
-	protected float 			currentPitfallScale = 1.0f;		// transform.localScale
 
 	private ShadowController 	shadowController;
 	private Robot				whoIsCarrying;
