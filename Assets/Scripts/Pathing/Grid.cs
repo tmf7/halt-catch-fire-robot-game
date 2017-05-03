@@ -149,7 +149,6 @@ public class Grid : MonoBehaviour {
 		Gizmos.DrawWireCube (transform.position, new Vector3 (gridWorldSize.x, gridWorldSize.y, 1.0f));
 		if (displayGridGizmos && grid != null) {
 			foreach (GridNode n in grid) {
-
 				Gizmos.color = Color.Lerp (Color.white, Color.black, Mathf.InverseLerp (penaltyMin, penaltyMax, n.movementPenalty));
 				Gizmos.color = (n.walkable) ? Gizmos.color : Color.red;
 				Gizmos.DrawCube (n.worldPosition, Vector3.one * nodeDiameter);

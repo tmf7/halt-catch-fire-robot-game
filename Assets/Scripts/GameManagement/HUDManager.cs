@@ -5,36 +5,41 @@ using UnityEngine.UI;
 
 public class HUDManager : MonoBehaviour {
 
-	public static HUDManager 	instance = null;
+	public static HUDManager	instance = null;
 	public int					levelDuration = 30;
 	public int 					robotsEarnedToAdd = 2;
 
 	[HideInInspector]
-	public int robotsFiredThisLevel = 0;
+	public int 					robotsFiredThisLevel = 0;
 	[HideInInspector]
-	public int repairsThisLevel = 0;
+	public int 					repairsThisLevel = 0;
 	[HideInInspector]
-	public int firesPutOutThisLevel = 0;
+	public int 					firesPutOutThisLevel = 0;
 	[HideInInspector]
-	public int boxesThisLevel = 0;
+	public int 					boxesThisLevel = 0;
 	[HideInInspector]
-	public bool 	playSprinklerSystem = false;
+	public bool 				playSprinklerSystem = false;
 	[HideInInspector]
-	public bool 	resetSprinklerCooldown = false;
+	public bool 				resetSprinklerCooldown = false;
 
 	// player stats
-	private Text 	boxesText;
-	private Text 	robotsText;
-	private Text 	timeText;
-	private float	levelEndTime;
-	private float	lastTimeRemainingValue;
-	private int 	boxesCollected = 0;
-	private int 	robotsFired = 0;
-	private int 	robotsRepaired = 0;
-	private int 	firesPutOut = 0;
-	private int 	robotIncreaseThreshold = 10;
+	private Text 				boxesText;
+	private Text 				robotsText;
+	private Text 				timeText;
+	private float				levelEndTime;
+	private float				lastTimeRemainingValue;
+	private int 				boxesCollected = 0;
+	private int 				robotsFired = 0;
+	private int 				robotsRepaired = 0;
+	private int 				firesPutOut = 0;
+	private int 				robotIncreaseThreshold = 10;
+	private bool 				wasEmotionButtonInteractable = false;
+	private bool				emotionHandleHeld = false;
 
-	private ImageSwapButton pauseButton;
+	private ImageSwapButton 	pauseButton;
+	private Slider 				globalEmotionSlider;
+	private Button 				globalEmotionButton;
+	private Image				globalEmotionImage;
 
 	public bool isLevelTimeUp {
 		get { 
@@ -78,6 +83,12 @@ public class HUDManager : MonoBehaviour {
 		}
 	}
 
+	public bool isEmotionSliderHeld {
+		get { 
+			return emotionHandleHeld;
+		}
+	}
+
 	void Awake() {
 		if (instance == null)
 			instance = this;
@@ -92,6 +103,10 @@ public class HUDManager : MonoBehaviour {
 		robotsText = GameObject.Find ("RobotsText").GetComponent<Text>();
 		timeText = GameObject.Find ("TimeText").GetComponent<Text>();
 		pauseButton = GameObject.Find ("PauseButton").GetComponentInChildren<ImageSwapButton> ();
+		globalEmotionSlider = GameObject.Find ("EmotionSlider").GetComponent<Slider> ();
+		globalEmotionButton = globalEmotionSlider.GetComponentInChildren<Button> ();
+		globalEmotionImage = globalEmotionButton.GetComponentInChildren<Image> ();
+		UpdatetGlobalEmotionSlider ();
 	}
 		
 	void Update() {
@@ -101,6 +116,42 @@ public class HUDManager : MonoBehaviour {
 		boxesText.text = "Boxes Orbited: " + boxesCollected.ToString();
 		robotsText.text = "Robots Left: " + GameManager.instance.robotCount.ToString();
 		timeText.text = "Time: " + (GameManager.instance.levelEnded ? lastTimeRemainingValue : levelTimeRemaining).ToString();
+		UpdatetGlobalEmotionSlider ();
+	}
+
+	public void UpdatetGlobalEmotionSlider() {
+		Robot robot = RobotGrabber.instance.currentGrabbedRobot;
+		globalEmotionSlider.gameObject.SetActive (robot != null);
+		if (!globalEmotionSlider.gameObject.activeSelf)
+			return;
+
+		if (!emotionHandleHeld)
+			globalEmotionSlider.value = robot.emotionalStability;
+		else 
+			robot.emotionalStability = globalEmotionSlider.value;
+		
+		globalEmotionButton.interactable = robot.emotionalStability >= 1.0f;
+		globalEmotionImage.sprite = robot.currentSpeech.sprite;
+
+		if (robot.emotionalStability >= 1.0f && !wasEmotionButtonInteractable)
+			robot.QuickEmotionalBreakdownToggle ();
+
+		wasEmotionButtonInteractable = globalEmotionButton.interactable;
+	}
+		
+	public void HoldEmotionHandle() {
+		instance.emotionHandleHeld = true;
+	}
+		
+	public void ReleaseEmotionHandle() {
+		instance.emotionHandleHeld = false;
+	}
+		
+	public void ToggleRobotEmotionalState() {
+		Robot robot = RobotGrabber.instance.currentGrabbedRobot;
+		if (robot == null)
+			return;
+		robot.QuickEmotionalBreakdownToggle ();
 	}
 
 	public void StartSprinklerSystem () {

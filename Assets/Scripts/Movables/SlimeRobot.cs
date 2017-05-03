@@ -31,6 +31,7 @@ public class SlimeRobot : MonoBehaviour {
 	}
 
 	public void OnCollisionEnter2D (Collision2D collision) {
-		collision.rigidbody.AddForceAtPosition ( -pushForce * collision.contacts[0].normal, collision.contacts [0].point, ForceMode2D.Impulse);
+		if (collision != null)
+			collision.rigidbody.AddForceAtPosition ( -pushForce * collision.contacts[0].normal, collision.contacts [0].point, ForceMode2D.Impulse);
 	}
 }

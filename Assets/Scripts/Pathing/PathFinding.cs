@@ -87,7 +87,7 @@ public class PathFinding : MonoBehaviour {
 		return waypoints;
 	}
 
-	Vector3[] SimplifyPath(List<GridNode> path) {
+	public Vector3[] SimplifyPath(List<GridNode> path) {
 		List<Vector3> waypoints = new List<Vector3> ();
 		Vector2 directionOld = Vector2.zero;
 

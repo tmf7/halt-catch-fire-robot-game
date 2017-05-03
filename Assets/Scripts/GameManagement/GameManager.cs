@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour {
 	public Gradient 			redWaveGradient;
 	public Gradient				blueWaveGradient;
 	public Gradient				greenWaveGradient;
+	public Gradient				silverWaveGradient;
 	public float				globalSpawnDelay = 5.0f;
 	public int 					maxRobots = 3;
 	public int					maxBoxes = 20;
