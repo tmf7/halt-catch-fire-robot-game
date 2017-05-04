@@ -5,6 +5,8 @@ using System;
 
 public class PathFinding : MonoBehaviour {
 
+	public int pathSmoothingInterval = 3;
+
 	private PathRequestManager pathRequestManager;
 	private Grid grid;
 
@@ -13,11 +15,11 @@ public class PathFinding : MonoBehaviour {
 		pathRequestManager = GetComponent<PathRequestManager> ();
 	}
 
-	public void StartFindPath(Vector3 startPos, Vector2 targetPos) {
-		StartCoroutine(FindPath(startPos, targetPos));
+	public void StartFindPath(Vector3 startPos, Vector2 targetPos, bool isSubPath) {
+		StartCoroutine(FindPath(startPos, targetPos, isSubPath));
 	}
 
-	IEnumerator FindPath (Vector3 startPos, Vector3 targetPos) {
+	IEnumerator FindPath (Vector3 startPos, Vector3 targetPos, bool isSubPath) {
 		Vector3[] waypoints = new Vector3[0];
 		bool pathSuccess = false;
 
@@ -62,7 +64,7 @@ public class PathFinding : MonoBehaviour {
 			waypoints = BuildPath (startNode, targetNode);
 			pathSuccess = waypoints.Length > 0;
 		}
-		pathRequestManager.FinishedProcessingPath (waypoints, pathSuccess);
+		pathRequestManager.FinishedProcessingPath (waypoints, pathSuccess, isSubPath);
 	}
 
 	int GetDistance(GridNode nodeA, GridNode nodeB) {
@@ -101,18 +103,60 @@ public class PathFinding : MonoBehaviour {
 		return waypoints.ToArray ();
 	}
 
-	public float PathLengthSqr (Vector3[] path) {
+	private Vector3[] SimplifyPath(List<Vector3> path) {
+		List<Vector3> waypoints = new List<Vector3> ();
+		Vector2 directionOld = Vector2.zero;
+
+		for (int i = 1; i < path.Count; i++) {
+			Vector2 directionNew = new Vector2 (path [i - 1].x - path [i].x, path [i - 1].y - path [i].y);
+			if (directionNew != directionOld) {
+				waypoints.Add (path [i]);
+			}
+			directionOld = directionNew;
+		}
+		return waypoints.ToArray ();
+	}
+
+	public Vector3[] MergeSubPaths (List<Vector3[]> subPaths) {
+		List<Vector3> complexPath = new List<Vector3> ();
+		foreach (Vector3[] path in subPaths) {
+			foreach (Vector3 point in path)
+				complexPath.Add (point);
+		}
+		return SimplifyPath (complexPath);
+	}
+
+	public int OptimizeDrawnPath(List<GridNode> path, Action<Vector3[], bool, bool> callback) {
+		int numSubPathsSubmitted = 0;
+		List<Vector3> waypoints = new List<Vector3> ();
+		Vector2 directionOld = Vector2.zero;
+		for (int i = pathSmoothingInterval; i < path.Count; i+=pathSmoothingInterval) {
+			Vector2 directionNew = new Vector2 (path [i - pathSmoothingInterval].gridRow - path [i].gridRow, path [i - pathSmoothingInterval].gridCol - path [i].gridCol);
+			if (directionNew != directionOld) {
+				waypoints.Add (path [i].worldPosition);
+			}
+			directionOld = directionNew;
+		}
+			
+		for (int i = 1; i < waypoints.Count; i++) {
+			PathRequestManager.RequestPath (waypoints [i - 1], waypoints [i], callback, true);
+			numSubPathsSubmitted++;
+		}
+		return numSubPathsSubmitted;
+	}
+
+	public float PathLengthSqr (List<GridNode> path) {
 		float lengthSqr = 0.0f;
-		for (int i = 1; i < path.Length; i++) {
-			lengthSqr += (path [i] - path [i - 1]).sqrMagnitude;
+		for (int i = 1; i < path.Count; i++) {
+			lengthSqr += (path [i].worldPosition - path [i - 1].worldPosition).sqrMagnitude;
 		}
 		return lengthSqr;
 	}
 
-	public float PathLength (Vector3[] path) {
+	public float PathLengthSqr (Vector3[] path) {
 		float lengthSqr = 0.0f;
 		for (int i = 1; i < path.Length; i++) {
-			lengthSqr += Vector3.Distance (path [i], path [i - 1]);
+			lengthSqr += (path [i] - path [i - 1]).sqrMagnitude;
 		}
 		return lengthSqr;
 	}

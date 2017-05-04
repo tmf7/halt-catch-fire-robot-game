@@ -67,7 +67,8 @@ public class RobotGrabber : MonoBehaviour {
 		}
 
 		// FIXME: magic number specific to the current y-position of the HUD interface
-		Cursor.visible = Time.timeScale == 0.0f || worldPosition.y > 7.0f || (grabbedRobot != null && !grabbedRobot.grabbedByPlayer);
+		// FIXME: the robot becomes grabbedByPlayer after the first release (if the drawnPath isn't long enough)
+		Cursor.visible = Time.timeScale == 0.0f || worldPosition.y > 7.0f || (grabbedRobot != null && !secondClickOnRobot);
 
 		// first click LOCKS the robot on the ground (ie NOT HOVER via Robot.grabbed bool)
 		// SET RobotGrabber SPRITE position DIRECTLY over grabbedRobot, and enable the cursor to manipulate the SLIDER, or draw a PATH
@@ -107,6 +108,7 @@ public class RobotGrabber : MonoBehaviour {
 				grabbedRobot = grabbedRobotCollider.GetComponent<Robot> ();
 				grabbedRobot.lockedByPlayer = true;
 				grabbedRobot.ClearDrawnPath ();
+				grabbedRobot.SetTargeter (null);
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 
 				// create a joint on the robot sprite
@@ -155,8 +157,11 @@ public class RobotGrabber : MonoBehaviour {
 			// set a threshold minimum path length?
 			if (grabbedRobot.lockedByPlayer) {
 				grabbedRobot.lockedByPlayer = false;
-				if (!grabbedRobot.FinishDrawingPath ())
+				if (!grabbedRobot.FinishDrawingPath ()) {
 					grabbedRobot.grabbedByPlayer = true;
+				} else {
+					ReleaseRobot ();
+				}
 			}				
 
 			if (secondClickOnRobot) {
@@ -166,13 +171,17 @@ public class RobotGrabber : MonoBehaviour {
 					dropForce = Vector3.zero;
 					
 				grabbedRobot.dropForce = forceMultiplier * dropForce;
-				Destroy (joint);
-				joint = null;
-				grabbedRobot.grabbedByPlayer = false;
-				grabbedRobot = null;
-				secondClickOnRobot = false;
-				grabbedRobotCollider = null;
+				ReleaseRobot ();
 			}
 		}
     }
+
+	private void ReleaseRobot () {
+		Destroy (joint);
+		joint = null;
+		grabbedRobot.grabbedByPlayer = false;
+		grabbedRobot = null;
+		secondClickOnRobot = false;
+		grabbedRobotCollider = null;
+	}
 }

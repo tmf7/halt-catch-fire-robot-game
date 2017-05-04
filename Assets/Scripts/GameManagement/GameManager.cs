@@ -12,10 +12,13 @@ public class GameManager : MonoBehaviour {
 	public Gradient				blueWaveGradient;
 	public Gradient				greenWaveGradient;
 	public Gradient				silverWaveGradient;
+	public Gradient 			blackWaveGradient;
 	public float				globalSpawnDelay = 5.0f;
 	public int 					maxRobots = 3;
 	public int					maxBoxes = 20;
-	public float 				acceptableSearchRangeSqr = 9.0f;		// stop looking for somthing closer if currently queried item is within this range
+	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for something closer if currently queried item is within this range
+	public float				drawnPathLengthThresholdSqr = 1.0f;
+	public float 				maxDrawnPathLengthSqr = 10.0f;
 	public bool 				spawningRobots = false;
 	public bool					levelEnded = false;
 

@@ -21,11 +21,11 @@ public class PathRequestManager : MonoBehaviour {
 		pathfinding = GetComponent<PathFinding> ();
 	}
 
-	public static void RequestPath(Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool> callback) {
-		if (instance.pathRequestQueue.Count > GameManager.instance.maxRobots)
-			instance.pathRequestQueue.Clear ();
+	public static void RequestPath(Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool, bool> callback, bool isSubPath = false) {
+//		if (instance.pathRequestQueue.Count > GameManager.instance.maxRobots)
+//			instance.pathRequestQueue.Clear ();
 		
-		PathRequest newRequest = new PathRequest (pathStart, pathEnd, callback);
+		PathRequest newRequest = new PathRequest (pathStart, pathEnd, callback, isSubPath);
 		instance.pathRequestQueue.Enqueue (newRequest);
 		instance.TryProcessNext ();
 	}
@@ -34,12 +34,12 @@ public class PathRequestManager : MonoBehaviour {
 		if (!processingPath && pathRequestQueue.Count > 0) {
 			currentPathRequest = pathRequestQueue.Dequeue ();
 			processingPath = true;
-			pathfinding.StartFindPath (currentPathRequest.pathStart, currentPathRequest.pathEnd);
+			pathfinding.StartFindPath (currentPathRequest.pathStart, currentPathRequest.pathEnd, currentPathRequest.isSubPath);
 		}
 	}
 
-	public void FinishedProcessingPath(Vector3[] path, bool success) {
-		currentPathRequest.callback (path, success);
+	public void FinishedProcessingPath(Vector3[] path, bool success, bool isSubPath) {
+		currentPathRequest.callback (path, success, isSubPath);
 		processingPath = false;
 		TryProcessNext ();
 	}
@@ -47,12 +47,14 @@ public class PathRequestManager : MonoBehaviour {
 	struct PathRequest {
 		public Vector3 pathStart;
 		public Vector3 pathEnd;
-		public Action<Vector3[], bool> callback;
+		public Action<Vector3[], bool, bool> callback;
+		public bool isSubPath;
 
-		public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool> _callback) {
+		public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool, bool> _callback, bool _isSubPath) {
 			pathStart = _start;
 			pathEnd = _end;
-			callback = _callback;			
+			callback = _callback;
+			isSubPath = _isSubPath;
 		}
 	}
 }

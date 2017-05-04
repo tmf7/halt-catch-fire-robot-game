@@ -153,15 +153,21 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
+	void OnGUI () {
+		if (GUI.Button (new Rect (100, 100, 100, 30), "SHAKE"))
+			ShakeObject (GameObject.FindGameObjectWithTag("MainCamera"));
+	}
+
+
 	// convenience function to issue multiple shakes without overlap
-	public void ShakeObject (GameObject obj, float duration = shakeDuration, float speed = shakeSpeed, float intensity = shakeIntensity) {
+	public void ShakeObject (GameObject obj, bool loose = false, float duration = shakeDuration, float speed = shakeSpeed, float intensity = shakeIntensity) {
 		if (shakeCoroutineInstance != null)
 			instance.StopCoroutine (shakeCoroutineInstance);
-		shakeCoroutineInstance = instance.ShakeObjectCoroutine (obj, duration, speed, intensity);
+		shakeCoroutineInstance = instance.ShakeObjectCoroutine (obj, loose, duration, speed, intensity);
 		instance.StartCoroutine (shakeCoroutineInstance);
 	}
 
-	public IEnumerator ShakeObjectCoroutine (GameObject obj, float duration, float speed, float intensity) {
+	public IEnumerator ShakeObjectCoroutine (GameObject obj, bool loose, float duration, float speed, float intensity) {
 		Vector3 originalPosition = obj.transform.position;
 		float elapsed = 0.0f;
 		while (elapsed < duration) {
@@ -170,14 +176,20 @@ public class UIManager : MonoBehaviour {
 				float dampedMag = damping * intensity;
 				float xOffset = (dampedMag * Mathf.PerlinNoise (Time.time * speed, 0.0f)) - (dampedMag / 2.0f);	
 				float yOffset = (dampedMag * Mathf.PerlinNoise (0.0f, Time.time * speed)) - (dampedMag / 2.0f);
-				obj.transform.localPosition = new Vector3 (originalPosition.x + xOffset, originalPosition.y + yOffset, originalPosition.z);
+
+				if (loose)
+					obj.transform.localPosition = new Vector3 (obj.transform.position.x + xOffset, obj.transform.position.y + yOffset, obj.transform.position.z);
+				else
+					obj.transform.localPosition = new Vector3 (originalPosition.x + xOffset, originalPosition.y + yOffset, originalPosition.z);
+				
 				elapsed += Time.deltaTime;
 				yield return null;
 			} else {
 				yield break;
 			}
 		}
-		obj.transform.position = originalPosition;
+		if (!loose)
+			obj.transform.position = originalPosition;
 	}
 
 	//this is called only once, and the paramter tell it to be called only after the scene was loaded

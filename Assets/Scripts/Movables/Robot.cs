@@ -79,15 +79,17 @@ public class Robot : Throwable {
 	private Vector3[] 			path;
 	private int 				targetIndex;
 	private int					slowdownIndex;				// account for unusually curvy paths
+	private int					oldDrawnPathCount;			// used for updating the drawnPath color
 	private Vector3 			currentWaypoint;
 	private Vector3				targetLastKnownPosition;
 	private float 				sqrTargetSlowdownDistance;
 	private float 				carryItemDistance;
-	private float				drawnPathLengthThresholdSqr = 100.0f;
 	private const float			pathUpdateMoveThreshold = 0.25f;
 	private const float 		minWaitTime = 0.2f;
 	private const float 		stoppingThreshold = 0.01f;
 	private bool 				waitingForPathRequestResults;
+	private List<Vector3[]> 	subPaths;
+	private int 				numSubPathsToProcess;
 
 	// state machine
 	private float				stateSpeedMultiplier = 1.0f;
@@ -101,6 +103,7 @@ public class Robot : Throwable {
 
 	void Start() {
 		drawnPath = new List<GridNode> ();
+		subPaths = new List<Vector3[]> ();
 		line = GetComponent<LineRenderer> ();
 		line.enabled = false;
 		animator = GetComponent<Animator> ();
@@ -149,11 +152,7 @@ public class Robot : Throwable {
 //		currentState = RobotStates.STATE_FINDBOX;
 //		HUDManager.instance.RobotRepairComplete ();
 	
-		print ("GROUNDED: " + grounded);
-		print("LOCKED: " + lockedByPlayer);
-		if (grounded && !fellInPit && !isBeingCarried && !lockedByPlayer)
-			SearchForTarget ();
-
+		SearchForTarget ();
 		UpdateShadow ();
 		UpdateCarriedItem ();
 	}
@@ -170,11 +169,10 @@ public class Robot : Throwable {
 				PlayRandomSoundFx (robotReliefSounds);
 				GetCarrier ().DropItem ();
 			}
-		
-			if (target != null || path != null) {
-				StopMoving ();
-			}
 
+			if (path != null)
+				StopMoving ();
+		
 			if (grabbedByPlayer) {
 				justReleased = false;
 				SetHeight (grabHeight);
@@ -233,6 +231,7 @@ public class Robot : Throwable {
 		}
 
 		if (emotionalStability > freakoutThreshold && !freakingOut) {
+			goneCrazy = false;
 			StartCoroutine (Freakout ());
 		}
 		freakingOut = emotionalStability > freakoutThreshold;
@@ -245,23 +244,22 @@ public class Robot : Throwable {
 
 	// robot is unable to follow it's current path while its freaking out 
 	public IEnumerator Freakout() {
-		goneCrazy = false;
 		do {
-			UIManager.instance.ShakeObject (this.gameObject, freakoutShakeDuration);
-
+			UIManager.instance.ShakeObject (this.gameObject, true, freakoutShakeDuration);
+			print ("FREAKOUT COROUTINE");
 			// TODO: if (!shockParticles.isPlaying) { shockParticles.main.loop = true; shockParticles.Play(); }
 			if (!efxSource.isPlaying)
 				PlayRandomSoundFx (breakdownShakeSounds);
 			
 			yield return new WaitForSeconds (freakoutShakeDuration);
 		} while (!goneCrazy);
-		goneCrazy = false;
 		efxSource.Stop ();
 		// shockParticles.main.loop = false;
 	}
 
 	public void ToggleCrazyEmotion() {
 		print ("TOGGLE EMOTION PRESSED");
+		goneCrazy = false;
 		StartCoroutine (Freakout ());
 		if (currentState == RobotStates.STATE_FINDBOX)
 			GoCrazy ();
@@ -281,17 +279,20 @@ public class Robot : Throwable {
 		switch (currentState) {
 			case RobotStates.STATE_FINDBOX:
 				spriteRenderer.color = Color.white;
-				line.colorGradient = GameManager.instance.blueWaveGradient;
+				line.colorGradient = lockedByPlayer ? line.colorGradient 
+													: GameManager.instance.blueWaveGradient;
 				break;
 			case RobotStates.STATE_SUICIDAL:
 				spriteRenderer.color = Color.cyan;
 				currentSpeech.sprite = suidicalSpeechSprite;
-				line.colorGradient = GameManager.instance.greenWaveGradient;
+				line.colorGradient = lockedByPlayer ? line.colorGradient 
+													: GameManager.instance.greenWaveGradient;
 				break;
 			case RobotStates.STATE_HOMICIDAL:
 				spriteRenderer.color = Color.red;
 				currentSpeech.sprite = homicidalSpeechSprite;
-				line.colorGradient = GameManager.instance.redWaveGradient;
+				line.colorGradient = lockedByPlayer ? line.colorGradient 
+													: GameManager.instance.redWaveGradient;
 				break;
 		}
 
@@ -302,8 +303,10 @@ public class Robot : Throwable {
 	}
 
 	void SearchForTarget() {
-		print ("SEARCH FOR TARGET");
-		if (isBeingCarried || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
+		if (!grounded)
+			return;
+			
+		if (isBeingCarried || fellInPit || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
 			StopMoving ();
 			return;
 		}
@@ -336,47 +339,73 @@ public class Robot : Throwable {
 		}
 	}
 
-	public void OnPathFound(Vector3[] newPath, bool pathSuccessful) {
+	public void OnPathFound(Vector3[] newPath, bool pathSuccessful, bool isSubPath) {
+		waitingForPathRequestResults = false;
 		if (pathSuccessful) {
-			path = newPath;
-			targetIndex = 0;
-			currentWaypoint = path [targetIndex];
-
-			// account for unusually curvy paths
-			float distanceFromEnd = 0.0f;
-			for (int i = path.Length - 1; i > 0; i--) {
-				distanceFromEnd += Vector3.Distance (path [i], path [i - 1]);
-				if (distanceFromEnd >= slowdownDistance) {
-					slowdownIndex = i;
-					break;
+			if (isSubPath) {
+				subPaths.Add (newPath);
+				numSubPathsToProcess--;
+				if (numSubPathsToProcess <= 0) {
+					numSubPathsToProcess = 0;
+					print ("MERGING (" + subPaths.Count + ") SUB-PATHS");
+					path = pathFinder.MergeSubPaths (subPaths);
+					print ("FINAL MERGE INDEX COUNT: " + path.Length);
+					if (path.Length > 0)
+						InitPath ();
+				} else {
+					waitingForPathRequestResults = true;
 				}
+			} else {
+				path = newPath;
+				InitPath ();
 			}
 		} else {
 			StopMoving ();
 		}
-		waitingForPathRequestResults = false;
+	}
+
+	private void InitPath () {
+		targetIndex = 0;
+		currentWaypoint = path [targetIndex];
+
+		// account for unusually curvy paths
+		float distanceFromEnd = 0.0f;
+		for (int i = path.Length - 1; i > 0; i--) {
+			distanceFromEnd += Vector3.Distance (path [i], path [i - 1]);
+			if (distanceFromEnd >= slowdownDistance) {
+				slowdownIndex = i;
+				break;
+			}
+		}
 	}
 
 	public void ClearDrawnPath() {
+		oldDrawnPathCount = 0;
 		drawnPath.Clear ();
 	}
 		
 	public void TryAddPathPoint (Vector3 worldPosition) {
 		GridNode node = grid.NodeFromWorldPoint (worldPosition);
-		if (node.walkable && !drawnPath.Contains(node))
-			drawnPath.Add (node);				
+		if (node.walkable && !drawnPath.Contains (node)) {
+			if (pathFinder.PathLengthSqr(drawnPath) < GameManager.instance.maxDrawnPathLengthSqr)
+				drawnPath.Add (node);				
+		}
 	}
 		
 	public bool FinishDrawingPath() {
-		Vector3[] playerDrawnPath = pathFinder.SimplifyPath (drawnPath);
-		drawnPath.Clear ();
-		bool pathSuccess = pathFinder.PathLengthSqr(playerDrawnPath) > drawnPathLengthThresholdSqr;
-		OnPathFound (playerDrawnPath, pathSuccess);	
-		return pathSuccess;
+		bool longEnoughPath = pathFinder.PathLengthSqr (drawnPath) > GameManager.instance.drawnPathLengthThresholdSqr;
+		if (longEnoughPath) {
+			waitingForPathRequestResults = true;
+			numSubPathsToProcess = pathFinder.OptimizeDrawnPath (drawnPath, OnPathFound);
+		}
+		ClearDrawnPath ();
+		return longEnoughPath;
 	}
 
+	// FIXME: don't change a user-defined path
+	// and don't request a new path if awaiting a drawnPath merge
 	void UpdatePath(bool freshStart) {
-		if (!waitingForPathRequestResults && (freshStart || (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold)) {
+		if (!waitingForPathRequestResults && (freshStart || (target != null && (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold))) {
 			waitingForPathRequestResults = true;
 			PathRequestManager.RequestPath (transform.position, target.position, OnPathFound);
 			targetLastKnownPosition = target.position;
@@ -438,12 +467,13 @@ public class Robot : Throwable {
 			return;
 		
 		line.enabled = true;
-		line.colorGradient = GameManager.instance.silverWaveGradient;
+		if (drawnPath.Count > oldDrawnPathCount)
+			line.colorGradient = pathFinder.PathLengthSqr(drawnPath) > GameManager.instance.drawnPathLengthThresholdSqr ? GameManager.instance.silverWaveGradient 
+																								   						: GameManager.instance.blackWaveGradient;
+		oldDrawnPathCount = drawnPath.Count;
 		line.numPositions = drawnPath.Count + 1;
 		line.SetPosition(0, transform.position);
 
-		// FIXME(?): the first path node may be the one directly under the robot
-		// FIXME: SetPosition may need a Vector3
 		for (int i = 0, pos = 1; i < drawnPath.Count; i++, pos++)
 			line.SetPosition (pos, drawnPath [i].worldPosition);		
 	}
@@ -475,12 +505,12 @@ public class Robot : Throwable {
 		}
 	}
 
-	// stop pathing to a box/robot that this has targeted, but has since been grabbed by another robot
-	// FIXME(?): homicidal robots still target robots grabbed by the player
+	// stop pathing to a box/robot that this has targeted, but has since been grabbed by another robot (or the player)
 	public void CheckIfTargetLost() {
 		if (isTargetThrowable) {
-			Robot targeter = target.GetComponent<Throwable> ().GetTargeter ();
-			if (targeter != null && targeter != this) {
+			Throwable throwableTarget = target.GetComponent<Throwable> ();
+			Robot targeter = throwableTarget.GetTargeter ();
+			if (targeter == null || (targeter != null && targeter != this)) {
 				StopMoving ();
 			}
 		}
