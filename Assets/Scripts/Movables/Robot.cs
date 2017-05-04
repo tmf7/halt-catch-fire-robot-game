@@ -94,12 +94,12 @@ public class Robot : Throwable {
 	// state machine
 	private float				stateSpeedMultiplier = 1.0f;
 	private bool 				justReleased;
-	private bool				freakingOut;
-	private bool 				goneCrazy = true;
 	private Throwable 			carriedItem;
 	private GameObject 			fireInstance;
 	private CircleCollider2D 	circleCollider;
 	private Animator			animator;
+	private ParticleSystem		shockParticles;
+	private IEnumerator			freakoutCoroutine = null;
 
 	void Start() {
 		drawnPath = new List<GridNode> ();
@@ -108,6 +108,16 @@ public class Robot : Throwable {
 		line.enabled = false;
 		animator = GetComponent<Animator> ();
 		circleCollider = GetComponent<CircleCollider2D> ();
+
+		// Throwable has grabbed the first particle system child
+		// this needs the next one
+		ParticleSystem[] allParticles = GetComponentsInChildren<ParticleSystem> ();
+		foreach (ParticleSystem system in allParticles) {
+			if (system.name == "ShockParticles") {
+				shockParticles = system;
+				break;
+			}
+		}
 
 		// InfoCanvas initialization
 		currentSpeech = GetComponentInChildren<Image> ();
@@ -159,13 +169,13 @@ public class Robot : Throwable {
 
 	private bool CheckGrabbedStatus() {
 		if (grabbedByPlayer || lockedByPlayer || isBeingCarried) {
-			if (isCarryingItem) {
+			if (isCarryingItem && grabbedByPlayer) {
 				if (carriedItem is Robot)
 					PlayRandomSoundFx (robotReliefSounds);
 				DropItem ();
 			}
 		
-			if ((grabbedByPlayer || lockedByPlayer) && isBeingCarried) {
+			if (isBeingCarried && (grabbedByPlayer || lockedByPlayer)) {
 				PlayRandomSoundFx (robotReliefSounds);
 				GetCarrier ().DropItem ();
 			}
@@ -202,10 +212,10 @@ public class Robot : Throwable {
 	}
 
 	private void UpdateCarriedItem() {
-		if (!isCarryingItem || target == null)
+		if (!isCarryingItem || path == null || path.Length <= 0)
 			return;
-
-		Vector3 carryDir = (target.position - transform.position).normalized;
+		
+		Vector3 carryDir = (path [path.Length - 1] - transform.position).normalized;
 		Vector3 carryPos = transform.position + carryDir * carryItemDistance;
 		carriedItem.transform.position = new Vector3(carryPos.x, carryPos.y, 0.0f);
 	}
@@ -228,13 +238,10 @@ public class Robot : Throwable {
 		if (emotionalStability < 1.0f) {
 			currentState = RobotStates.STATE_FINDBOX;
 			emotionalStability += emotionalDistressRate * Time.deltaTime;
-		}
 
-		if (emotionalStability > freakoutThreshold && !freakingOut) {
-			goneCrazy = false;
-			StartCoroutine (Freakout ());
+			if (emotionalStability > freakoutThreshold)
+				StartCoroutine (Freakout());
 		}
-		freakingOut = emotionalStability > freakoutThreshold;
 
 		if (emotionalStability >= 1.0f && currentState == RobotStates.STATE_FINDBOX) {
 			emotionalStability = 1.0f;
@@ -242,37 +249,54 @@ public class Robot : Throwable {
 		}
 	}
 
-	// robot is unable to follow it's current path while its freaking out 
+	// do not have more than one of this coroutine running on a robot at a time
 	public IEnumerator Freakout() {
+		if (freakoutCoroutine == null)
+			freakoutCoroutine = Freakout ();
+		else
+			yield break;
+
+		RobotStates oldState = currentState;
+		float oldStability = emotionalStability;
+		var main = shockParticles.main;
+		ParticleSystemRenderer psr = shockParticles.GetComponent<ParticleSystemRenderer> ();
+
 		do {
 			UIManager.instance.ShakeObject (this.gameObject, true, freakoutShakeDuration);
-			print ("FREAKOUT COROUTINE");
-			// TODO: if (!shockParticles.isPlaying) { shockParticles.main.loop = true; shockParticles.Play(); }
+			if (!shockParticles.isPlaying) { 
+				main.loop = true;
+				shockParticles.Play(); 
+			} else {
+				psr.sortingLayerID = spriteRenderer.sortingLayerID;
+			}
 			if (!efxSource.isPlaying)
 				PlayRandomSoundFx (breakdownShakeSounds);
 			
 			yield return new WaitForSeconds (freakoutShakeDuration);
-		} while (!goneCrazy);
-		efxSource.Stop ();
-		// shockParticles.main.loop = false;
+		} while (currentState == oldState && emotionalStability > oldStability);
+
+		main.loop = false;
+		foreach (AudioClip clip in breakdownShakeSounds) {
+			if (efxSource.clip == clip) {
+				efxSource.Stop ();
+				break;
+			}
+		}
+		freakoutCoroutine = null;
 	}
 
 	public void ToggleCrazyEmotion() {
-		print ("TOGGLE EMOTION PRESSED");
-		goneCrazy = false;
 		StartCoroutine (Freakout ());
 		if (currentState == RobotStates.STATE_FINDBOX)
 			GoCrazy ();
 		else
 			currentState = (currentState == RobotStates.STATE_HOMICIDAL ? RobotStates.STATE_SUICIDAL : RobotStates.STATE_HOMICIDAL);
-		goneCrazy = true;
 	}
 
 	private void GoCrazy () {
 		PlaySingleSoundFx (breakdownZapSound);
 		float flipACoin = Random.Range (0, 2);
 		currentState = flipACoin == 0 ? RobotStates.STATE_HOMICIDAL : RobotStates.STATE_SUICIDAL;
-		goneCrazy = true;
 	}
 
 	private void UpdateVisuals() {
@@ -313,8 +337,8 @@ public class Robot : Throwable {
 
 		CheckIfTargetLost ();
 			
-		if (target != null) {
-			FollowPath ();			// FIXME: FollowPath actually gets a new path that overwrites the user-defined path
+		if (target != null || path != null) {
+			FollowPath ();
 			return;
 		}
 
@@ -345,16 +369,17 @@ public class Robot : Throwable {
 			if (isSubPath) {
 				subPaths.Add (newPath);
 				numSubPathsToProcess--;
+
 				if (numSubPathsToProcess <= 0) {
 					numSubPathsToProcess = 0;
-					print ("MERGING (" + subPaths.Count + ") SUB-PATHS");
 					path = pathFinder.MergeSubPaths (subPaths);
-					print ("FINAL MERGE INDEX COUNT: " + path.Length);
+					subPaths.Clear ();
 					if (path.Length > 0)
 						InitPath ();
 				} else {
 					waitingForPathRequestResults = true;
 				}
+
 			} else {
 				path = newPath;
 				InitPath ();
@@ -379,9 +404,10 @@ public class Robot : Throwable {
 		}
 	}
 
-	public void ClearDrawnPath() {
+	public void ClearUserDefinedPath() {
 		oldDrawnPathCount = 0;
 		drawnPath.Clear ();
+		subPaths.Clear ();
 	}
 		
 	public void TryAddPathPoint (Vector3 worldPosition) {
@@ -398,12 +424,10 @@ public class Robot : Throwable {
 			waitingForPathRequestResults = true;
 			numSubPathsToProcess = pathFinder.OptimizeDrawnPath (drawnPath, OnPathFound);
 		}
-		ClearDrawnPath ();
+		ClearUserDefinedPath ();
 		return longEnoughPath;
 	}
 
-	// FIXME: don't change a user-defined path
-	// and don't request a new path if awaiting a drawnPath merge
 	void UpdatePath(bool freshStart) {
 		if (!waitingForPathRequestResults && (freshStart || (target != null && (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold))) {
 			waitingForPathRequestResults = true;

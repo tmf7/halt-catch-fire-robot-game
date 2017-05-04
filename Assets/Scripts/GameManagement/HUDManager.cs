@@ -33,7 +33,6 @@ public class HUDManager : MonoBehaviour {
 	private int 				robotsRepaired = 0;
 	private int 				firesPutOut = 0;
 	private int 				robotIncreaseThreshold = 10;
-	private bool 				wasEmotionButtonInteractable = false;
 	private bool				emotionHandleHeld = false;
 
 	private ImageSwapButton 	pauseButton;
@@ -104,10 +103,10 @@ public class HUDManager : MonoBehaviour {
 		timeText = GameObject.Find ("TimeText").GetComponent<Text>();
 		pauseButton = GameObject.Find ("PauseButton").GetComponentInChildren<ImageSwapButton> ();
 		globalEmotionSlider = GameObject.Find ("EmotionSlider").GetComponent<Slider> ();
-		globalEmotionButton = globalEmotionSlider.GetComponentInChildren<Button> ();
+		globalEmotionButton = GameObject.Find ("EmotionButton").GetComponent<Button> ();
 		globalEmotionImage = GameObject.Find ("EmotionImage").GetComponent<Image> ();
 		globalEmotionImage.enabled = false;
-		UpdatetGlobalEmotionSlider ();
+		UpdatetGlobalEmotionInterface ();
 	}
 		
 	void Update() {
@@ -117,12 +116,13 @@ public class HUDManager : MonoBehaviour {
 		boxesText.text = "Boxes Orbited: " + boxesCollected.ToString();
 		robotsText.text = "Robots Left: " + GameManager.instance.robotCount.ToString();
 		timeText.text = "Time: " + (GameManager.instance.levelEnded ? lastTimeRemainingValue : levelTimeRemaining).ToString();
-		UpdatetGlobalEmotionSlider ();
+		UpdatetGlobalEmotionInterface ();
 	}
 
-	public void UpdatetGlobalEmotionSlider() {
+	public void UpdatetGlobalEmotionInterface() {
 		Robot robot = RobotGrabber.instance.currentGrabbedRobot;
 		globalEmotionSlider.gameObject.SetActive (robot != null);
+		globalEmotionButton.gameObject.SetActive (robot != null);
 		if (!globalEmotionSlider.gameObject.activeSelf)
 			return;
 
@@ -134,11 +134,6 @@ public class HUDManager : MonoBehaviour {
 		globalEmotionButton.interactable = robot.emotionalStability >= 1.0f;
 		globalEmotionImage.enabled = globalEmotionButton.interactable && robot.currentSpeech.enabled;
 		globalEmotionImage.sprite = robot.currentSpeech.sprite;
-
-		if (robot.emotionalStability >= 1.0f && !wasEmotionButtonInteractable)
-			robot.ToggleCrazyEmotion ();
-
-		wasEmotionButtonInteractable = globalEmotionButton.interactable;
 	}
 		
 	public void HoldEmotionHandle() {

@@ -60,14 +60,12 @@ public class RobotGrabber : MonoBehaviour {
 				#endif
 				transform.position = worldPosition;		
 			} else if (grabbedRobot != null) {
-				print ("SET GRABBER POSITION");
 				spriteRenderer.enabled = true;
 				transform.position = grabbedRobot.transform.position + Vector3.up * joint.distance;
 			}
 		}
 
 		// FIXME: magic number specific to the current y-position of the HUD interface
-		// FIXME: the robot becomes grabbedByPlayer after the first release (if the drawnPath isn't long enough)
 		Cursor.visible = Time.timeScale == 0.0f || worldPosition.y > 7.0f || (grabbedRobot != null && !secondClickOnRobot);
 
 		// first click LOCKS the robot on the ground (ie NOT HOVER via Robot.grabbed bool)
@@ -107,7 +105,7 @@ public class RobotGrabber : MonoBehaviour {
 				grabbedRobotCollider = hits [closestHitIndex];
 				grabbedRobot = grabbedRobotCollider.GetComponent<Robot> ();
 				grabbedRobot.lockedByPlayer = true;
-				grabbedRobot.ClearDrawnPath ();
+				grabbedRobot.ClearUserDefinedPath ();
 				grabbedRobot.SetTargeter (null);
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 
@@ -132,7 +130,6 @@ public class RobotGrabber : MonoBehaviour {
 			} else {
 				Collider2D hit = Physics2D.OverlapCircle (worldPosition, grabRadius, grabbedRobotMask);
 				secondClickOnRobot = hit == grabbedRobotCollider;
-				print ("SECOND ROBO-CLICK: " + secondClickOnRobot);
 			}
 		}
 
@@ -148,13 +145,10 @@ public class RobotGrabber : MonoBehaviour {
 		}
 			
 		// input release
-		if (Input.GetMouseButtonUp (0)) {	// FIXME(?): was !Input.GetMouseButton(0)
+		if (Input.GetMouseButtonUp (0)) {
 			if (grabbedRobot == null)
 				return;
 
-			// FIXME: don't drop a bot, just let it walk along the ground if the player drew a path
-			// PROBLEM: a player may accidentally draw a small path while un-clicking the first time
-			// set a threshold minimum path length?
 			if (grabbedRobot.lockedByPlayer) {
 				grabbedRobot.lockedByPlayer = false;
 				if (!grabbedRobot.FinishDrawingPath ()) {
