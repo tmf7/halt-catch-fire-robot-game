@@ -6,13 +6,14 @@ using UnityEngine.UI;
 public class HUDManager : MonoBehaviour {
 
 	public static HUDManager	instance = null;
+//	public  float				difficulty = 0;
 	public int					levelDuration = 30;
 	public int 					robotsEarnedToAdd = 2;
 
 	[HideInInspector]
 	public int 					robotsFiredThisLevel = 0;
 	[HideInInspector]
-	public int 					repairsThisLevel = 0;
+	public int 					robotsBuiltThisLevel = 0;
 	[HideInInspector]
 	public int 					firesPutOutThisLevel = 0;
 	[HideInInspector]
@@ -30,7 +31,7 @@ public class HUDManager : MonoBehaviour {
 	private float				lastTimeRemainingValue;
 	private int 				boxesCollected = 0;
 	private int 				robotsFired = 0;
-	private int 				robotsRepaired = 0;
+	private int 				robotsBuilt = 0;
 	private int 				firesPutOut = 0;
 	private int 				robotIncreaseThreshold = 10;
 	private bool				emotionHandleHeld = false;
@@ -53,7 +54,7 @@ public class HUDManager : MonoBehaviour {
 	}
 
 	public int robotsRemaining {
-		get { 
+		get {
 			return GameManager.instance.maxRobots - robotsFired;			
 		}																	
 	}														
@@ -61,12 +62,6 @@ public class HUDManager : MonoBehaviour {
 	public int levelTimeRemaining {
 		get { 
 			return isLevelTimeUp ? 0 : levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad);
-		}
-	}
-
-	public int totalRobotsRepaired {
-		get { 
-			return robotsRepaired;
 		}
 	}
 
@@ -79,6 +74,12 @@ public class HUDManager : MonoBehaviour {
 	public int totalFiresPutOut {
 		get { 
 			return firesPutOut;
+		}
+	}
+
+	public int totalRobotsBuilt {
+		get { 
+			return robotsBuilt;
 		}
 	}
 
@@ -128,7 +129,7 @@ public class HUDManager : MonoBehaviour {
 
 		if (!emotionHandleHeld)
 			globalEmotionSlider.value = robot.emotionalStability;
-		else 
+		else
 			robot.emotionalStability = globalEmotionSlider.value;
 		
 		globalEmotionButton.interactable = robot.emotionalStability >= 1.0f;
@@ -173,9 +174,6 @@ public class HUDManager : MonoBehaviour {
 		boxesThisLevel++;
 		if (boxesCollected % robotIncreaseThreshold == 0) {
 			GameManager.instance.IncreaseMaxRobots (robotsEarnedToAdd);
-			// TODO: start at 3, increase by 2 every 10 up to 10, then every 30
-			// allow the threshold to oscillate if the robotCount drops
-			// ? make the threshold visible ?
 		}
 	}
 
@@ -189,22 +187,22 @@ public class HUDManager : MonoBehaviour {
 		robotsFiredThisLevel++;
 	}
 
-	public void RobotRepairComplete() {
-		robotsRepaired++;
-		repairsThisLevel++;
+	public void BuildRobot() {
+		robotsBuilt++;
+		robotsBuiltThisLevel++;
 	}
 
 	public void ResetGameStats() {
 		firesPutOut = 0;
-		robotsRepaired = 0;
 		boxesCollected = 0;
+		robotsBuilt = 0;
 		robotsFired = 0;
 	}
 
 	public void ResetLevelStats() {
 		firesPutOutThisLevel = 0;
-		repairsThisLevel = 0;
 		robotsFiredThisLevel = 0;
+		robotsBuiltThisLevel = 0;
 		boxesThisLevel = 0;
 	}
 }

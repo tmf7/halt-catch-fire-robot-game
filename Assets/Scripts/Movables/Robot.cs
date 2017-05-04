@@ -10,7 +10,6 @@ public class Robot : Throwable {
 	public GameObject 	steamPuffPrefab;
 	public ParticleSystem robotBeamPrefab;
 
-	public AudioClip 	repairingSound;			// TODO: loop-play this as long the slider bar is being held
 	public AudioClip 	playerGrabbedSound;
 	public AudioClip 	robotGrabbedSound;
 	public AudioClip	slowThrownSound;
@@ -30,7 +29,7 @@ public class Robot : Throwable {
 	public float 		slowdownDistance = 2.0f;
 	public float 		grabHeight = 10.0f;
 	public float		robotScreamTolerance = 16.0f;
-	public float		emotionalDistressRate = 0.1f;		// FIXME/TODO: 10 seconds to insanity (tie this to a difficulty slider on the pause menu)
+	public float		emotionalDistressRate = 0.1f;		// TODO: tie this directly to a difficulty slider on the pause menu
 	public float		freakoutThreshold = 0.8f;
 	public float 		freakoutShakeDuration = 0.5f;
 	public float		emotionalStability = 0.0f;
@@ -155,12 +154,6 @@ public class Robot : Throwable {
 
 		if (onFire && HUDManager.instance.playSprinklerSystem)
 			onFire = false;
-
-		// FIXME: version 2.0 wont have special states to FIND nearest robots or hazards (maybe)
-		// and won't have a repair zone at all
-//		currentState == RobotStates.STATE_REPAIRING;
-//		currentState = RobotStates.STATE_FINDBOX;
-//		HUDManager.instance.RobotRepairComplete ();
 	
 		SearchForTarget ();
 		UpdateShadow ();
@@ -245,7 +238,7 @@ public class Robot : Throwable {
 
 		if (emotionalStability >= 1.0f && currentState == RobotStates.STATE_FINDBOX) {
 			emotionalStability = 1.0f;
-			GoCrazy ();
+			ToggleCrazyEmotion ();
 		}
 	}
 
@@ -259,15 +252,14 @@ public class Robot : Throwable {
 		RobotStates oldState = currentState;
 		float oldStability = emotionalStability;
 		var main = shockParticles.main;
-		ParticleSystemRenderer psr = shockParticles.GetComponent<ParticleSystemRenderer> ();
+		ParticleSystemRenderer shockPSR = shockParticles.GetComponent<ParticleSystemRenderer> ();
 
 		do {
 			UIManager.instance.ShakeObject (this.gameObject, true, freakoutShakeDuration);
+			shockPSR.sortingLayerID = spriteRenderer.sortingLayerID;
 			if (!shockParticles.isPlaying) { 
 				main.loop = true;
 				shockParticles.Play(); 
-			} else {
-				psr.sortingLayerID = spriteRenderer.sortingLayerID;
 			}
 			if (!efxSource.isPlaying)
 				PlayRandomSoundFx (breakdownShakeSounds);
@@ -291,10 +283,10 @@ public class Robot : Throwable {
 			GoCrazy ();
 		else
 			currentState = (currentState == RobotStates.STATE_HOMICIDAL ? RobotStates.STATE_SUICIDAL : RobotStates.STATE_HOMICIDAL);
+		PlaySingleSoundFx (breakdownZapSound);
 	}
 
 	private void GoCrazy () {
-		PlaySingleSoundFx (breakdownZapSound);
 		float flipACoin = Random.Range (0, 2);
 		currentState = flipACoin == 0 ? RobotStates.STATE_HOMICIDAL : RobotStates.STATE_SUICIDAL;
 	}
@@ -302,17 +294,20 @@ public class Robot : Throwable {
 	private void UpdateVisuals() {
 		switch (currentState) {
 			case RobotStates.STATE_FINDBOX:
+				stateSpeedMultiplier = 1.0f;
 				spriteRenderer.color = Color.white;
 				line.colorGradient = lockedByPlayer ? line.colorGradient 
 													: GameManager.instance.blueWaveGradient;
 				break;
 			case RobotStates.STATE_SUICIDAL:
+				stateSpeedMultiplier = 0.5f;
 				spriteRenderer.color = Color.cyan;
 				currentSpeech.sprite = suidicalSpeechSprite;
 				line.colorGradient = lockedByPlayer ? line.colorGradient 
-													: GameManager.instance.greenWaveGradient;
+													: GameManager.instance.greenWaveGradient;				
 				break;
 			case RobotStates.STATE_HOMICIDAL:
+				stateSpeedMultiplier = 2.0f;
 				spriteRenderer.color = Color.red;
 				currentSpeech.sprite = homicidalSpeechSprite;
 				line.colorGradient = lockedByPlayer ? line.colorGradient 
@@ -342,25 +337,15 @@ public class Robot : Throwable {
 			return;
 		}
 
-		// FIXME: only get a box/delivery target if not given an explicit path from the player
-		// TODO: also run around like a crazy person if onFire == true
+		// default
+		target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
+							  : GameManager.instance.GetClosestBoxTarget (this);
 
-		switch (currentState) {
-			case RobotStates.STATE_FINDBOX:
-				stateSpeedMultiplier = 1.0f;
-				target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
-									  : GameManager.instance.GetClosestBoxTarget (this);
-				break;
-			case RobotStates.STATE_SUICIDAL:
-				stateSpeedMultiplier = 0.5f;
-				target = GameManager.instance.GetClosestHazardTarget (this);
-				break;
-			case RobotStates.STATE_HOMICIDAL:
-				stateSpeedMultiplier = 2.0f;
-				target = isDelivering ? GameManager.instance.GetClosestHazardTarget (this)
-									  : GameManager.instance.GetClosestRobotTarget (this);
-				break;
-		}
+		// homicidal
+		if (isCarryingItem && (carriedItem is Robot))
+			target = GameManager.instance.GetClosestHazardTarget (this);
+
+		// suidical is handled by the SuicideCircle child
 	}
 
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful, bool isSubPath) {
@@ -576,10 +561,9 @@ public class Robot : Throwable {
 	// which prevents derived classes from directly using it
 	protected override void HitCollision2D(Collision2D collision) {
 		if (!isCarryingItem && !isBeingCarried) {
-
 			Throwable toGrab = collision.gameObject.GetComponent<Throwable> ();
 			if (toGrab != null && toGrab.grounded) {
-				if (toGrab.tag == "Box" && currentState == RobotStates.STATE_FINDBOX)
+				if (toGrab.tag == "Box")
 					GrabItem (toGrab);
 				else if (toGrab.tag == "Robot" && currentState == RobotStates.STATE_HOMICIDAL && !(toGrab as Robot).lockedByPlayer)
 					GrabItem (toGrab);
@@ -603,10 +587,15 @@ public class Robot : Throwable {
 	}
 
 	void OnCollisionStay2D(Collision2D collision) {
-		if (collision.collider.tag == "Crusher"){
+		if (collision.collider.tag == "Crusher") {
 			howDied = RobotNames.MethodOfDeath.DEATH_BY_CRUSHER;
 			Explode ();
 		}
+
+//		if (collision.collider.tag == "Furnace") {
+//			if (!onFire)
+//				onFire = true;
+//		}
 	}
 
 	// derived-class extension of OnTriggerEnter2D

@@ -91,6 +91,7 @@ public class RobotNames {
 			}
 		}
 		survivorNamesUsed++;
+		HUDManager.instance.BuildRobot ();
 		return GetUnusedName ();
 	}
 

@@ -215,6 +215,21 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
+	public bool IsHazard (Transform hit) {
+		return hazardPoints.Contains (hit);
+	}
+
+	public Collider2D IsTouchingHazard (Collider2D collider2D) {
+		foreach (Transform hazard in hazardPoints) {
+			Collider2D testHit = hazard.GetComponent<Collider2D> ();
+			if (collider2D.IsTouching (testHit)) {
+				print ("HIT");
+				return testHit;
+			}
+		}
+		return null;
+	}
+
 	public Transform GetClosestBoxTarget(Robot robot) {
 		Box closestBox = null;
 		float minRangeSqr = float.MaxValue;

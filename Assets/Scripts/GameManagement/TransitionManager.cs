@@ -189,13 +189,13 @@ public class TransitionManager : MonoBehaviour {
 		if (levelTextToDisplay == 7) {
 			scoreString = "TOTAL BOXES ORBITED: " + HUDManager.instance.totalBoxesCollected;
 			scoreString += "\nTOTAL FIRES EXTINGUISHED: " + HUDManager.instance.totalFiresPutOut;
-			scoreString += "\nTOTAL REPAIRS MADE: " + HUDManager.instance.totalRobotsRepaired;
+			scoreString += "\nTOTAL ROBOTS BUILT: " + HUDManager.instance.totalRobotsBuilt;
 		} else {
 			scoreString = "LEVEL PERFORMANCE:";
 			scoreString +=  "\nBOXES ORBITED: " + HUDManager.instance.boxesThisLevel;
 			scoreString += "\t\t\t\t\tFIRES EXTINGUISHED: " + HUDManager.instance.firesPutOutThisLevel;
-			scoreString += "\nREPAIRED ROBOTS: " + HUDManager.instance.repairsThisLevel + "  ";
-			scoreString += "\t\t\tTERMINATED ROBOTS: " + HUDManager.instance.robotsFiredThisLevel;
+			scoreString += "\nBUILT ROBOTS: " + HUDManager.instance.robotsBuiltThisLevel + " ";
+			scoreString += "\t\t\t\t\tTERMINATED ROBOTS: " + HUDManager.instance.robotsFiredThisLevel;
 		}
 		StartCoroutine (AnimateText (scoreText, scoreString));
 	}
