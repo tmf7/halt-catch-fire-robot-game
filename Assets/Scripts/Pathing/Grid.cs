@@ -41,6 +41,18 @@ public class Grid : MonoBehaviour {
 			return numGridRows * numGridCols;
 		}
 	}
+
+	public int GridRows {
+		get { 
+			return numGridRows;
+		}
+	}
+
+	public int GridCols {
+		get { 
+			return numGridCols;
+		}
+	}
 	
 	void CreateGrid () {
 		grid = new GridNode[numGridRows, numGridCols];

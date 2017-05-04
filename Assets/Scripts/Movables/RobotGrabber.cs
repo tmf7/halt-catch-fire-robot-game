@@ -7,13 +7,14 @@ public class RobotGrabber : MonoBehaviour {
 	public static RobotGrabber 	instance = null;
 
 	public LayerMask			grabbleMask;
-	public LayerMask 			grabbedRobotMask;
+	public LayerMask			grabbedRobotMask;
 	public float				grabRadius = 10.0f;
 	public float				mouseJointDistance = 0.1f;
 	public float				touchJointDistance = 1.0f;
 	public float				forceMultiplier = 2.0f;
 
 	private Robot 				grabbedRobot;
+	private Collider2D			grabbedRobotCollider;
     private DistanceJoint2D 	joint;
 	private SpriteRenderer		spriteRenderer;
 	private bool				secondClickOnRobot = false;
@@ -48,26 +49,25 @@ public class RobotGrabber : MonoBehaviour {
         Vector3 worldPosition = Camera.main.ScreenToWorldPoint(mousePos);
 		worldPosition.z = 0.0f;
 
-		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
-
-		if (Time.timeScale == 0.0f || worldPosition.y > 7.0f) {		// FIXME: magic number specific to the current y-position of the HUD interface
-			Cursor.visible = true;
-			spriteRenderer.enabled = false;
-		} else {
-			Cursor.visible = false;
-			spriteRenderer.enabled = true;
-		}
-
 		// robotGrabber follows the mouse 1:1
 		// unless the player has clicked on a robot once
-		if (!Cursor.visible && (grabbedRobot == null || secondClickOnRobot)) {
-			transform.position = worldPosition;		
-		} else if (grabbedRobot != null) {
-			transform.position = grabbedRobot.transform.position + Vector3.up * joint.distance;		// FIXME: don't shake the grabber-sprite if the robot is shaking
-			Cursor.visible = true;
+		if (!Cursor.visible) {
+			if (grabbedRobot == null || secondClickOnRobot) {
+				#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
+					spriteRenderer.enabled = true;
+				#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
+					spriteRenderer.enabled = false;
+				#endif
+				transform.position = worldPosition;		
+			} else if (grabbedRobot != null) {
+				print ("SET GRABBER POSITION");
+				spriteRenderer.enabled = true;
+				transform.position = grabbedRobot.transform.position + Vector3.up * joint.distance;
+			}
 		}
-		
-		#endif
+
+		// FIXME: magic number specific to the current y-position of the HUD interface
+		Cursor.visible = Time.timeScale == 0.0f || worldPosition.y > 7.0f || (grabbedRobot != null && !grabbedRobot.grabbedByPlayer);
 
 		// first click LOCKS the robot on the ground (ie NOT HOVER via Robot.grabbed bool)
 		// SET RobotGrabber SPRITE position DIRECTLY over grabbedRobot, and enable the cursor to manipulate the SLIDER, or draw a PATH
@@ -80,7 +80,7 @@ public class RobotGrabber : MonoBehaviour {
 		// if the user instead HOLDS AND DRAGS the mouse, then the robot STAYS LOCKED and starts getting a NEW PATH 
 		// if the user RELEASES the mouse, UNLOCK the robot to follow the new path, and start MOVING the RobotGrabber SPRITE again as normal
 
-		// input release
+		// input press
 		if (Input.GetMouseButtonDown (0)) {
 			if (joint == null) {
 
@@ -103,53 +103,63 @@ public class RobotGrabber : MonoBehaviour {
 				if (closestHitIndex == -1)
 					return;
 
-				Collider2D closestHit = hits [closestHitIndex];
-				grabbedRobot = closestHit.GetComponent<Robot> ();
+				grabbedRobotCollider = hits [closestHitIndex];
+				grabbedRobot = grabbedRobotCollider.GetComponent<Robot> ();
 				grabbedRobot.lockedByPlayer = true;
-				grabbedRobot.gameObject.layer = Mathf.RoundToInt(Mathf.Log(grabbedRobotMask.value, 2.0f));
+				grabbedRobot.ClearDrawnPath ();
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 
 				// create a joint on the robot sprite
-				joint = closestHit.gameObject.AddComponent<DistanceJoint2D> ();
+				joint = grabbedRobotCollider.gameObject.AddComponent<DistanceJoint2D> ();
 				joint.autoConfigureConnectedAnchor = false;
 				joint.autoConfigureDistance = false;
 				joint.enableCollision = true;
-				joint.anchor = Vector2.up * closestHit.bounds.extents.y;	// put the joint in robot local space slightly above its head
-				joint.connectedAnchor = worldPosition;
 
 				#if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
-				joint.distance = touchJointDistance;
+					joint.distance = touchJointDistance;
 				#else
 					joint.distance = mouseJointDistance;
 				#endif
 
-				// allow the robot to swing on the hinge and spin in flight
-				closestHit.attachedRigidbody.constraints = RigidbodyConstraints2D.None;
+				// put the joint in robot local space slightly above its head
+				// and align both parts of the joint initially
+				joint.anchor = Vector2.up * grabbedRobotCollider.bounds.extents.y;												
+				joint.connectedAnchor = new Vector2 (grabbedRobot.transform.position.x, grabbedRobot.transform.position.y) + (Vector2.up * joint.distance) + joint.anchor;
+
+
 			} else {
 				Collider2D hit = Physics2D.OverlapCircle (worldPosition, grabRadius, grabbedRobotMask);
-				secondClickOnRobot = hit != null;
+				secondClickOnRobot = hit == grabbedRobotCollider;
+				print ("SECOND ROBO-CLICK: " + secondClickOnRobot);
 			}
-
 		}
 
-		// dragging the input
+		// input drag
 		if (joint != null && (Input.GetAxis ("Mouse X") != 0.0f || Input.GetAxis ("Mouse Y") != 0.0f)) {
-			if (secondClickOnRobot)
+			if (secondClickOnRobot) {
+				// allow the robot to swing on the hinge and spin in flight
+				grabbedRobotCollider.attachedRigidbody.constraints = RigidbodyConstraints2D.None;
 				joint.connectedAnchor = worldPosition;
-			else
+			} else if (grabbedRobot.lockedByPlayer) {
 				grabbedRobot.TryAddPathPoint (worldPosition);
+			}
 		}
 			
-		// input click
-		if (!Input.GetMouseButton (0)) {
-			if (grabbedRobot != null && grabbedRobot.lockedByPlayer) {
-				grabbedRobot.lockedByPlayer = false;
-				grabbedRobot.grabbedByPlayer = true;
-				grabbedRobot.FinishDrawingPath ();
+		// input release
+		if (Input.GetMouseButtonUp (0)) {	// FIXME(?): was !Input.GetMouseButton(0)
+			if (grabbedRobot == null)
 				return;
+
+			// FIXME: don't drop a bot, just let it walk along the ground if the player drew a path
+			// PROBLEM: a player may accidentally draw a small path while un-clicking the first time
+			// set a threshold minimum path length?
+			if (grabbedRobot.lockedByPlayer) {
+				grabbedRobot.lockedByPlayer = false;
+				if (!grabbedRobot.FinishDrawingPath ())
+					grabbedRobot.grabbedByPlayer = true;
 			}				
 
-			if (grabbedRobot != null && grabbedRobot.grabbedByPlayer) {
+			if (secondClickOnRobot) {
 				grabbedRobot.gameObject.layer = Mathf.RoundToInt(Mathf.Log (grabbleMask.value, 2.0f));
 				Vector3 dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
 				if (dropForce.sqrMagnitude <= 2.0f * (joint.distance * joint.distance))
@@ -160,6 +170,8 @@ public class RobotGrabber : MonoBehaviour {
 				joint = null;
 				grabbedRobot.grabbedByPlayer = false;
 				grabbedRobot = null;
+				secondClickOnRobot = false;
+				grabbedRobotCollider = null;
 			}
 		}
     }

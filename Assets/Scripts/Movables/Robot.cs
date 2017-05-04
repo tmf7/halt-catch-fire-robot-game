@@ -17,7 +17,7 @@ public class Robot : Throwable {
 
 	public AudioClip[]	fastThrownSounds;
 	public AudioClip[]	robotReliefSounds;
-	public AudioClip	breakdownHumSound;
+	public AudioClip[]	breakdownShakeSounds;
 	public AudioClip	breakdownZapSound;
 
 	public Sprite 		onFireSpeechSprite;
@@ -31,8 +31,8 @@ public class Robot : Throwable {
 	public float 		grabHeight = 10.0f;
 	public float		robotScreamTolerance = 16.0f;
 	public float		emotionalDistressRate = 0.1f;		// FIXME/TODO: 10 seconds to insanity (tie this to a difficulty slider on the pause menu)
-	public float		emotionalBreakdownDuration = 3.0f;
-	public float 		quickBreakdownDuration = 0.5f;
+	public float		freakoutThreshold = 0.8f;
+	public float 		freakoutShakeDuration = 0.5f;
 	public float		emotionalStability = 0.0f;
 
 	[HideInInspector]
@@ -83,6 +83,7 @@ public class Robot : Throwable {
 	private Vector3				targetLastKnownPosition;
 	private float 				sqrTargetSlowdownDistance;
 	private float 				carryItemDistance;
+	private float				drawnPathLengthThresholdSqr = 100.0f;
 	private const float			pathUpdateMoveThreshold = 0.25f;
 	private const float 		minWaitTime = 0.2f;
 	private const float 		stoppingThreshold = 0.01f;
@@ -92,6 +93,7 @@ public class Robot : Throwable {
 	private float				stateSpeedMultiplier = 1.0f;
 	private bool 				justReleased;
 	private bool				freakingOut;
+	private bool 				goneCrazy = true;
 	private Throwable 			carriedItem;
 	private GameObject 			fireInstance;
 	private CircleCollider2D 	circleCollider;
@@ -106,7 +108,7 @@ public class Robot : Throwable {
 
 		// InfoCanvas initialization
 		currentSpeech = GetComponentInChildren<Image> ();
-		currentSpeech.sprite = null;
+		currentSpeech.enabled = false;
 		Text[] robotNamePlate = GetComponentsInChildren<Text> ();
 		name = RobotNames.Instance.TryGetSurvivorName();
 		robotNamePlate[0].text = name;
@@ -120,17 +122,22 @@ public class Robot : Throwable {
 
 	void Update() {
 		UpdateEmotionalState ();
+		UpdateVisuals ();
 
-		if (!CheckGrabbedStatus () && !grounded && !justReleased) {
-			justReleased = true;
-			SetHeight (grabHeight);
-			rb2D.drag = 0.0f;
-			rb2D.velocity = new Vector2 (dropForce.x, dropForce.y);
-			Throw (0.0f, -1.0f);
-			if (dropForce.sqrMagnitude > robotScreamTolerance)
-				PlayRandomSoundFx (fastThrownSounds);
-			else
-				PlaySingleSoundFx (slowThrownSound);
+		if (!CheckGrabbedStatus ()) {
+			UpdatePathLine ();
+
+			if (!grounded && !justReleased) {
+				justReleased = true;
+				SetHeight (grabHeight);
+				rb2D.drag = 0.0f;
+				rb2D.velocity = new Vector2 (dropForce.x, dropForce.y);
+				Throw (0.0f, -1.0f);
+				if (dropForce.sqrMagnitude > robotScreamTolerance)
+					PlayRandomSoundFx (fastThrownSounds);
+				else
+					PlaySingleSoundFx (slowThrownSound);
+			}
 		}
 
 		if (onFire && HUDManager.instance.playSprinklerSystem)
@@ -142,6 +149,8 @@ public class Robot : Throwable {
 //		currentState = RobotStates.STATE_FINDBOX;
 //		HUDManager.instance.RobotRepairComplete ();
 	
+		print ("GROUNDED: " + grounded);
+		print("LOCKED: " + lockedByPlayer);
 		if (grounded && !fellInPit && !isBeingCarried && !lockedByPlayer)
 			SearchForTarget ();
 
@@ -221,39 +230,79 @@ public class Robot : Throwable {
 		if (emotionalStability < 1.0f) {
 			currentState = RobotStates.STATE_FINDBOX;
 			emotionalStability += emotionalDistressRate * Time.deltaTime;
+		}
 
-			float timeRemaining = (1.0f - emotionalStability) / emotionalDistressRate;
-			if (timeRemaining < emotionalBreakdownDuration && timeRemaining > 0.0f && !freakingOut) {
-				UIManager.instance.ShakeObject (this.gameObject, timeRemaining);
-				PlaySingleSoundFx (breakdownHumSound);											// FIXME: this sound may be annoying
-				// TODO: set a (child) electric shock particle effect duration to timeRemaining and play
-			}
-			freakingOut = timeRemaining < emotionalBreakdownDuration;
-				
-			if (emotionalStability >= 1.0f) {
-				emotionalStability = 1.0f;
-				GoCrazy ();
-			}
+		if (emotionalStability > freakoutThreshold && !freakingOut) {
+			StartCoroutine (Freakout ());
+		}
+		freakingOut = emotionalStability > freakoutThreshold;
+
+		if (emotionalStability >= 1.0f && currentState == RobotStates.STATE_FINDBOX) {
+			emotionalStability = 1.0f;
+			GoCrazy ();
 		}
 	}
 
-	public void QuickEmotionalBreakdownToggle() {
-		UIManager.instance.ShakeObject (this.gameObject, quickBreakdownDuration);
+	// robot is unable to follow it's current path while its freaking out 
+	public IEnumerator Freakout() {
+		goneCrazy = false;
+		do {
+			UIManager.instance.ShakeObject (this.gameObject, freakoutShakeDuration);
+
+			// TODO: if (!shockParticles.isPlaying) { shockParticles.main.loop = true; shockParticles.Play(); }
+			if (!efxSource.isPlaying)
+				PlayRandomSoundFx (breakdownShakeSounds);
+			
+			yield return new WaitForSeconds (freakoutShakeDuration);
+		} while (!goneCrazy);
+		goneCrazy = false;
+		efxSource.Stop ();
+		// shockParticles.main.loop = false;
+	}
+
+	public void ToggleCrazyEmotion() {
+		print ("TOGGLE EMOTION PRESSED");
+		StartCoroutine (Freakout ());
 		if (currentState == RobotStates.STATE_FINDBOX)
 			GoCrazy ();
 		else
 			currentState = (currentState == RobotStates.STATE_HOMICIDAL ? RobotStates.STATE_SUICIDAL : RobotStates.STATE_HOMICIDAL);
+		goneCrazy = true;
 	}
 
 	private void GoCrazy () {
-		// TODO: set a (child) electric shock particle effect duration to quickBreakdownDuration and play
 		PlaySingleSoundFx (breakdownZapSound);
 		float flipACoin = Random.Range (0, 2);
 		currentState = flipACoin == 0 ? RobotStates.STATE_HOMICIDAL : RobotStates.STATE_SUICIDAL;
+		goneCrazy = true;
+	}
+
+	private void UpdateVisuals() {
+		switch (currentState) {
+			case RobotStates.STATE_FINDBOX:
+				spriteRenderer.color = Color.white;
+				line.colorGradient = GameManager.instance.blueWaveGradient;
+				break;
+			case RobotStates.STATE_SUICIDAL:
+				spriteRenderer.color = Color.cyan;
+				currentSpeech.sprite = suidicalSpeechSprite;
+				line.colorGradient = GameManager.instance.greenWaveGradient;
+				break;
+			case RobotStates.STATE_HOMICIDAL:
+				spriteRenderer.color = Color.red;
+				currentSpeech.sprite = homicidalSpeechSprite;
+				line.colorGradient = GameManager.instance.redWaveGradient;
+				break;
+		}
+
+		if (onFire)
+			currentSpeech.sprite = onFireSpeechSprite;
+
+		currentSpeech.enabled = currentState != RobotStates.STATE_FINDBOX || onFire;
 	}
 
 	void SearchForTarget() {
-
+		print ("SEARCH FOR TARGET");
 		if (isBeingCarried || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
 			StopMoving ();
 			return;
@@ -267,36 +316,24 @@ public class Robot : Throwable {
 		}
 
 		// FIXME: only get a box/delivery target if not given an explicit path from the player
+		// TODO: also run around like a crazy person if onFire == true
 
 		switch (currentState) {
 			case RobotStates.STATE_FINDBOX:
-				spriteRenderer.color = Color.white;
-				currentSpeech.sprite = null;
-				line.colorGradient = GameManager.instance.blueWaveGradient;
 				stateSpeedMultiplier = 1.0f;
-//				target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
-//									  : GameManager.instance.GetClosestBoxTarget (this);
+				target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
+									  : GameManager.instance.GetClosestBoxTarget (this);
 				break;
 			case RobotStates.STATE_SUICIDAL:
-				spriteRenderer.color = Color.cyan;
-				currentSpeech.sprite = suidicalSpeechSprite;
-				line.colorGradient = GameManager.instance.greenWaveGradient;
 				stateSpeedMultiplier = 0.5f;
-//				target = GameManager.instance.GetClosestHazardTarget (this);
+				target = GameManager.instance.GetClosestHazardTarget (this);
 				break;
 			case RobotStates.STATE_HOMICIDAL:
-				spriteRenderer.color = Color.red;
-				currentSpeech.sprite = homicidalSpeechSprite;
-				line.colorGradient = GameManager.instance.redWaveGradient;
 				stateSpeedMultiplier = 2.0f;
-//				target = isDelivering ? GameManager.instance.GetClosestHazardTarget (this)
-//									  : GameManager.instance.GetClosestRobotTarget (this);
+				target = isDelivering ? GameManager.instance.GetClosestHazardTarget (this)
+									  : GameManager.instance.GetClosestRobotTarget (this);
 				break;
 		}
-
-		// TODO: also run around like a crazy person
-		if (onFire)
-			currentSpeech.sprite = onFireSpeechSprite;
 	}
 
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful) {
@@ -319,6 +356,10 @@ public class Robot : Throwable {
 		}
 		waitingForPathRequestResults = false;
 	}
+
+	public void ClearDrawnPath() {
+		drawnPath.Clear ();
+	}
 		
 	public void TryAddPathPoint (Vector3 worldPosition) {
 		GridNode node = grid.NodeFromWorldPoint (worldPosition);
@@ -326,10 +367,12 @@ public class Robot : Throwable {
 			drawnPath.Add (node);				
 	}
 		
-	public void FinishDrawingPath() {
+	public bool FinishDrawingPath() {
 		Vector3[] playerDrawnPath = pathFinder.SimplifyPath (drawnPath);
 		drawnPath.Clear ();
-		OnPathFound (playerDrawnPath, playerDrawnPath.Length > 0);			
+		bool pathSuccess = pathFinder.PathLengthSqr(playerDrawnPath) > drawnPathLengthThresholdSqr;
+		OnPathFound (playerDrawnPath, pathSuccess);	
+		return pathSuccess;
 	}
 
 	void UpdatePath(bool freshStart) {
@@ -376,19 +419,18 @@ public class Robot : Throwable {
 			spriteRenderer.flipX = false;	
 
 		transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * stateSpeedMultiplier * percentSpeed * Time.deltaTime);
-		UpdatePathLine ();
 	}
 
 	private void UpdatePathLine() {
+		if (path == null)
+			return;
+
 		line.enabled = true;
+		line.numPositions = (path.Length - targetIndex) + 1;
+		line.SetPosition(0, transform.position);
 
-		if (path != null) {
-			line.numPositions = (path.Length - targetIndex) + 1;
-			line.SetPosition(0, transform.position);
-
-			for (int i = targetIndex, pos = 1; i < path.Length; i++, pos++)
-				line.SetPosition (pos, path [i]);
-		}
+		for (int i = targetIndex, pos = 1; i < path.Length; i++, pos++)
+			line.SetPosition (pos, path [i]);
 	}
 
 	private void ShowDrawnPath() {
@@ -485,7 +527,7 @@ public class Robot : Throwable {
 			if (toGrab != null && toGrab.grounded) {
 				if (toGrab.tag == "Box" && currentState == RobotStates.STATE_FINDBOX)
 					GrabItem (toGrab);
-				else if (toGrab.tag == "Robot" && currentState == RobotStates.STATE_HOMICIDAL)
+				else if (toGrab.tag == "Robot" && currentState == RobotStates.STATE_HOMICIDAL && !(toGrab as Robot).lockedByPlayer)
 					GrabItem (toGrab);
 			}
 		}

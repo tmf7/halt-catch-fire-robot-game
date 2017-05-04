@@ -243,7 +243,7 @@ public class GameManager : MonoBehaviour {
 		float minRangeSqr = float.MaxValue;
 
 		foreach (Robot robot in allRobots) {
-			if (robot == homicidalRobot || robot.isBeingCarried || robot.isTargeted || robot.fellInPit)
+			if (robot == homicidalRobot || robot.isBeingCarried || robot.isTargeted || robot.fellInPit || robot.grabbedByPlayer || robot.lockedByPlayer)
 				continue;
 
 			float rangeSqr = (robot.transform.position - homicidalRobot.transform.position).sqrMagnitude;

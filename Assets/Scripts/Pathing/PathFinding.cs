@@ -100,4 +100,20 @@ public class PathFinding : MonoBehaviour {
 		}
 		return waypoints.ToArray ();
 	}
+
+	public float PathLengthSqr (Vector3[] path) {
+		float lengthSqr = 0.0f;
+		for (int i = 1; i < path.Length; i++) {
+			lengthSqr += (path [i] - path [i - 1]).sqrMagnitude;
+		}
+		return lengthSqr;
+	}
+
+	public float PathLength (Vector3[] path) {
+		float lengthSqr = 0.0f;
+		for (int i = 1; i < path.Length; i++) {
+			lengthSqr += Vector3.Distance (path [i], path [i - 1]);
+		}
+		return lengthSqr;
+	}
 }

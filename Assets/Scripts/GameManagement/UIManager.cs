@@ -153,6 +153,7 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
+	// convenience function to issue multiple shakes without overlap
 	public void ShakeObject (GameObject obj, float duration = shakeDuration, float speed = shakeSpeed, float intensity = shakeIntensity) {
 		if (shakeCoroutineInstance != null)
 			instance.StopCoroutine (shakeCoroutineInstance);

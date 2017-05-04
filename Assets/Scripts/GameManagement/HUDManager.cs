@@ -105,7 +105,8 @@ public class HUDManager : MonoBehaviour {
 		pauseButton = GameObject.Find ("PauseButton").GetComponentInChildren<ImageSwapButton> ();
 		globalEmotionSlider = GameObject.Find ("EmotionSlider").GetComponent<Slider> ();
 		globalEmotionButton = globalEmotionSlider.GetComponentInChildren<Button> ();
-		globalEmotionImage = globalEmotionButton.GetComponentInChildren<Image> ();
+		globalEmotionImage = GameObject.Find ("EmotionImage").GetComponent<Image> ();
+		globalEmotionImage.enabled = false;
 		UpdatetGlobalEmotionSlider ();
 	}
 		
@@ -131,10 +132,11 @@ public class HUDManager : MonoBehaviour {
 			robot.emotionalStability = globalEmotionSlider.value;
 		
 		globalEmotionButton.interactable = robot.emotionalStability >= 1.0f;
+		globalEmotionImage.enabled = globalEmotionButton.interactable && robot.currentSpeech.enabled;
 		globalEmotionImage.sprite = robot.currentSpeech.sprite;
 
 		if (robot.emotionalStability >= 1.0f && !wasEmotionButtonInteractable)
-			robot.QuickEmotionalBreakdownToggle ();
+			robot.ToggleCrazyEmotion ();
 
 		wasEmotionButtonInteractable = globalEmotionButton.interactable;
 	}
@@ -151,7 +153,7 @@ public class HUDManager : MonoBehaviour {
 		Robot robot = RobotGrabber.instance.currentGrabbedRobot;
 		if (robot == null)
 			return;
-		robot.QuickEmotionalBreakdownToggle ();
+		robot.ToggleCrazyEmotion ();
 	}
 
 	public void StartSprinklerSystem () {
