@@ -6,42 +6,43 @@ using UnityEngine.UI;
 
 public class Robot : Throwable {
 
-	public GameObject	firePrefab;
-	public GameObject 	steamPuffPrefab;
-	public ParticleSystem robotBeamPrefab;
+	public GameObject			observationCirclePrefab;
+	public GameObject			firePrefab;
+	public GameObject 			steamPuffPrefab;
+	public ParticleSystem 		robotBeamPrefab;
 
-	public AudioClip 	playerGrabbedSound;
-	public AudioClip 	robotGrabbedSound;
-	public AudioClip	slowThrownSound;
+	public AudioClip 			playerGrabbedSound;
+	public AudioClip 			robotGrabbedSound;
+	public AudioClip			slowThrownSound;
 
-	public AudioClip[]	fastThrownSounds;
-	public AudioClip[]	robotReliefSounds;
-	public AudioClip[]	breakdownShakeSounds;
-	public AudioClip	breakdownZapSound;
+	public AudioClip[]			fastThrownSounds;
+	public AudioClip[]			robotReliefSounds;
+	public AudioClip[]			breakdownShakeSounds;
+	public AudioClip			breakdownZapSound;
 
-	public Sprite 		onFireSpeechSprite;
-	public Sprite 		homicidalSpeechSprite;
-	public Sprite 		suidicalSpeechSprite;
-	public Image		currentSpeech;
+	public Sprite 				onFireSpeechSprite;
+	public Sprite 				homicidalSpeechSprite;
+	public Sprite 				suidicalSpeechSprite;
+	public Image				currentSpeech;
 
-	public Transform 	target;
-	public float 		speed = 2.0f;
-	public float 		slowdownDistance = 2.0f;
-	public float 		grabHeight = 10.0f;
-	public float		robotScreamTolerance = 16.0f;
-	public float		emotionalDistressRate = 0.1f;		// TODO: tie this directly to a difficulty slider on the pause menu
-	public float		freakoutThreshold = 0.8f;
-	public float 		freakoutShakeDuration = 0.5f;
-	public float		emotionalStability = 0.0f;
+	public Transform 			target;
+	public float 				speed = 2.0f;
+	public float 				slowdownDistance = 2.0f;
+	public float 				grabHeight = 10.0f;
+	public float				robotScreamTolerance = 16.0f;
+	public float				emotionalDistressRate = 0.1f;		// TODO: tie this directly to a difficulty slider on the pause menu
+	public float				freakoutThreshold = 0.8f;
+	public float 				freakoutShakeDuration = 0.5f;
+	public float				emotionalStability = 0.0f;
 
 	[HideInInspector]
-	public float 		health = 100;
+	public float 				health = 100;
 	[HideInInspector]
-	public bool 		grabbedByPlayer = false;
+	public bool 				grabbedByPlayer = false;
 	[HideInInspector]
-	public bool 		lockedByPlayer = false;
+	public bool 				lockedByPlayer = false;
 	[HideInInspector]
-	public float 		spawnTime;
+	public float 				spawnTime;
 
 	[HideInInspector]
 	public bool onFire {
@@ -95,12 +96,16 @@ public class Robot : Throwable {
 	private bool 				justReleased;
 	private Throwable 			carriedItem;
 	private GameObject 			fireInstance;
+	private ObservationCircle	observationCircle;
 	private CircleCollider2D 	circleCollider;
 	private Animator			animator;
 	private ParticleSystem		shockParticles;
 	private IEnumerator			freakoutCoroutine = null;
 
 	void Start() {
+		GameObject circleObj = Instantiate<GameObject> (observationCirclePrefab, transform.position, Quaternion.identity);
+		observationCircle = circleObj.GetComponent<ObservationCircle>();
+		observationCircle.SetOwner (this);
 		drawnPath = new List<GridNode> ();
 		subPaths = new List<Vector3[]> ();
 		line = GetComponent<LineRenderer> ();
@@ -319,6 +324,7 @@ public class Robot : Throwable {
 			currentSpeech.sprite = onFireSpeechSprite;
 
 		currentSpeech.enabled = currentState != RobotStates.STATE_FINDBOX || onFire;
+		observationCircle.UpdateVisuals ();
 	}
 
 	void SearchForTarget() {
@@ -508,6 +514,18 @@ public class Robot : Throwable {
 		}
 	}
 
+	public bool isCarryingBox{
+		get { 
+			return isCarryingItem && (carriedItem is Box);
+		}
+	}
+
+	public bool isCarryingRobot{
+		get { 
+			return isCarryingItem && (carriedItem is Robot);
+		}
+	}
+
 	public bool isTargetThrowable {
 		get { 
 			return target != null && target.GetComponent<Throwable> () != null;	
@@ -624,7 +642,6 @@ public class Robot : Throwable {
 				}
 			}
 		}
-
 	}
 
 	protected override void OnLanding () {

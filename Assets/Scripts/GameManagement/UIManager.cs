@@ -153,12 +153,6 @@ public class UIManager : MonoBehaviour {
 		}
 	}
 
-	void OnGUI () {
-		if (GUI.Button (new Rect (100, 100, 100, 30), "SHAKE"))
-			ShakeObject (GameObject.FindGameObjectWithTag("MainCamera"));
-	}
-
-
 	// convenience function to issue multiple shakes without overlap
 	public void ShakeObject (GameObject obj, bool loose = false, float duration = shakeDuration, float speed = shakeSpeed, float intensity = shakeIntensity) {
 		if (shakeCoroutineInstance != null)

@@ -199,6 +199,12 @@ public class GameManager : MonoBehaviour {
 		allBoxes.Add (newBox);
 	}
 
+	public Transform robotParent {
+		get { 
+			return robotHolder;
+		}
+	}
+
 	public void AddRobot(Robot newRobot) {
 		newRobot.transform.SetParent (robotHolder);
 		newRobot.SetShadowParent (robotHolder);
@@ -223,7 +229,18 @@ public class GameManager : MonoBehaviour {
 		foreach (Transform hazard in hazardPoints) {
 			Collider2D testHit = hazard.GetComponent<Collider2D> ();
 			if (collider2D.IsTouching (testHit)) {
-				print ("HIT");
+				print ("HIT HAZARD");
+				return testHit;
+			}
+		}
+		return null;
+	}
+
+	public Collider2D IsTouchingRobot (Collider2D collider2D) {
+		foreach (Robot robot in allRobots) {
+			Collider2D testHit = robot.GetComponent<Collider2D> ();
+			if (collider2D.IsTouching (testHit)) {
+				print ("HIT ROBOT");
 				return testHit;
 			}
 		}

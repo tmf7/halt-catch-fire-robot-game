@@ -21,7 +21,7 @@ public abstract class Throwable : MonoBehaviour {
 
 	public LayerMask			groundedResetMask;
 	public float 				groundedDrag = 10.0f;
-	public float 				deadlyHeight;
+	public float 				deadlyHeight = 0.125f;
 	public GameObject 			dropShadowPrefab;
 	public GameObject 			explosionPrefab;
 	public Range 				throwSpeeds = new Range(8.0f, 12.0f);
