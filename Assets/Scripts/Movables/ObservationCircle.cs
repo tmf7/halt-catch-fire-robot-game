@@ -35,7 +35,7 @@ public class ObservationCircle : MonoBehaviour {
 		}
 	}
 
-	void OnTriggerStay2D (Collider2D hit) {
+	void OnTriggerEnter2D (Collider2D hit) {
 		if (owner == null || hit == null || !spriteRenderer.enabled || hit.name == owner.name)
 			return;
 		
@@ -47,7 +47,7 @@ public class ObservationCircle : MonoBehaviour {
 		}
 	}
 
-	void OnCollisionStay2D (Collision2D hit) {
+	void OnCollisionEnter2D (Collision2D hit) {
 		if (owner == null || hit == null || !spriteRenderer.enabled || hit.gameObject.name == owner.name)
 			return;
 

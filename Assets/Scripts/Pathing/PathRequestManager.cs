@@ -5,7 +5,7 @@ using System;
 
 public class PathRequestManager : MonoBehaviour {
 
-	private Queue<PathRequest> 	pathRequestQueue = new Queue<PathRequest>();
+	private Dictionary<string, PathRequest> pathRequestDict = new Dictionary<string, PathRequest>();
 	private PathRequest 		currentPathRequest;
 	private PathFinding 		pathfinding;
 	private bool 				processingPath;
@@ -21,25 +21,38 @@ public class PathRequestManager : MonoBehaviour {
 		pathfinding = GetComponent<PathFinding> ();
 	}
 
-	public static void RequestPath(Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool, bool> callback, bool isSubPath = false) {
-//		if (instance.pathRequestQueue.Count > GameManager.instance.maxRobots)
-//			instance.pathRequestQueue.Clear ();
+	public static void RequestPath(string owner, Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool, int> callback, int subPathIndex = -1) {
+		instance.pathRequestDict [owner + subPathIndex.ToString()] = new PathRequest (owner, pathStart, pathEnd, callback, subPathIndex);
+		if (subPathIndex > -1)
+			instance.RemoveDeadSubPaths (owner, subPathIndex);
 		
-		PathRequest newRequest = new PathRequest (pathStart, pathEnd, callback, isSubPath);
-		instance.pathRequestQueue.Enqueue (newRequest);
 		instance.TryProcessNext ();
 	}
 
-	void TryProcessNext() {
-		if (!processingPath && pathRequestQueue.Count > 0) {
-			currentPathRequest = pathRequestQueue.Dequeue ();
-			processingPath = true;
-			pathfinding.StartFindPath (currentPathRequest.pathStart, currentPathRequest.pathEnd, currentPathRequest.isSubPath);
+	void RemoveDeadSubPaths(string owner, int subPathIndex) {
+		// Don't Remove what's already been overwritten
+		int index = subPathIndex + 1;
+		string tryKey = owner + index.ToString ();
+		while (pathRequestDict.ContainsKey (tryKey)) {
+			pathRequestDict.Remove (tryKey);
+			index++;
+			tryKey = owner + index.ToString ();
 		}
 	}
 
-	public void FinishedProcessingPath(Vector3[] path, bool success, bool isSubPath) {
-		currentPathRequest.callback (path, success, isSubPath);
+	void TryProcessNext() {
+		if (!processingPath && pathRequestDict.Count > 0) {
+			var dictEnumerator = pathRequestDict.GetEnumerator();
+			dictEnumerator.MoveNext ();
+			currentPathRequest = dictEnumerator.Current.Value;
+			processingPath = true;
+			pathfinding.StartFindPath (currentPathRequest.pathStart, currentPathRequest.pathEnd, currentPathRequest.subPathIndex);
+		}
+	}
+
+	public void FinishedProcessingPath(Vector3[] path, bool success, int subPathIndex) {
+		instance.pathRequestDict.Remove(currentPathRequest.owner + subPathIndex.ToString());
+		currentPathRequest.callback (path, success, subPathIndex);
 		processingPath = false;
 		TryProcessNext ();
 	}
@@ -47,14 +60,16 @@ public class PathRequestManager : MonoBehaviour {
 	struct PathRequest {
 		public Vector3 pathStart;
 		public Vector3 pathEnd;
-		public Action<Vector3[], bool, bool> callback;
-		public bool isSubPath;
+		public Action<Vector3[], bool, int> callback;
+		public int subPathIndex;
+		public string owner;
 
-		public PathRequest(Vector3 _start, Vector3 _end, Action<Vector3[], bool, bool> _callback, bool _isSubPath) {
+		public PathRequest(string _owner, Vector3 _start, Vector3 _end, Action<Vector3[], bool, int> _callback, int _subPathIndex) {
+			owner = _owner;
 			pathStart = _start;
 			pathEnd = _end;
 			callback = _callback;
-			isSubPath = _isSubPath;
+			subPathIndex = _subPathIndex;
 		}
 	}
 }

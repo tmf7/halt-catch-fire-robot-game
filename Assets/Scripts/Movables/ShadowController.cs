@@ -77,6 +77,9 @@ public class ShadowController : MonoBehaviour {
 
 	// height off the ground that determines the dropShadow sprite y-offset from its user sprite
 	public float GetShadowOffset() {
+		if (rb3D.transform.position.z < 0.0f)
+			grounded = true;
+
 		float trajectoryModifier = offsetSlope * (rb3D.transform.position.x - startPosX);
 		float shadowOffset = (rb3D.transform.position.z - colliderHeight) - trajectoryModifier;
 

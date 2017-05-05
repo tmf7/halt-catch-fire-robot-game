@@ -5,8 +5,6 @@ using System;
 
 public class PathFinding : MonoBehaviour {
 
-	public int pathSmoothingInterval = 3;
-
 	private PathRequestManager pathRequestManager;
 	private Grid grid;
 
@@ -15,11 +13,11 @@ public class PathFinding : MonoBehaviour {
 		pathRequestManager = GetComponent<PathRequestManager> ();
 	}
 
-	public void StartFindPath(Vector3 startPos, Vector2 targetPos, bool isSubPath) {
-		StartCoroutine(FindPath(startPos, targetPos, isSubPath));
+	public void StartFindPath(Vector3 startPos, Vector2 targetPos, int subPathIndex) {
+		StartCoroutine(FindPath(startPos, targetPos, subPathIndex));
 	}
 
-	IEnumerator FindPath (Vector3 startPos, Vector3 targetPos, bool isSubPath) {
+	IEnumerator FindPath (Vector3 startPos, Vector3 targetPos, int subPathIndex) {
 		Vector3[] waypoints = new Vector3[0];
 		bool pathSuccess = false;
 
@@ -64,7 +62,7 @@ public class PathFinding : MonoBehaviour {
 			waypoints = BuildPath (startNode, targetNode);
 			pathSuccess = waypoints.Length > 0;
 		}
-		pathRequestManager.FinishedProcessingPath (waypoints, pathSuccess, isSubPath);
+		pathRequestManager.FinishedProcessingPath (waypoints, pathSuccess, subPathIndex);
 	}
 
 	int GetDistance(GridNode nodeA, GridNode nodeB) {
@@ -124,25 +122,6 @@ public class PathFinding : MonoBehaviour {
 				complexPath.Add (point);
 		}
 		return SimplifyPath (complexPath);
-	}
-
-	public int OptimizeDrawnPath(List<GridNode> path, Action<Vector3[], bool, bool> callback) {
-		int numSubPathsSubmitted = 0;
-		List<Vector3> waypoints = new List<Vector3> ();
-		Vector2 directionOld = Vector2.zero;
-		for (int i = pathSmoothingInterval; i < path.Count; i+=pathSmoothingInterval) {
-			Vector2 directionNew = new Vector2 (path [i - pathSmoothingInterval].gridRow - path [i].gridRow, path [i - pathSmoothingInterval].gridCol - path [i].gridCol);
-			if (directionNew != directionOld) {
-				waypoints.Add (path [i].worldPosition);
-			}
-			directionOld = directionNew;
-		}
-			
-		for (int i = 1; i < waypoints.Count; i++) {
-			PathRequestManager.RequestPath (waypoints [i - 1], waypoints [i], callback, true);
-			numSubPathsSubmitted++;
-		}
-		return numSubPathsSubmitted;
 	}
 
 	public float PathLengthSqr (List<GridNode> path) {

@@ -73,8 +73,6 @@ public class Robot : Throwable {
 
 	// pathing
 	private LineRenderer 		line;
-	private Grid				grid;
-	private PathFinding 		pathFinder;
 	private List<GridNode> 		drawnPath;
 	private Vector3[] 			path;
 	private int 				targetIndex;
@@ -84,12 +82,15 @@ public class Robot : Throwable {
 	private Vector3				targetLastKnownPosition;
 	private float 				sqrTargetSlowdownDistance;
 	private float 				carryItemDistance;
-	private const float			pathUpdateMoveThreshold = 0.25f;
-	private const float 		minWaitTime = 0.2f;
-	private const float 		stoppingThreshold = 0.01f;
 	private bool 				waitingForPathRequestResults;
 	private List<Vector3[]> 	subPaths;
-	private int 				numSubPathsToProcess;
+	private int 				maxSubPathIndex;
+
+	private static Grid			grid;
+	private static PathFinding 	pathFinder;
+	private static float 		stoppingThreshold = 0.01f;
+	private static float		pathUpdateMoveThreshold = 0.25f;
+	private static int 			pathSmoothingInterval = 3;
 
 	// state machine
 	private float				stateSpeedMultiplier = 1.0f;
@@ -354,15 +355,14 @@ public class Robot : Throwable {
 		// suidical is handled by the SuicideCircle child
 	}
 
-	public void OnPathFound(Vector3[] newPath, bool pathSuccessful, bool isSubPath) {
+	public void OnPathFound(Vector3[] newPath, bool pathSuccessful, int subPathIndex) {
 		waitingForPathRequestResults = false;
 		if (pathSuccessful) {
-			if (isSubPath) {
+			if (subPathIndex > -1) {
 				subPaths.Add (newPath);
-				numSubPathsToProcess--;
 
-				if (numSubPathsToProcess <= 0) {
-					numSubPathsToProcess = 0;
+				if (subPathIndex == maxSubPathIndex) {
+					maxSubPathIndex = -1;
 					path = pathFinder.MergeSubPaths (subPaths);
 					subPaths.Clear ();
 					if (path.Length > 0)
@@ -413,16 +413,37 @@ public class Robot : Throwable {
 		bool longEnoughPath = pathFinder.PathLengthSqr (drawnPath) > GameManager.instance.drawnPathLengthThresholdSqr;
 		if (longEnoughPath) {
 			waitingForPathRequestResults = true;
-			numSubPathsToProcess = pathFinder.OptimizeDrawnPath (drawnPath, OnPathFound);
+			OptimizeDrawnPath ();
 		}
 		ClearUserDefinedPath ();
 		return longEnoughPath;
 	}
 
+	// this was originally in the PathFinding class
+	// but placing it here reduces the function call overhead a bit
+	public void OptimizeDrawnPath() {
+		List<Vector3> waypoints = new List<Vector3> ();
+		Vector2 directionOld = Vector2.zero;
+		for (int i = pathSmoothingInterval; i < drawnPath.Count; i+=pathSmoothingInterval) {
+			Vector2 directionNew = new Vector2 (drawnPath [i - pathSmoothingInterval].gridRow - drawnPath [i].gridRow, drawnPath [i - pathSmoothingInterval].gridCol - drawnPath [i].gridCol);
+			if (directionNew != directionOld) {
+				waypoints.Add (drawnPath [i].worldPosition);
+			}
+			directionOld = directionNew;
+		}
+
+		int subPathIndex = 0;
+		for (int i = 1; i < waypoints.Count; i++) {
+			PathRequestManager.RequestPath (name, waypoints [i - 1], waypoints [i], OnPathFound, subPathIndex);
+			subPathIndex++;
+		}
+		maxSubPathIndex = subPathIndex - 1;
+	}
+
 	void UpdatePath(bool freshStart) {
 		if (!waitingForPathRequestResults && (freshStart || (target != null && (target.position - targetLastKnownPosition).sqrMagnitude > pathUpdateMoveThreshold))) {
 			waitingForPathRequestResults = true;
-			PathRequestManager.RequestPath (transform.position, target.position, OnPathFound);
+			PathRequestManager.RequestPath (name, transform.position, target.position, OnPathFound);
 			targetLastKnownPosition = target.position;
 		} 
 	}
