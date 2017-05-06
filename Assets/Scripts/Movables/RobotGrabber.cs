@@ -36,12 +36,6 @@ public class RobotGrabber : MonoBehaviour {
 
 	void Start () {
 		spriteRenderer = GetComponent<SpriteRenderer> ();
-
-		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
-			spriteRenderer.enabled = true;
-		#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
-			spriteRenderer.enabled = false;
-		#endif
 	}
 
     void Update() {
@@ -49,24 +43,26 @@ public class RobotGrabber : MonoBehaviour {
         Vector3 worldPosition = Camera.main.ScreenToWorldPoint(mousePos);
 		worldPosition.z = 0.0f;
 
-		// robotGrabber follows the mouse 1:1
-		// unless the player has clicked on a robot once
+		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
+
+		spriteRenderer.enabled = worldPosition.y < 7.0f || grabbedRobot != null;
+
+		#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
+
+		spriteRenderer.enabled = grabbedRobot != null;
+
+		#endif
+
+		bool updateGrabberPosition = (grabbedRobot == null || secondClickOnRobot);
 		if (!Cursor.visible) {
-			if (grabbedRobot == null || secondClickOnRobot) {
-				#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
-					spriteRenderer.enabled = true;
-				#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
-					spriteRenderer.enabled = false;
-				#endif
+			if (updateGrabberPosition)
 				transform.position = worldPosition;		
-			} else if (grabbedRobot != null) {
-				spriteRenderer.enabled = true;
+			else
 				transform.position = grabbedRobot.transform.position + Vector3.up * joint.distance;
-			}
 		}
 
 		// FIXME: magic number specific to the current y-position of the HUD interface
-		Cursor.visible = Time.timeScale == 0.0f || worldPosition.y > 7.0f || (grabbedRobot != null && !secondClickOnRobot);
+		Cursor.visible = worldPosition.y > 7.0f || !updateGrabberPosition;
 
 		// first click LOCKS the robot on the ground (ie NOT HOVER via Robot.grabbed bool)
 		// SET RobotGrabber SPRITE position DIRECTLY over grabbedRobot, and enable the cursor to manipulate the SLIDER, or draw a PATH
@@ -105,7 +101,7 @@ public class RobotGrabber : MonoBehaviour {
 				grabbedRobotCollider = hits [closestHitIndex];
 				grabbedRobot = grabbedRobotCollider.GetComponent<Robot> ();
 				grabbedRobot.lockedByPlayer = true;
-				grabbedRobot.ClearUserDefinedPath ();
+				grabbedRobot.ClearDrawnPath ();
 				grabbedRobot.SetTargeter (null);
 				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
 

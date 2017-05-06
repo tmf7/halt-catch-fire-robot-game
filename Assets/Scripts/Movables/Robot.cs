@@ -73,6 +73,7 @@ public class Robot : Throwable {
 
 	// pathing
 	private LineRenderer 		line;
+	private Dictionary<int, Vector3[]> 	subPaths;
 	private List<GridNode> 		drawnPath;
 	private Vector3[] 			path;
 	private int 				targetIndex;
@@ -80,17 +81,19 @@ public class Robot : Throwable {
 	private int					oldDrawnPathCount;			// used for updating the drawnPath color
 	private Vector3 			currentWaypoint;
 	private Vector3				targetLastKnownPosition;
+	private float 				currentDrawnPathLength;
 	private float 				sqrTargetSlowdownDistance;
 	private float 				carryItemDistance;
 	private bool 				waitingForPathRequestResults;
-	private List<Vector3[]> 	subPaths;
-	private int 				maxSubPathIndex;
+	private int 				numSubPathsToMerge;
 
 	private static Grid			grid;
 	private static PathFinding 	pathFinder;
 	private static float 		stoppingThreshold = 0.01f;
 	private static float		pathUpdateMoveThreshold = 0.25f;
 	private static int 			pathSmoothingInterval = 3;
+	private static float		minDrawnPathLength = 2.0f;
+	private static float 		maxDrawnPathLength = 30.0f;
 
 	// state machine
 	private float				stateSpeedMultiplier = 1.0f;
@@ -108,7 +111,7 @@ public class Robot : Throwable {
 		observationCircle = circleObj.GetComponent<ObservationCircle>();
 		observationCircle.SetOwner (this);
 		drawnPath = new List<GridNode> ();
-		subPaths = new List<Vector3[]> ();
+		subPaths = new Dictionary<int, Vector3[]> ();
 		line = GetComponent<LineRenderer> ();
 		line.enabled = false;
 		animator = GetComponent<Animator> ();
@@ -140,7 +143,6 @@ public class Robot : Throwable {
 
 	void Update() {
 		UpdateEmotionalState ();
-		UpdateVisuals ();
 
 		if (!CheckGrabbedStatus ()) {
 			UpdatePathLine ();
@@ -161,6 +163,7 @@ public class Robot : Throwable {
 		if (onFire && HUDManager.instance.playSprinklerSystem)
 			onFire = false;
 	
+		UpdateVisuals ();
 		SearchForTarget ();
 		UpdateShadow ();
 		UpdateCarriedItem ();
@@ -325,7 +328,7 @@ public class Robot : Throwable {
 			currentSpeech.sprite = onFireSpeechSprite;
 
 		currentSpeech.enabled = currentState != RobotStates.STATE_FINDBOX || onFire;
-		observationCircle.UpdateVisuals ();
+		observationCircle.UpdateVisuals (grounded);
 	}
 
 	void SearchForTarget() {
@@ -359,12 +362,13 @@ public class Robot : Throwable {
 		waitingForPathRequestResults = false;
 		if (pathSuccessful) {
 			if (subPathIndex > -1) {
-				subPaths.Add (newPath);
+				subPaths.Add (subPathIndex, newPath);
+				numSubPathsToMerge--;
 
-				if (subPathIndex == maxSubPathIndex) {
-					maxSubPathIndex = -1;
+				if (numSubPathsToMerge <= 0) {
+					numSubPathsToMerge = 0;
 					path = pathFinder.MergeSubPaths (subPaths);
-					subPaths.Clear ();
+					ClearDrawnPath ();
 					if (path.Length > 0)
 						InitPath ();
 				} else {
@@ -395,7 +399,10 @@ public class Robot : Throwable {
 		}
 	}
 
-	public void ClearUserDefinedPath() {
+	public void ClearDrawnPath() {
+//		StopMoving ();
+		currentDrawnPathLength = 0.0f;
+		numSubPathsToMerge = 0;
 		oldDrawnPathCount = 0;
 		drawnPath.Clear ();
 		subPaths.Clear ();
@@ -404,40 +411,45 @@ public class Robot : Throwable {
 	public void TryAddPathPoint (Vector3 worldPosition) {
 		GridNode node = grid.NodeFromWorldPoint (worldPosition);
 		if (node.walkable && !drawnPath.Contains (node)) {
-			if (pathFinder.PathLengthSqr(drawnPath) < GameManager.instance.maxDrawnPathLengthSqr)
-				drawnPath.Add (node);				
+			if (currentDrawnPathLength < maxDrawnPathLength) {
+				if (drawnPath.Count > 1)
+					currentDrawnPathLength += Vector3.Distance(node.worldPosition, drawnPath [drawnPath.Count - 1].worldPosition);
+				drawnPath.Add (node);
+			}
 		}
 	}
 		
 	public bool FinishDrawingPath() {
-		bool longEnoughPath = pathFinder.PathLengthSqr (drawnPath) > GameManager.instance.drawnPathLengthThresholdSqr;
+		bool longEnoughPath = currentDrawnPathLength > minDrawnPathLength;
 		if (longEnoughPath) {
 			waitingForPathRequestResults = true;
 			OptimizeDrawnPath ();
+		} else {
+			ClearDrawnPath ();
 		}
-		ClearUserDefinedPath ();
 		return longEnoughPath;
 	}
 
 	// this was originally in the PathFinding class
 	// but placing it here reduces the function call overhead a bit
-	public void OptimizeDrawnPath() {
+	private void OptimizeDrawnPath() {
 		List<Vector3> waypoints = new List<Vector3> ();
 		Vector2 directionOld = Vector2.zero;
-		for (int i = pathSmoothingInterval; i < drawnPath.Count; i+=pathSmoothingInterval) {
+		for (int i = pathSmoothingInterval; i < drawnPath.Count - 1; i+=pathSmoothingInterval) {
 			Vector2 directionNew = new Vector2 (drawnPath [i - pathSmoothingInterval].gridRow - drawnPath [i].gridRow, drawnPath [i - pathSmoothingInterval].gridCol - drawnPath [i].gridCol);
 			if (directionNew != directionOld) {
 				waypoints.Add (drawnPath [i].worldPosition);
 			}
 			directionOld = directionNew;
 		}
+		waypoints.Add (drawnPath [drawnPath.Count - 1].worldPosition);		// always keep the final position the user wanted
 
 		int subPathIndex = 0;
 		for (int i = 1; i < waypoints.Count; i++) {
 			PathRequestManager.RequestPath (name, waypoints [i - 1], waypoints [i], OnPathFound, subPathIndex);
 			subPathIndex++;
 		}
-		maxSubPathIndex = subPathIndex - 1;
+		numSubPathsToMerge = subPathIndex;
 	}
 
 	void UpdatePath(bool freshStart) {
@@ -449,7 +461,7 @@ public class Robot : Throwable {
 	}
 
 	void FollowPath() {
-		UpdatePath (path == null);
+		UpdatePath (path == null && drawnPath.Count == 0);
 		if (path == null)
 			return;
 
@@ -487,7 +499,7 @@ public class Robot : Throwable {
 	}
 
 	private void UpdatePathLine() {
-		if (path == null)
+		if (path == null || lockedByPlayer)
 			return;
 
 		line.enabled = true;
@@ -504,8 +516,8 @@ public class Robot : Throwable {
 		
 		line.enabled = true;
 		if (drawnPath.Count > oldDrawnPathCount)
-			line.colorGradient = pathFinder.PathLengthSqr(drawnPath) > GameManager.instance.drawnPathLengthThresholdSqr ? GameManager.instance.silverWaveGradient 
-																								   						: GameManager.instance.blackWaveGradient;
+			line.colorGradient = currentDrawnPathLength > minDrawnPathLength ? GameManager.instance.silverWaveGradient 
+																			 : GameManager.instance.blackWaveGradient;
 		oldDrawnPathCount = drawnPath.Count;
 		line.numPositions = drawnPath.Count + 1;
 		line.SetPosition(0, transform.position);

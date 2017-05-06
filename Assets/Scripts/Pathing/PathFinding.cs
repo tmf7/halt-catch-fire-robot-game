@@ -42,7 +42,8 @@ public class PathFinding : MonoBehaviour {
 					if (!neighbor.walkable || closedSet.Contains (neighbor))
 						continue;
 
-					int newMovementCostToNeighbor = currentNode.gCost + GetDistance (currentNode, neighbor) + neighbor.movementPenalty;
+					int subPathModifier = subPathIndex > -1 ? 0 : 1;
+					int newMovementCostToNeighbor = currentNode.gCost + GetDistance (currentNode, neighbor) + neighbor.movementPenalty * subPathModifier;
 					if (newMovementCostToNeighbor < neighbor.gCost || !openSet.Contains (neighbor)) {
 						neighbor.gCost = newMovementCostToNeighbor;
 						neighbor.hCost = GetDistance (neighbor, targetNode);
@@ -115,28 +116,13 @@ public class PathFinding : MonoBehaviour {
 		return waypoints.ToArray ();
 	}
 
-	public Vector3[] MergeSubPaths (List<Vector3[]> subPaths) {
+	public Vector3[] MergeSubPaths (Dictionary<int, Vector3[]> subPaths) {
 		List<Vector3> complexPath = new List<Vector3> ();
-		foreach (Vector3[] path in subPaths) {
-			foreach (Vector3 point in path)
+		for (int subPathIndex = 0; subPathIndex < subPaths.Count; subPathIndex++) {
+			Vector3[] subPath = subPaths [subPathIndex];
+			foreach (Vector3 point in subPath)
 				complexPath.Add (point);
 		}
 		return SimplifyPath (complexPath);
-	}
-
-	public float PathLengthSqr (List<GridNode> path) {
-		float lengthSqr = 0.0f;
-		for (int i = 1; i < path.Count; i++) {
-			lengthSqr += (path [i].worldPosition - path [i - 1].worldPosition).sqrMagnitude;
-		}
-		return lengthSqr;
-	}
-
-	public float PathLengthSqr (Vector3[] path) {
-		float lengthSqr = 0.0f;
-		for (int i = 1; i < path.Length; i++) {
-			lengthSqr += (path [i] - path [i - 1]).sqrMagnitude;
-		}
-		return lengthSqr;
 	}
 }

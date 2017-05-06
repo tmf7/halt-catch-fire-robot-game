@@ -8,6 +8,7 @@ public class ShadowController : MonoBehaviour {
 	// This object's z-coordinate determines the drop shadow sprite y-offset relative to its user sprite
 
 	public float 			suddenDropForce = 10.0f;
+	public float			shadowErrorTolerance = -10.0f;
 
 	private Rigidbody2D 	parentRB;
 	private Rigidbody 		rb3D;
@@ -59,7 +60,7 @@ public class ShadowController : MonoBehaviour {
 
 	public bool grounded {
 		get { 
-			return grounded = (GetShadowOffset() <= 0.0f);
+			return grounded = (GetShadowOffset () <= 0.0f);
 		}
 		set {
 			rb3D.velocity = value ? Vector3.zero : rb3D.velocity;
@@ -77,7 +78,7 @@ public class ShadowController : MonoBehaviour {
 
 	// height off the ground that determines the dropShadow sprite y-offset from its user sprite
 	public float GetShadowOffset() {
-		if (rb3D.transform.position.z < 0.0f)
+		if (rb3D.transform.position.z < shadowErrorTolerance)
 			grounded = true;
 
 		float trajectoryModifier = offsetSlope * (rb3D.transform.position.x - startPosX);

@@ -11,8 +11,9 @@ public class ObservationCircle : MonoBehaviour {
 	private SpriteRenderer 		spriteRenderer;
 	private Robot 				owner;
 
-	void Start () {
+	void Awake () {
 		spriteRenderer = GetComponent<SpriteRenderer> ();
+		spriteRenderer.enabled = false;
 		transform.SetParent(GameManager.instance.robotParent);
 	}
 
@@ -25,10 +26,10 @@ public class ObservationCircle : MonoBehaviour {
 			Destroy (gameObject);
 	}
 
-	public void UpdateVisuals () {
+	public void UpdateVisuals (bool show) {
 		transform.position = owner.transform.position + (Vector3.up * yOffset);
-		spriteRenderer.enabled = (owner.currentState != Robot.RobotStates.STATE_FINDBOX && owner.grounded);
-		if (spriteRenderer.enabled ) {
+		spriteRenderer.enabled = (owner.currentState != Robot.RobotStates.STATE_FINDBOX && show);
+		if (spriteRenderer.enabled) {
 			bool homicidal = owner.currentState == Robot.RobotStates.STATE_HOMICIDAL;
 			spriteRenderer.color =  homicidal ? homicideSearchColor
 											  : suicideSearchColor;

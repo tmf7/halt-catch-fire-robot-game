@@ -17,8 +17,6 @@ public class GameManager : MonoBehaviour {
 	public int 					maxRobots = 3;
 	public int					maxBoxes = 20;
 	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for something closer if currently queried item is within this range
-	public float				drawnPathLengthThresholdSqr = 1.0f;
-	public float 				maxDrawnPathLengthSqr = 10.0f;
 	public bool 				spawningRobots = false;
 	public bool					levelEnded = false;
 
