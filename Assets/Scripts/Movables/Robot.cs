@@ -85,7 +85,7 @@ public class Robot : Throwable {
 	private float 				sqrTargetSlowdownDistance;
 	private float 				carryItemDistance;
 	private bool 				waitingForPathRequestResults;
-	private int 				numSubPathsToMerge;
+	private int 				lowestFailedSubPathIndex = int.MaxValue;
 
 	private static Grid			grid;
 	private static PathFinding 	pathFinder;
@@ -361,48 +361,62 @@ public class Robot : Throwable {
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful, int subPathIndex) {
 		waitingForPathRequestResults = false;
 		if (pathSuccessful) {
-			if (subPathIndex > -1) {
-				subPaths.Add (subPathIndex, newPath);
-				numSubPathsToMerge--;
-
-				if (numSubPathsToMerge <= 0) {
-					numSubPathsToMerge = 0;
-					path = pathFinder.MergeSubPaths (subPaths);
-					ClearDrawnPath ();
-					if (path.Length > 0)
-						InitPath ();
-				} else {
-					waitingForPathRequestResults = true;
-				}
-
-			} else {
+			if (subPathIndex != PathRequestManager.AUTO_PATH) {	// user-defined sub-path
+				if (subPathIndex < lowestFailedSubPathIndex)
+					subPaths.Add (subPathIndex, newPath);
+			} else {											// regular auto-path
 				path = newPath;
 				InitPath ();
 			}
 		} else {
-			StopMoving ();
+			if (subPathIndex != PathRequestManager.AUTO_PATH && subPathIndex < lowestFailedSubPathIndex) {
+				lowestFailedSubPathIndex = subPathIndex;
+				PathRequestManager.KillPathRequests (name, subPathIndex + 1);
+			} else if (subPathIndex == PathRequestManager.AUTO_PATH) {
+				StopMoving ();
+			}
+		}
+
+		if (subPaths.Count > 0) {
+			if (PathRequestManager.PathRequestsRemaining(name) <= 0) {
+				RemoveCutoffSubPaths ();
+				path = pathFinder.MergeSubPaths (subPaths);
+				InitPath ();
+			} else {
+				waitingForPathRequestResults = true;
+			}
+		}
+	}
+
+	private void RemoveCutoffSubPaths() {
+		for (int i = lowestFailedSubPathIndex; i <= subPaths.Count; i++) {		// FIXME(?): lowestFailedSubPathIndex MAY not be resetting properly, and results in killed drawnPaths
+			if (subPaths.ContainsKey (i))
+				subPaths.Remove (i);
 		}
 	}
 
 	private void InitPath () {
-		targetIndex = 0;
-		currentWaypoint = path [targetIndex];
+		ClearDrawnPath ();
+		if (path.Length > 0) {
+			targetIndex = 0;
+			currentWaypoint = path [targetIndex];
 
-		// account for unusually curvy paths
-		float distanceFromEnd = 0.0f;
-		for (int i = path.Length - 1; i > 0; i--) {
-			distanceFromEnd += Vector3.Distance (path [i], path [i - 1]);
-			if (distanceFromEnd >= slowdownDistance) {
-				slowdownIndex = i;
-				break;
+			// account for unusually curvy paths
+			float distanceFromEnd = 0.0f;
+			for (int i = path.Length - 1; i > 0; i--) {
+				distanceFromEnd += Vector3.Distance (path [i], path [i - 1]);
+				if (distanceFromEnd >= slowdownDistance) {
+					slowdownIndex = i;
+					break;
+				}
 			}
 		}
 	}
 
 	public void ClearDrawnPath() {
-//		StopMoving ();
+		PathRequestManager.KillPathRequests(name);
+		lowestFailedSubPathIndex = int.MaxValue;
 		currentDrawnPathLength = 0.0f;
-		numSubPathsToMerge = 0;
 		oldDrawnPathCount = 0;
 		drawnPath.Clear ();
 		subPaths.Clear ();
@@ -446,10 +460,9 @@ public class Robot : Throwable {
 
 		int subPathIndex = 0;
 		for (int i = 1; i < waypoints.Count; i++) {
-			PathRequestManager.RequestPath (name, waypoints [i - 1], waypoints [i], OnPathFound, subPathIndex);
+			PathRequestManager.RequestPath (name, waypoints [i - 1], waypoints [i], OnPathFound, subPathIndex, i == (waypoints.Count - 1));
 			subPathIndex++;
 		}
-		numSubPathsToMerge = subPathIndex;
 	}
 
 	void UpdatePath(bool freshStart) {
@@ -530,6 +543,7 @@ public class Robot : Throwable {
 		if (isTargetThrowable) 
 			target.GetComponent<Throwable> ().SetTargeter (null);
 	
+//		PathRequestManager.KillPathRequests (name);			// FIXME: this may interfere with a drawPath (as StopMoving() is called while the robot is lockedByPlayer)
 		path = null;
 		targetIndex = 0;
 		target = null;

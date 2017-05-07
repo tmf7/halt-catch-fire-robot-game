@@ -254,6 +254,7 @@ public abstract class Throwable : MonoBehaviour {
 		if (this is Robot) {
 			(this as Robot).DropItem ();
 			RobotNames.Instance.AddRobotSurvivalTime(name, Time.time - (this as Robot).spawnTime, true, (this as Robot).howDied);
+			PathRequestManager.KillPathRequests (name);
 		}
 		
 		GameManager.instance.Remove (this);

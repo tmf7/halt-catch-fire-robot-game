@@ -62,6 +62,8 @@ public class PathFinding : MonoBehaviour {
 		if (pathSuccess) {
 			waypoints = BuildPath (startNode, targetNode);
 			pathSuccess = waypoints.Length > 0;
+			if (!pathSuccess)
+				print ("FIND PATH (" + subPathIndex + ") FAILED");
 		}
 		pathRequestManager.FinishedProcessingPath (waypoints, pathSuccess, subPathIndex);
 	}
@@ -78,7 +80,6 @@ public class PathFinding : MonoBehaviour {
 	Vector3[] BuildPath(GridNode startNode, GridNode endNode) {
 		List<GridNode> path = new List<GridNode> ();
 		GridNode currentNode = endNode;
-
 		while (currentNode != startNode) {
 			path.Add (currentNode);
 			currentNode = currentNode.parent;
@@ -119,7 +120,8 @@ public class PathFinding : MonoBehaviour {
 	public Vector3[] MergeSubPaths (Dictionary<int, Vector3[]> subPaths) {
 		List<Vector3> complexPath = new List<Vector3> ();
 		for (int subPathIndex = 0; subPathIndex < subPaths.Count; subPathIndex++) {
-			Vector3[] subPath = subPaths [subPathIndex];
+//			print ("MERGE SUBPATH (" + subPathIndex + ")");
+			Vector3[] subPath = subPaths [subPathIndex];		// FIXME(!): will throw exception if index doesn't exist
 			foreach (Vector3 point in subPath)
 				complexPath.Add (point);
 		}

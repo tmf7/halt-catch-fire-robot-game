@@ -5,12 +5,16 @@ using System;
 
 public class PathRequestManager : MonoBehaviour {
 
-	private Dictionary<string, PathRequest> pathRequestDict = new Dictionary<string, PathRequest>();
-	private PathRequest 		currentPathRequest;
-	private PathFinding 		pathfinding;
-	private bool 				processingPath;
+	private Dictionary<string, KeyValuePair<int, int>>	pathRequestOwners = new Dictionary<string, KeyValuePair<int, int>> ();		// KVP for maxPathRequests and pathRequestsRemaining
 
-	static PathRequestManager 	instance = null;
+	private Dictionary<string, PathRequest> 	pathRequestDict = new Dictionary<string, PathRequest>();
+	private PathRequest 						currentPathRequest;
+	private PathFinding 						pathfinding;
+	private string 								currentOwner;
+	private bool 								processingPath;
+
+	static PathRequestManager 					instance = null;
+	public static int 							AUTO_PATH = -1;
 
 	void Awake() {
 		if (instance == null)
@@ -21,38 +25,93 @@ public class PathRequestManager : MonoBehaviour {
 		pathfinding = GetComponent<PathFinding> ();
 	}
 
-	public static void RequestPath(string owner, Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool, int> callback, int subPathIndex = -1) {
-		instance.pathRequestDict [owner + subPathIndex.ToString()] = new PathRequest (owner, pathStart, pathEnd, callback, subPathIndex);
-		if (subPathIndex > -1)
-			instance.RemoveDeadSubPaths (owner, subPathIndex);
+	public static void RequestPath(string owner, Vector3 pathStart, Vector3 pathEnd, Action<Vector3[], bool, int> callback, int subPathIndex = -1, bool finalPathRequest = true) {
+		if (subPathIndex <= 0)
+			KillPathRequests (owner);
 		
+		if (finalPathRequest)
+			instance.RegisterPathOwner (owner, subPathIndex);
+
+		int index = subPathIndex;
+		if (subPathIndex == AUTO_PATH)
+			index = 0;
+		
+		instance.pathRequestDict [owner + index.ToString()] = new PathRequest (owner, pathStart, pathEnd, callback, subPathIndex);
 		instance.TryProcessNext ();
 	}
 
-	void RemoveDeadSubPaths(string owner, int subPathIndex) {
-		// Don't Remove what's already been overwritten
-		int index = subPathIndex + 1;
-		string tryKey = owner + index.ToString ();
-		while (pathRequestDict.ContainsKey (tryKey)) {
-			pathRequestDict.Remove (tryKey);
-			index++;
-			tryKey = owner + index.ToString ();
+	public static void KillPathRequests (string owner, int startIndex = 0) {
+//		print ("(" + owner + ") PATHS REQ. ABOVE (" + startIndex + ") KILLED");
+		int maxRemovals = instance.PathRequestsSubmitted (owner);
+		for (int index = startIndex; index < maxRemovals; index++) {
+			string tryKey = owner + index.ToString ();
+			instance.pathRequestDict.Remove (tryKey);
+			instance.DecrementRequestsRemaining (owner);					// FIXME: this affects the registered path count
 		}
 	}
 
+	public static int PathRequestsRemaining (string owner) {
+		KeyValuePair<int, int> requestRatio;
+		if (instance.pathRequestOwners.TryGetValue (owner, out requestRatio))
+			return requestRatio.Value;
+		else
+			return -1;
+	}
+
+	int PathRequestsSubmitted (string owner) {
+		KeyValuePair<int, int> requestRatio;
+		if (pathRequestOwners.TryGetValue (owner, out requestRatio))
+			return requestRatio.Key;
+		else
+			return -1;
+	}
+
+	void DecrementRequestsRemaining (string owner) {
+		KeyValuePair<int, int> requestRatio;
+		if (!pathRequestOwners.TryGetValue (owner, out requestRatio))
+			return;
+		pathRequestOwners [owner] = new KeyValuePair<int, int> (requestRatio.Key, requestRatio.Value - 1);	
+	}
+
+	void RegisterPathOwner (string owner, int numPathRequests) {
+		if (numPathRequests <= 0)
+			numPathRequests = 1;
+		else
+			numPathRequests++;
+		pathRequestOwners [owner] = new KeyValuePair<int, int> (numPathRequests, numPathRequests);	
+	}
+
+	bool GetNextOwner() {
+		currentOwner = null;
+		foreach (KeyValuePair<string, KeyValuePair<int, int>> owner in pathRequestOwners) {
+			if (PathRequestsRemaining (owner.Key) > 0) {
+				currentOwner = owner.Key;
+				break;
+			}
+		}
+		return currentOwner != null;
+	}
+
 	void TryProcessNext() {
-		if (!processingPath && pathRequestDict.Count > 0) {
-			var dictEnumerator = pathRequestDict.GetEnumerator();
-			dictEnumerator.MoveNext ();
-			currentPathRequest = dictEnumerator.Current.Value;
+		if (!processingPath && pathRequestDict.Count > 0 && GetNextOwner()) {
+
+			int index = PathRequestsSubmitted(currentOwner) - PathRequestsRemaining (currentOwner);
+			string pathRequestKey = currentOwner + index.ToString ();
+			if (!pathRequestDict.TryGetValue (pathRequestKey, out currentPathRequest)) {
+				processingPath = false;
+				return;
+			}
+
 			processingPath = true;
+			DecrementRequestsRemaining (currentOwner);
 			pathfinding.StartFindPath (currentPathRequest.pathStart, currentPathRequest.pathEnd, currentPathRequest.subPathIndex);
 		}
 	}
 
 	public void FinishedProcessingPath(Vector3[] path, bool success, int subPathIndex) {
 		instance.pathRequestDict.Remove(currentPathRequest.owner + subPathIndex.ToString());
-		currentPathRequest.callback (path, success, subPathIndex);
+		if (currentPathRequest.callback.Target != null)
+			currentPathRequest.callback (path, success, subPathIndex);
 		processingPath = false;
 		TryProcessNext ();
 	}
