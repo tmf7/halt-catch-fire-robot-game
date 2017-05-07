@@ -98,6 +98,7 @@ public class Robot : Throwable {
 	// state machine
 	private float				stateSpeedMultiplier = 1.0f;
 	private bool 				justReleased;
+	private bool 				wasCarryingItem;
 	private Throwable 			carriedItem;
 	private GameObject 			fireInstance;
 	private ObservationCircle	observationCircle;
@@ -316,7 +317,7 @@ public class Robot : Throwable {
 													: GameManager.instance.greenWaveGradient;				
 				break;
 			case RobotStates.STATE_HOMICIDAL:
-				stateSpeedMultiplier = 2.0f;
+				stateSpeedMultiplier = 1.5f;
 				spriteRenderer.color = Color.red;
 				currentSpeech.sprite = homicidalSpeechSprite;
 				line.colorGradient = lockedByPlayer ? line.colorGradient 
@@ -335,6 +336,10 @@ public class Robot : Throwable {
 		if (!grounded)
 			return;
 			
+		// TODO: add a FREEZE-TIME (not pause) condition here
+		// that stops the robots as if the level had ended
+		// EXCEPT the robots keep their current visible path, and can have paths drawn/nudged
+		// and UpdateCarriedItem properly (w/o moving) (they do spawn the robot beam during levelEnded if dropped on a box)
 		if (isBeingCarried || fellInPit || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
 			StopMoving ();
 			return;
@@ -347,15 +352,45 @@ public class Robot : Throwable {
 			return;
 		}
 
+		// FIXME: slow down the robots overall (or at least homicidal)
+		// FIXME: go back to the old b-line robot movement so player has to monitor robots closer
+		// FIND_BOX target box + deliver
+		// HOMICIDAL target robot + (FARTHEST) hazard UNLESS moving on a user-defined path, or carrying a box that was bumped
+		// SUICIDAL target hazard UNLESS moving on a user-defined path, or carrying a box that was bumped
+
+		switch (currentState) {
+			case RobotStates.STATE_FINDBOX:
+				SetTarget (isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
+										: GameManager.instance.GetClosestBoxTarget (this));
+				break;
+			case RobotStates.STATE_HOMICIDAL:
+				SetTarget (isDelivering ? GameManager.instance.GetRandomHazardTarget ()
+										: GameManager.instance.GetRandomRobotTarget (this));
+				break;
+			case RobotStates.STATE_SUICIDAL:
+				SetTarget (GameManager.instance.GetClosestHazardTarget (this));
+				break;
+		}
+
+
 		// default
-		target = isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
-							  : GameManager.instance.GetClosestBoxTarget (this);
+		// **** START HERE ****
 
 		// homicidal
-		if (isCarryingItem && (carriedItem is Robot))
-			target = GameManager.instance.GetClosestHazardTarget (this);
+		if (isCarryingRobot)
+			SetTarget (GameManager.instance.GetClosestHazardTarget (this));
 
-		// suidical is handled by the SuicideCircle child
+		// suidical is handled by the ObservationCircle child
+	}
+
+	public void SetTarget(Transform newTarget) {
+		// free the old target (if any)
+		if (isTargetThrowable) 
+			target.GetComponent<Throwable> ().SetTargeter (null);
+		
+		target = newTarget;
+		if (isTargetThrowable) 
+			target.GetComponent<Throwable> ().SetTargeter (this);
 	}
 
 	public void OnPathFound(Vector3[] newPath, bool pathSuccessful, int subPathIndex) {
@@ -553,11 +588,11 @@ public class Robot : Throwable {
 
 	public bool isCarryingItem {
 		get { 
-			if (carriedItem != null && carriedItem.GetCarrier () != this) {
+			if ((carriedItem != null && carriedItem.GetCarrier () != this) || (wasCarryingItem && carriedItem == null)) {
 				carriedItem = null;
 				StopDelivering ();
 			}
-			return carriedItem != null;
+			return (wasCarryingItem = carriedItem != null);
 		}
 	}
 

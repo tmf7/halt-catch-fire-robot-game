@@ -330,4 +330,27 @@ public class GameManager : MonoBehaviour {
 		}
 		return closestHazard;
 	}
+
+	public Transform GetRandomHazardTarget() {
+		return hazardPoints[Random.Range(0, hazardPoints.Count)];
+	}
+
+	public Transform GetRandomRobotTarget(Robot homicidalRobot) {
+		if (allRobots.Count <= 0)
+			return null;
+
+		Transform robot = null;
+		int numTries = 0;
+		int index = -1;
+		for (/*numTries*/; numTries < maxRobots; numTries++) {
+			index = Random.Range(0, allRobots.Count);
+			Robot tryBot = allRobots [index];
+			if (tryBot != homicidalRobot && !tryBot.isBeingCarried && !tryBot.isTargeted && !tryBot.fellInPit && !tryBot.grabbedByPlayer && !tryBot.lockedByPlayer)
+				break;
+		}
+		if (numTries < maxRobots && index > 0)
+			robot = allRobots [index].transform;
+
+		return robot;
+	}
 }

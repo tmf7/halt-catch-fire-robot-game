@@ -36,7 +36,7 @@ public class ObservationCircle : MonoBehaviour {
 		}
 	}
 
-	void OnTriggerEnter2D (Collider2D hit) {
+	void OnTriggerStay2D (Collider2D hit) {
 		if (owner == null || hit == null || !spriteRenderer.enabled || hit.name == owner.name)
 			return;
 		
@@ -44,19 +44,7 @@ public class ObservationCircle : MonoBehaviour {
 			|| (owner.currentState == Robot.RobotStates.STATE_SUICIDAL && GameManager.instance.IsHazard(hit.transform))) { 
 			if (owner.isCarryingBox) 
 				owner.DropItem ();
-			owner.target = hit.transform;
-		}
-	}
-
-	void OnCollisionEnter2D (Collision2D hit) {
-		if (owner == null || hit == null || !spriteRenderer.enabled || hit.gameObject.name == owner.name)
-			return;
-
-		if ((owner.currentState == Robot.RobotStates.STATE_HOMICIDAL && hit.gameObject.GetComponent<Robot> () != null)
-			|| (owner.currentState == Robot.RobotStates.STATE_SUICIDAL && GameManager.instance.IsHazard(hit.transform))) { 
-			if (owner.isCarryingBox) 
-				owner.DropItem ();
-			owner.target = hit.transform;
+			owner.SetTarget(hit.transform);
 		}
 	}
 }
