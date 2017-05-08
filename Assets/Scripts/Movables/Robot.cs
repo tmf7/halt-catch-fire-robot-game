@@ -557,7 +557,7 @@ public class Robot : Throwable {
 			return;
 
 		line.enabled = true;
-		line.numPositions = (path.Length - targetIndex) + 1;
+		line.positionCount = (path.Length - targetIndex) + 1;
 		line.SetPosition(0, transform.position);
 
 		for (int i = targetIndex, pos = 1; i < path.Length; i++, pos++)
@@ -573,7 +573,7 @@ public class Robot : Throwable {
 			line.colorGradient = currentDrawnPathLength > minDrawnPathLength ? GameManager.instance.silverWaveGradient 
 																			 : GameManager.instance.blackWaveGradient;
 		oldDrawnPathCount = drawnPath.Count;
-		line.numPositions = drawnPath.Count + 1;
+		line.positionCount = drawnPath.Count + 1;
 		line.SetPosition(0, transform.position);
 
 		for (int i = 0, pos = 1; i < drawnPath.Count; i++, pos++)

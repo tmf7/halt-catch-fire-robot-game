@@ -284,7 +284,7 @@ public abstract class Throwable : MonoBehaviour {
 		Vector2 penetration = new Vector2 (desiredPos.x, desiredPos.y) - hitPos;
 		float penetrationDepth = penetration.magnitude;
 		foreach (var c in collision.contacts) {
-			
+			float derp = c.separation;
 		}
 //		penetration.Normalize ();
 
