@@ -40,7 +40,7 @@ public class ObservationCircle : MonoBehaviour {
 		if (owner == null || hit == null || !spriteRenderer.enabled || hit.name == owner.name)
 			return;
 		
-		if ((owner.currentState == Robot.RobotStates.STATE_HOMICIDAL && hit.gameObject.GetComponent<Robot> () != null)
+		if ((owner.currentState == Robot.RobotStates.STATE_HOMICIDAL && !owner.isCarryingRobot && hit.gameObject.GetComponent<Robot> () != null)
 			|| (owner.currentState == Robot.RobotStates.STATE_SUICIDAL && GameManager.instance.IsHazard(hit.transform))) { 
 			if (owner.isCarryingBox) 
 				owner.DropItem ();

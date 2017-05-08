@@ -155,7 +155,7 @@ public class RobotGrabber : MonoBehaviour {
 			}				
 
 			if (secondClickOnRobot) {
-				grabbedRobot.gameObject.layer = Mathf.RoundToInt(Mathf.Log (grabbleMask.value, 2.0f));
+				grabbedRobot.gameObject.layer = (int)Mathf.Log (grabbleMask.value, 2.0f);
 				Vector3 dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
 				if (dropForce.sqrMagnitude <= 2.0f * (joint.distance * joint.distance))
 					dropForce = Vector3.zero;

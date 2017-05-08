@@ -34,6 +34,7 @@ public class Robot : Throwable {
 	public float				freakoutThreshold = 0.8f;
 	public float 				freakoutShakeDuration = 0.5f;
 	public float				emotionalStability = 0.0f;
+	public float 				displayEmotionDelay = 2.0f;
 
 	[HideInInspector]
 	public float 				health = 100;
@@ -52,7 +53,7 @@ public class Robot : Throwable {
 			if (!onFire && value) {
 				DropItem ();
 				fireInstance = Instantiate<GameObject> (firePrefab, transform.position, Quaternion.identity, transform);
-			} else if (onFire) {
+			} else if (onFire && !value) {
 				Destroy (fireInstance);
 				HUDManager.instance.ExtinguishFire ();
 				Instantiate<GameObject> (steamPuffPrefab, transform.position, Quaternion.identity, transform);
@@ -106,6 +107,7 @@ public class Robot : Throwable {
 	private Animator			animator;
 	private ParticleSystem		shockParticles;
 	private IEnumerator			freakoutCoroutine = null;
+	private float 				displayEmotionTime;
 
 	void Start() {
 		GameObject circleObj = Instantiate<GameObject> (observationCirclePrefab, transform.position, Quaternion.identity);
@@ -214,6 +216,8 @@ public class Robot : Throwable {
 		carryItemDistance = circleCollider.radius + carriedRadius;
 	}
 
+	private RaycastHit2D[] interloperHit = new RaycastHit2D[1];			// BUGFIX: for UpdateCarriedItem checks
+
 	private void UpdateCarriedItem() {
 		if (!isCarryingItem || path == null || path.Length <= 0)
 			return;
@@ -221,6 +225,17 @@ public class Robot : Throwable {
 		Vector3 carryDir = (path [path.Length - 1] - transform.position).normalized;
 		Vector3 carryPos = transform.position + carryDir * carryItemDistance;
 		carriedItem.transform.position = new Vector3(carryPos.x, carryPos.y, 0.0f);
+
+		// BUGFIX: a box will sometimes get pushed between a robot and its carried item, causing the robot to
+		// rocket backwards due to the default unity collision correction
+		circleCollider.Raycast (carryDir, interloperHit, carryItemDistance, groundedResetMask);
+		if (interloperHit[0].collider != null) {
+			Throwable hitItem = interloperHit[0].collider.GetComponent<Throwable> ();
+			if (hitItem != null && (hitItem is Box) && hitItem != carriedItem) {
+				print ("INTERLOPER!");
+				DropItem ();
+			}
+		}
 	}
 
 	public RobotStates GetState() {
@@ -294,6 +309,7 @@ public class Robot : Throwable {
 		else
 			currentState = (currentState == RobotStates.STATE_HOMICIDAL ? RobotStates.STATE_SUICIDAL : RobotStates.STATE_HOMICIDAL);
 		PlaySingleSoundFx (breakdownZapSound);
+		displayEmotionTime = Time.time + displayEmotionDelay;
 	}
 
 	private void GoCrazy () {
@@ -317,7 +333,7 @@ public class Robot : Throwable {
 													: GameManager.instance.greenWaveGradient;				
 				break;
 			case RobotStates.STATE_HOMICIDAL:
-				stateSpeedMultiplier = 1.5f;
+				stateSpeedMultiplier = 1.25f;
 				spriteRenderer.color = Color.red;
 				currentSpeech.sprite = homicidalSpeechSprite;
 				line.colorGradient = lockedByPlayer ? line.colorGradient 
@@ -328,7 +344,7 @@ public class Robot : Throwable {
 		if (onFire)
 			currentSpeech.sprite = onFireSpeechSprite;
 
-		currentSpeech.enabled = currentState != RobotStates.STATE_FINDBOX || onFire;
+		currentSpeech.enabled = (currentState != RobotStates.STATE_FINDBOX && Time.time < displayEmotionTime) || onFire;
 		observationCircle.UpdateVisuals (grounded);
 	}
 
@@ -352,35 +368,25 @@ public class Robot : Throwable {
 			return;
 		}
 
-		// FIXME: slow down the robots overall (or at least homicidal)
-		// FIXME: go back to the old b-line robot movement so player has to monitor robots closer
-		// FIND_BOX target box + deliver
-		// HOMICIDAL target robot + (FARTHEST) hazard UNLESS moving on a user-defined path, or carrying a box that was bumped
-		// SUICIDAL target hazard UNLESS moving on a user-defined path, or carrying a box that was bumped
-
 		switch (currentState) {
 			case RobotStates.STATE_FINDBOX:
 				SetTarget (isDelivering ? GameManager.instance.GetClosestDeliveryTarget (this)
 										: GameManager.instance.GetClosestBoxTarget (this));
 				break;
 			case RobotStates.STATE_HOMICIDAL:
-				SetTarget (isDelivering ? GameManager.instance.GetRandomHazardTarget ()
-										: GameManager.instance.GetRandomRobotTarget (this));
+				if (isCarryingBox)
+					SetTarget (GameManager.instance.GetClosestDeliveryTarget (this));
+				else
+					SetTarget (isDelivering ? GameManager.instance.GetRandomHazardTarget ()
+											: GameManager.instance.GetRandomRobotTarget (this));
 				break;
 			case RobotStates.STATE_SUICIDAL:
-				SetTarget (GameManager.instance.GetClosestHazardTarget (this));
+				if (isCarryingBox)
+					SetTarget (GameManager.instance.GetClosestDeliveryTarget (this));
+				else
+					SetTarget (GameManager.instance.GetClosestHazardTarget (this));
 				break;
 		}
-
-
-		// default
-		// **** START HERE ****
-
-		// homicidal
-		if (isCarryingRobot)
-			SetTarget (GameManager.instance.GetClosestHazardTarget (this));
-
-		// suidical is handled by the ObservationCircle child
 	}
 
 	public void SetTarget(Transform newTarget) {
@@ -449,7 +455,7 @@ public class Robot : Throwable {
 	}
 
 	public void ClearDrawnPath() {
-		PathRequestManager.KillPathRequests(name);
+		PathRequestManager.KillPathRequests(name);				// FIXME(?): sometimes a robot gameObject gets destroyed, but this function is still called (by RobotGrabber)
 		lowestFailedSubPathIndex = int.MaxValue;
 		currentDrawnPathLength = 0.0f;
 		oldDrawnPathCount = 0;
@@ -596,13 +602,13 @@ public class Robot : Throwable {
 		}
 	}
 
-	public bool isCarryingBox{
+	public bool isCarryingBox {
 		get { 
 			return isCarryingItem && (carriedItem is Box);
 		}
 	}
 
-	public bool isCarryingRobot{
+	public bool isCarryingRobot {
 		get { 
 			return isCarryingItem && (carriedItem is Robot);
 		}
@@ -670,32 +676,8 @@ public class Robot : Throwable {
 			}
 		}
 
-		if (collision.collider.tag == "Furnace") {
-			if (!onFire)
-				onFire = true;
-		}
-
-		if (collision.collider.tag == "Crusher") {
-			howDied = RobotNames.MethodOfDeath.DEATH_BY_CRUSHER;
-			Explode ();
-		}
-
-		if (collision.collider.tag == "Robot") {
-			if (!onFire && collision.collider.GetComponent<Robot> ().onFire)
-				onFire = true;
-		}
-	}
-
-	void OnCollisionStay2D(Collision2D collision) {
-		if (collision.collider.tag == "Crusher") {
-			howDied = RobotNames.MethodOfDeath.DEATH_BY_CRUSHER;
-			Explode ();
-		}
-
-//		if (collision.collider.tag == "Furnace") {
-//			if (!onFire)
-//				onFire = true;
-//		}
+		if (collision.collider.tag == "Robot" && collision.collider.GetComponent<Robot> ().onFire)
+			onFire = true;
 	}
 
 	// derived-class extension of OnTriggerEnter2D

@@ -133,7 +133,7 @@ public class HUDManager : MonoBehaviour {
 			robot.emotionalStability = globalEmotionSlider.value;
 		
 		globalEmotionButton.interactable = robot.emotionalStability >= 1.0f;
-		globalEmotionImage.enabled = globalEmotionButton.interactable && robot.currentSpeech.enabled;
+		globalEmotionImage.enabled = globalEmotionButton.interactable;
 		globalEmotionImage.sprite = robot.currentSpeech.sprite;
 	}
 		

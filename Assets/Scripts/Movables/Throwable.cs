@@ -278,6 +278,28 @@ public abstract class Throwable : MonoBehaviour {
 		if (!grounded)
 			HitWall ();
 
+		// TODO: collision response (push or slide along the collision surface)
+		Vector3 desiredPos = transform.position;
+		Vector2 hitPos = collision.contacts [0].point;
+		Vector2 penetration = new Vector2 (desiredPos.x, desiredPos.y) - hitPos;
+		float penetrationDepth = penetration.magnitude;
+		foreach (var c in collision.contacts) {
+			
+		}
+//		penetration.Normalize ();
+
+/*
+
+		// resolve the collider out of collision according to the contact point, contact normal, and collider size
+		collision.collider.transform.position = new Vector3 (hitPos.x - collision.collider.bounds.extents.x, hitPos.y);
+
+		Vector2 hitNormal = collision.contacts[0].normal;
+		Vector2 hitTangent = new Vector2 (hitNormal.y, hitNormal.x);
+		float dot = Vector2.Dot (penetration, hitTangent);
+
+		// TODO: slide in the direction closest to the pentration direction
+*/
+
 		// tell the carrier to drop this
 		if (isBeingCarried && whoIsCarrying.CheckHitTarget(collision.collider.tag))
 			whoIsCarrying.DropItem();

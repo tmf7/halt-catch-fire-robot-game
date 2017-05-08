@@ -348,7 +348,7 @@ public class GameManager : MonoBehaviour {
 			if (tryBot != homicidalRobot && !tryBot.isBeingCarried && !tryBot.isTargeted && !tryBot.fellInPit && !tryBot.grabbedByPlayer && !tryBot.lockedByPlayer)
 				break;
 		}
-		if (numTries < maxRobots && index > 0)
+		if (numTries < maxRobots)
 			robot = allRobots [index].transform;
 
 		return robot;

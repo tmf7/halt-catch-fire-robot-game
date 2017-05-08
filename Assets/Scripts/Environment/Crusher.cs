@@ -7,12 +7,14 @@ public class Crusher : MonoBehaviour {
 	public AudioClip smashSound;
 	public AudioClip retractSound;
 
-	private AudioSource source;
 	private Animator animator;
+	private AudioSource source;
 	private ParticleSystem smashParticles;
+	private BoxCollider2D boxCollider;
 
 	void Start() {
 		source = GetComponent<AudioSource> ();
+		boxCollider = GetComponent<BoxCollider2D> ();
 		animator = GetComponent<Animator> ();
 		smashParticles = GetComponentInChildren<ParticleSystem> ();
 	}
@@ -20,13 +22,13 @@ public class Crusher : MonoBehaviour {
 	// activate the crusherShadow collider
 	// crusherShadow must be the first child of crusher
 	private void EnableCollider() {
-		GetComponentInChildren<BoxCollider2D> ().isTrigger = false;
+		boxCollider.isTrigger = false;
 	}
 
 	// de-activate the crusherShadow collider
 	// crusherShadow must be the first child of crusher
 	private void DisableCollider() {
-		GetComponentInChildren<BoxCollider2D> ().isTrigger = true;
+		boxCollider.isTrigger = true;
 	}
 
 	private void PlaySmashSound() {
@@ -35,7 +37,7 @@ public class Crusher : MonoBehaviour {
 		source.Play ();
 	}
 
-	private void PlayRetractSount() {
+	private void PlayRetractSound() {
 		source.clip = retractSound;
 		source.Play ();
 	}
@@ -44,9 +46,11 @@ public class Crusher : MonoBehaviour {
 		animator.SetTrigger ("RetractCrusher");
 	}
 
-	void OnCollisionEnter2D(Collision2D collision) {
+	void OnCollisionStay2D(Collision2D collision) {
 		Robot hitRobot = collision.collider.GetComponent<Robot> ();
-		if (hitRobot != null)
+		if (hitRobot != null) {
+			hitRobot.howDied = RobotNames.MethodOfDeath.DEATH_BY_CRUSHER;
 			hitRobot.Explode ();
+		}
 	}
 }
