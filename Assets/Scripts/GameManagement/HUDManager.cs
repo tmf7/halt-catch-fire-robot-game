@@ -40,6 +40,7 @@ public class HUDManager : MonoBehaviour {
 	private Slider 				globalEmotionSlider;
 	private Button 				globalEmotionButton;
 	private Image				globalEmotionImage;
+	private Text[] 				globalEmotionText;
 
 	public bool isLevelTimeUp {
 		get { 
@@ -105,6 +106,7 @@ public class HUDManager : MonoBehaviour {
 		pauseButton = GameObject.Find ("PauseButton").GetComponentInChildren<ImageSwapButton> ();
 		globalEmotionSlider = GameObject.Find ("EmotionSlider").GetComponent<Slider> ();
 		globalEmotionButton = GameObject.Find ("EmotionButton").GetComponent<Button> ();
+		globalEmotionText = globalEmotionButton.GetComponentsInChildren<Text> ();
 		globalEmotionImage = GameObject.Find ("EmotionImage").GetComponent<Image> ();
 		globalEmotionImage.enabled = false;
 		UpdatetGlobalEmotionInterface ();
@@ -126,6 +128,9 @@ public class HUDManager : MonoBehaviour {
 		globalEmotionButton.gameObject.SetActive (robot != null);
 		if (!globalEmotionSlider.gameObject.activeSelf)
 			return;
+
+		globalEmotionText [0].text = robot.name;
+		globalEmotionText [1].text = robot.name;
 
 		if (!emotionHandleHeld)
 			globalEmotionSlider.value = robot.emotionalStability;

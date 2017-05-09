@@ -43,7 +43,7 @@ public class PathFinding : MonoBehaviour {
 						continue;
 
 					int subPathModifier = subPathIndex > -1 ? 0 : 1;
-					int newMovementCostToNeighbor = currentNode.gCost + GetDistance (currentNode, neighbor) + neighbor.movementPenalty * subPathModifier;
+					int newMovementCostToNeighbor = currentNode.gCost + GetDistance (currentNode, neighbor) + (neighbor.movementPenalty * subPathModifier);
 					if (newMovementCostToNeighbor < neighbor.gCost || !openSet.Contains (neighbor)) {
 						neighbor.gCost = newMovementCostToNeighbor;
 						neighbor.hCost = GetDistance (neighbor, targetNode);
@@ -62,8 +62,8 @@ public class PathFinding : MonoBehaviour {
 		if (pathSuccess) {
 			waypoints = BuildPath (startNode, targetNode);
 			pathSuccess = waypoints.Length > 0;
-			if (!pathSuccess)
-				print ("FIND PATH (" + subPathIndex + ") FAILED");
+//			if (!pathSuccess)
+//				print ("FIND PATH (" + subPathIndex + ") FAILED");
 		}
 		pathRequestManager.FinishedProcessingPath (waypoints, pathSuccess, subPathIndex);
 	}

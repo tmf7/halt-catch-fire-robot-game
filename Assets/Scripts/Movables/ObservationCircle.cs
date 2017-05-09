@@ -44,6 +44,10 @@ public class ObservationCircle : MonoBehaviour {
 			|| (owner.currentState == Robot.RobotStates.STATE_SUICIDAL && GameManager.instance.IsHazard(hit.transform))) { 
 			if (owner.isCarryingBox) 
 				owner.DropItem ();
+			
+			if (owner.target == null)
+				owner.StopMoving ();
+			
 			owner.SetTarget(hit.transform);
 		}
 	}

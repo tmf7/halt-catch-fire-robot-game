@@ -17,6 +17,10 @@ public class RobotGrabber : MonoBehaviour {
 	private Collider2D			grabbedRobotCollider;
     private DistanceJoint2D 	joint;
 	private SpriteRenderer		spriteRenderer;
+	private ParticleSystem 		glowParticles;
+	private ParticleSystem		beamParticles;
+	private Quaternion 			originalBeamRotation;
+	private Vector3				dropForce;
 	private bool				secondClickOnRobot = false;
 
 	public Robot currentGrabbedRobot {
@@ -36,6 +40,11 @@ public class RobotGrabber : MonoBehaviour {
 
 	void Start () {
 		spriteRenderer = GetComponent<SpriteRenderer> ();
+		ParticleSystem[] particleChildren = GetComponentsInChildren<ParticleSystem> ();
+		bool firstGlow = particleChildren [0].name == "GrabberGlow";
+		glowParticles =  firstGlow ? particleChildren [0] : particleChildren [1];
+		beamParticles = firstGlow ? particleChildren [1] : particleChildren [0];
+		originalBeamRotation = beamParticles.transform.rotation;
 	}
 
     void Update() {
@@ -43,6 +52,18 @@ public class RobotGrabber : MonoBehaviour {
         Vector3 worldPosition = Camera.main.ScreenToWorldPoint(mousePos);
 		worldPosition.z = 0.0f;
 
+		if (grabbedRobot != null && !beamParticles.isPlaying)
+			beamParticles.Play ();
+
+		// align the beam to the joint the robot is dangling from
+		// FIXME: a cone emmiter has a different start rotation from the prior-used edge emmiter, and therefore needs a different rotation applied
+		// to rotate about the global z (not its local z)
+		if (joint != null) {
+			dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
+			Quaternion beamRotation = Quaternion.LookRotation(Vector3.forward, dropForce);
+			beamParticles.transform.rotation = originalBeamRotation * Quaternion.Inverse(beamRotation);
+		}
+	
 		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
 
 		spriteRenderer.enabled = worldPosition.y < 7.0f || grabbedRobot != null;
@@ -50,6 +71,10 @@ public class RobotGrabber : MonoBehaviour {
 		#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
 
 		spriteRenderer.enabled = grabbedRobot != null;
+		if (grabbedRobot != null)
+			glowParticles.Play ();
+		else
+			glowParticles.Stop ();
 
 		#endif
 
@@ -156,7 +181,7 @@ public class RobotGrabber : MonoBehaviour {
 
 			if (secondClickOnRobot) {
 				grabbedRobot.gameObject.layer = (int)Mathf.Log (grabbleMask.value, 2.0f);
-				Vector3 dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
+//				Vector3 dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
 				if (dropForce.sqrMagnitude <= 2.0f * (joint.distance * joint.distance))
 					dropForce = Vector3.zero;
 					
@@ -167,6 +192,8 @@ public class RobotGrabber : MonoBehaviour {
     }
 
 	private void ReleaseRobot () {
+		beamParticles.Stop ();
+		beamParticles.Clear ();
 		Destroy (joint);
 		joint = null;
 		grabbedRobot.grabbedByPlayer = false;
