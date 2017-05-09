@@ -41,7 +41,6 @@ public abstract class Throwable : MonoBehaviour {
 	protected GameObject		dropShadow;
 	protected SpriteRenderer	spriteRenderer;
 	protected Rigidbody2D 		rb2D;
-	protected Vector3 			oldPosition;
 	protected bool 				landingResolved = true;
 
 	private ShadowController 	shadowController;
@@ -70,11 +69,6 @@ public abstract class Throwable : MonoBehaviour {
 				Throwable.throwSectors.Add (new Range (currentMinAngle, currentMinAngle + throwSectorAngle));
 			}
 		}
-		oldPosition = transform.position;
-	}
-
-	void LateUpdate() {
-		oldPosition = transform.position;
 	}
 
 	public void SetShadowParent(Transform parent) {
@@ -279,13 +273,6 @@ public abstract class Throwable : MonoBehaviour {
 			whoIsCarrying.DropItem();
 
 		HitCollision2D (collision);
-	}
-
-	void OnCollisionStay2D (Collision2D collision) {
-		foreach (ContactPoint2D contact in collision.contacts) {
-			Vector2 tangent = new Vector2 (contact.normal.y, -contact.normal.x);
-			rb2D.AddForceAtPosition (-2.0f * contact.separation * tangent, contact.point, ForceMode2D.Force);
-		}
 	}
 
 	public void PlaySingleSoundFx (AudioClip clip) {

@@ -164,7 +164,7 @@ public class UIManager : MonoBehaviour {
 	public IEnumerator ShakeObjectCoroutine (GameObject obj, bool loose, float duration, float speed, float intensity) {
 		Vector3 originalPosition = obj.transform.position;
 		float elapsed = 0.0f;
-		while (elapsed < duration) {
+		while (elapsed < duration && Time.timeScale == 1.0f) {
 			if (obj != null) {
 				float damping = Mathf.Clamp01 ((duration - elapsed) / duration);
 				float dampedMag = damping * intensity;
