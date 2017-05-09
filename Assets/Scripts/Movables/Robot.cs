@@ -217,7 +217,6 @@ public class Robot : Throwable {
 	}
 
 	private RaycastHit2D[] interloperHit = new RaycastHit2D[1];			// BUGFIX: for UpdateCarriedItem checks
-
 	private void UpdateCarriedItem() {
 		if (!isCarryingItem || path == null || path.Length <= 0)
 			return;
@@ -232,7 +231,6 @@ public class Robot : Throwable {
 		if (interloperHit[0].collider != null) {
 			Throwable hitItem = interloperHit[0].collider.GetComponent<Throwable> ();
 			if (hitItem != null && (hitItem is Box) && hitItem != carriedItem) {
-				print ("INTERLOPER!");
 				DropItem ();
 			}
 		}
@@ -345,7 +343,7 @@ public class Robot : Throwable {
 			currentSpeech.sprite = onFireSpeechSprite;
 
 		currentSpeech.enabled = (currentState != RobotStates.STATE_FINDBOX && Time.time < displayEmotionTime) || onFire;
-		observationCircle.UpdateVisuals (grounded);
+		observationCircle.UpdateVisuals (grounded && !fellInPit);
 	}
 
 	void SearchForTarget() {
@@ -516,10 +514,11 @@ public class Robot : Throwable {
 
 	void FollowPath() {
 		UpdatePath (path == null && drawnPath.Count == 0);
-		if (path == null)
+		if (path == null || path.Length == 0)
 			return;
 
-		if (transform.position == currentWaypoint) {
+
+		if (circleCollider.OverlapPoint (currentWaypoint)) {		// FIXME: was transform.position == currentWaypoint
 			targetIndex++;
 			if (targetIndex >= path.Length) {
 				StopMoving ();

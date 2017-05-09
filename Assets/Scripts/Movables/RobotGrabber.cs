@@ -76,7 +76,7 @@ public class RobotGrabber : MonoBehaviour {
 		// if the user RELEASES the mouse, UNLOCK the robot to follow the new path, and start MOVING the RobotGrabber SPRITE again as normal
 
 		// input press
-		if (Input.GetMouseButtonDown (0)) {
+		if (Input.GetMouseButtonDown (0) && worldPosition.y < 7.0f) {		// BUGFIX: for clicking sprinkler button above a door and accidentally grabbing a robot
 			if (joint == null) {
 
 				// find the closest robot within the given radius of the click, if any

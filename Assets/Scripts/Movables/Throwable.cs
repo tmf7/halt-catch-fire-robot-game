@@ -24,6 +24,7 @@ public abstract class Throwable : MonoBehaviour {
 	public float 				deadlyHeight = 0.125f;
 	public GameObject 			dropShadowPrefab;
 	public GameObject 			explosionPrefab;
+	public AnimationCurve 		throwThrottleCurve;
 	public Range 				throwSpeeds = new Range(8.0f, 12.0f);
 	public Range				airTimes = new Range(0.5f, 2.0f);
 	public int 					throwSectorCount = 10;
@@ -40,6 +41,7 @@ public abstract class Throwable : MonoBehaviour {
 	protected GameObject		dropShadow;
 	protected SpriteRenderer	spriteRenderer;
 	protected Rigidbody2D 		rb2D;
+	protected Vector3 			oldPosition;
 	protected bool 				landingResolved = true;
 
 	private ShadowController 	shadowController;
@@ -47,7 +49,6 @@ public abstract class Throwable : MonoBehaviour {
 	private Robot				whoHasTargeted;
 	private int 				previousSectorIndex = 0;
 
-	private static AnimationCurve throttleCurve;
 	private static List<Range>	  throwSectors;
 	private static readonly float maxThrowThrottleFactor = 0.0625f;
 	private static readonly float thresholdAngle = 180.0f * Mathf.Deg2Rad;
@@ -69,16 +70,11 @@ public abstract class Throwable : MonoBehaviour {
 				Throwable.throwSectors.Add (new Range (currentMinAngle, currentMinAngle + throwSectorAngle));
 			}
 		}
+		oldPosition = transform.position;
+	}
 
-		// sharp throttle spike near 270 degree downward throw
-		if (Throwable.throttleCurve == null) {
-			Throwable.throttleCurve = new AnimationCurve ();
-			Throwable.throttleCurve.AddKey (0.0f, 1.0f);
-			Throwable.throttleCurve.AddKey (0.33f, 0.8f);
-			Throwable.throttleCurve.AddKey (0.5f, 0.0f);
-			Throwable.throttleCurve.AddKey (0.66f, 0.8f);
-			Throwable.throttleCurve.AddKey (1.0f, 1.0f);
-		}
+	void LateUpdate() {
+		oldPosition = transform.position;
 	}
 
 	public void SetShadowParent(Transform parent) {
@@ -109,7 +105,7 @@ public abstract class Throwable : MonoBehaviour {
 		// don't give the throwable more downward speed than it needs
 		if (throwAngle > thresholdAngle) {
 			float curveTime = Mathf.InverseLerp(Mathf.PI, 2 * Mathf.PI, throwAngle);		// 0 to 1
-			float lerpFactor = throttleCurve.Evaluate (curveTime);							// 1 to 0 to 1
+			float lerpFactor = throwThrottleCurve.Evaluate (curveTime);						// 1 to 0 to 1
 			float throttleFactor = Mathf.Lerp(maxThrowThrottleFactor, 1.0f, lerpFactor); 	// 1 to 0.0625 to 1
 			throwSpeed *= throttleFactor;			
 		}
@@ -278,33 +274,18 @@ public abstract class Throwable : MonoBehaviour {
 		if (!grounded)
 			HitWall ();
 
-		// TODO: collision response (push or slide along the collision surface)
-		Vector3 desiredPos = transform.position;
-		Vector2 hitPos = collision.contacts [0].point;
-		Vector2 penetration = new Vector2 (desiredPos.x, desiredPos.y) - hitPos;
-		float penetrationDepth = penetration.magnitude;
-		foreach (var c in collision.contacts) {
-			float derp = c.separation;
-		}
-//		penetration.Normalize ();
-
-/*
-
-		// resolve the collider out of collision according to the contact point, contact normal, and collider size
-		collision.collider.transform.position = new Vector3 (hitPos.x - collision.collider.bounds.extents.x, hitPos.y);
-
-		Vector2 hitNormal = collision.contacts[0].normal;
-		Vector2 hitTangent = new Vector2 (hitNormal.y, hitNormal.x);
-		float dot = Vector2.Dot (penetration, hitTangent);
-
-		// TODO: slide in the direction closest to the pentration direction
-*/
-
 		// tell the carrier to drop this
 		if (isBeingCarried && whoIsCarrying.CheckHitTarget(collision.collider.tag))
 			whoIsCarrying.DropItem();
 
 		HitCollision2D (collision);
+	}
+
+	void OnCollisionStay2D (Collision2D collision) {
+		foreach (ContactPoint2D contact in collision.contacts) {
+			Vector2 tangent = new Vector2 (contact.normal.y, -contact.normal.x);
+			rb2D.AddForceAtPosition (-2.0f * contact.separation * tangent, contact.point, ForceMode2D.Force);
+		}
 	}
 
 	public void PlaySingleSoundFx (AudioClip clip) {

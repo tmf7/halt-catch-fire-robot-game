@@ -71,7 +71,7 @@ public class Grid : MonoBehaviour {
 				Ray ray = new Ray (worldPoint + Vector3.forward * rayHeight, Vector3.back);
 				RaycastHit2D hit = Physics2D.GetRayIntersection (ray, rayRange, walkableMask);
 				if (hit)
-					walkableRegionsDict.TryGetValue(hit.collider.gameObject.layer, out movementPenalty);
+					walkableRegionsDict.TryGetValue (hit.collider.gameObject.layer, out movementPenalty);
 				if (!walkable)
 					movementPenalty += obstacleProximityPenalty;
 
