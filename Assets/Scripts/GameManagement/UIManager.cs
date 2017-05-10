@@ -211,7 +211,7 @@ public class UIManager : MonoBehaviour {
 			SoundManager.instance.PlayGameMusic ();
 			GameManager.instance.InitLevel ();
 			TransitionManager.instance.DisableStoryCanvas ();
-//			TransitionManager.instance.StartInGameDialogue();
+			TransitionManager.instance.StartInGameDialogue();
 			Cursor.visible = false;
 			storyToTell++;
 		} else {

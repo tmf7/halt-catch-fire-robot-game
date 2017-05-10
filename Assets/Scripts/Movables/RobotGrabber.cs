@@ -9,9 +9,10 @@ public class RobotGrabber : MonoBehaviour {
 	public LayerMask			grabbleMask;
 	public LayerMask			grabbedRobotMask;
 	public float				grabRadius = 10.0f;
-	public float				mouseJointDistance = 0.1f;
-	public float				touchJointDistance = 1.0f;
+	public float				jointDistance = 1.0f;
 	public float				forceMultiplier = 2.0f;
+	public AnimationCurve 		beamLifeCurve;
+	public AnimationCurve 		beamAngleCurve;
 
 	private Robot 				grabbedRobot;
 	private Collider2D			grabbedRobotCollider;
@@ -52,17 +53,7 @@ public class RobotGrabber : MonoBehaviour {
         Vector3 worldPosition = Camera.main.ScreenToWorldPoint(mousePos);
 		worldPosition.z = 0.0f;
 
-		if (grabbedRobot != null && !beamParticles.isPlaying)
-			beamParticles.Play ();
-
-		// align the beam to the joint the robot is dangling from
-		// FIXME: a cone emmiter has a different start rotation from the prior-used edge emmiter, and therefore needs a different rotation applied
-		// to rotate about the global z (not its local z)
-		if (joint != null) {
-			dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
-			Quaternion beamRotation = Quaternion.LookRotation(Vector3.forward, dropForce);
-			beamParticles.transform.rotation = originalBeamRotation * Quaternion.Inverse(beamRotation);
-		}
+		UpdateBeamParticles ();
 	
 		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
 
@@ -135,12 +126,7 @@ public class RobotGrabber : MonoBehaviour {
 				joint.autoConfigureConnectedAnchor = false;
 				joint.autoConfigureDistance = false;
 				joint.enableCollision = true;
-
-				#if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
-					joint.distance = touchJointDistance;
-				#else
-					joint.distance = mouseJointDistance;
-				#endif
+				joint.distance = jointDistance;
 
 				// put the joint in robot local space slightly above its head
 				// and align both parts of the joint initially
@@ -190,6 +176,34 @@ public class RobotGrabber : MonoBehaviour {
 			}
 		}
     }
+
+	private void UpdateBeamParticles () {
+		if (grabbedRobot != null && !beamParticles.isPlaying)
+			beamParticles.Play ();
+
+		// align the beam to the joint the robot is dangling from
+		if (joint != null && beamParticles.isPlaying) {
+			dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
+			float mag = dropForce.magnitude;
+			float lerpFactor = Mathf.InverseLerp(1.0f, 16.0f, dropForce.magnitude);	// FIXME: magic beam stretching numbers determined emperically
+			float lifetime = beamLifeCurve.Evaluate (lerpFactor);
+			float beamAngle = beamAngleCurve.Evaluate (lerpFactor);
+
+			var main = beamParticles.main;
+			main.startLifetime = lifetime;
+
+			var shape = beamParticles.shape;
+			shape.angle = beamAngle;
+
+			float facingAngle = Mathf.Atan2(dropForce.x, dropForce.y) * Mathf.Rad2Deg;
+			Quaternion beamRotation = Quaternion.AngleAxis (facingAngle, Vector3.up);
+			beamParticles.transform.rotation = originalBeamRotation * Quaternion.Inverse (beamRotation);
+
+			// FIXME(~): restarting on a pre-warmed system sets the speed to the framerate (way too fast)
+			beamParticles.Stop();
+			beamParticles.Play ();
+		}
+	}
 
 	private void ReleaseRobot () {
 		beamParticles.Stop ();
