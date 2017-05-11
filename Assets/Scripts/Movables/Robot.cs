@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class Robot : Throwable {
 
 	public GameObject			observationCirclePrefab;
+	public GameObject 			dummyTargetPrefab;
 	public GameObject			firePrefab;
 	public GameObject 			steamPuffPrefab;
 	public ParticleSystem 		robotBeamPrefab;
@@ -73,13 +74,14 @@ public class Robot : Throwable {
 	private bool isDelivering = false;
 
 	// pathing
+	private GameObject			dummyTarget;				// in the event of more robots than available targets
 	private LineRenderer 		line;
 	private Dictionary<int, Vector3[]> 	subPaths;
 	private List<GridNode> 		drawnPath;
 	private Vector3[] 			path;
 	private int 				targetIndex;
 	private int					slowdownIndex;				// account for unusually curvy paths
-	private int					oldDrawnPathCount;			// used for updating the drawnPath color
+	private int					oldDrawnPathCount;			// for updating the drawnPath color
 	private Vector3 			currentWaypoint;
 	private Vector3				targetLastKnownPosition;
 	private float 				currentDrawnPathLength;
@@ -384,6 +386,15 @@ public class Robot : Throwable {
 				else
 					SetTarget (GameManager.instance.GetClosestHazardTarget (this));
 				break;
+		}
+
+		if (target == null) {
+			Vector3 position = GameManager.instance.GetRandomWorldPointTarget (this);
+			if (dummyTarget == null)
+				dummyTarget = Instantiate<GameObject> (dummyTargetPrefab, position, Quaternion.identity, GameManager.instance.robotParent);
+			else
+				dummyTarget.transform.position = position;
+			target = dummyTarget.transform;
 		}
 	}
 

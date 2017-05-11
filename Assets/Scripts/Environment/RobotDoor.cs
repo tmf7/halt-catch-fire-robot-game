@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class RobotDoor : MonoBehaviour {
 
@@ -16,11 +17,24 @@ public class RobotDoor : MonoBehaviour {
 
 	private AudioSource source;
 	private Animator	animator;
+	private Canvas spawnCanvas;
+	private Text[] 		robotCostText;
 	private bool		spawnSlimeBot = false;
 
 	void Awake() {
 		source = GetComponent<AudioSource> ();
 		animator = GetComponent<Animator> ();
+		spawnCanvas = GetComponentInChildren<Canvas> ();
+		robotCostText = GetComponentsInChildren<Text> ();
+	}
+
+	void Update () {
+		spawnCanvas.enabled = isClosed;
+		if (spawnCanvas.enabled) {
+			string buildCost = GameManager.instance.robotBuildCost.ToString();
+			robotCostText [0].text = buildCost;
+			robotCostText [1].text = buildCost;
+		}
 	}
 
 	public IEnumerator SpawnSlimeBot() {
@@ -48,8 +62,18 @@ public class RobotDoor : MonoBehaviour {
 		}
 		TriggerDoorClose ();
 	}
+
+	// button attached to this gameObject invokes this
+	public void SpawnOneRobot() {
+		int buildCost = GameManager.instance.robotBuildCost;
+		if (HUDManager.instance.boxesRemaining >= buildCost) {
+			HUDManager.instance.SpendBoxes (buildCost);
+			GameManager.instance.IncrementMaxRobots ();
+			TriggerDoorOpen ();
+		}
+	}
 		
-	//  GameManager invokes this on all doors once the global spawnDelay has elapsed
+	// GameManager invokes this on all doors at level beginning
 	public void TriggerDoorOpen() {
 		isClosed = false;
 		animator.SetTrigger ("OpenDoor");

@@ -13,17 +13,16 @@ public class GameManager : MonoBehaviour {
 	public Gradient				greenWaveGradient;
 	public Gradient				silverWaveGradient;
 	public Gradient 			blackWaveGradient;
-	public float				globalSpawnDelay = 5.0f;
 	public int 					maxRobots = 3;
 	public int					maxBoxes = 20;
 	public float 				acceptableSearchRangeSqr = 50.0f;		// stop looking for something closer if currently queried item is within this range
-	public bool 				spawningRobots = false;
 	public bool					levelEnded = false;
 
 	// heierarchy organization
 	private Transform 			boxHolder;		
 	private Transform			robotHolder;
 
+	private Grid				grid;
 	private List<Box> 			allBoxes;
 	private List<Robot> 		allRobots;
 	private List<RobotDoor>		allDoors;
@@ -31,11 +30,8 @@ public class GameManager : MonoBehaviour {
 	private List<Transform> 	hazardPoints;
 
 	// respawn handling
-	private List<Text> 			spawnTexts;
-	private float				nextRobotSpawnTime;
-	private int 				robotsToSpawnThisCycle;
-	private int 				robotsAddedThisCycle;
 	private int					initialMaxRobots;
+	private int 				pendingRobots;
 
 	public int robotCount {
 		get {
@@ -56,72 +52,22 @@ public class GameManager : MonoBehaviour {
             Destroy(gameObject);	
 
 		DontDestroyOnLoad(gameObject);
-		spawnTexts = new List<Text> ();
 		initialMaxRobots = maxRobots;
 	}
 
 	void Update() {
-		if (!levelEnded) {
-			UpdateRespawnText ();
+		if (!levelEnded) 
 			CheckIfLevelOver ();
-		}
 	}
 
-	// regulate robot spawn rate
-	// FIXME: just insta-spawn a SINGLE robot if the player has clicked the door button and can afford it
-	// run the spawn cycle, and only then allow another click for another robot
-	// place multiple doors per level so its not such a bottleneck
-	// TODO: make maxRobots 60 by default... or maybe still do the IncreaseMaxRobots logic....
-	// FIXME: however, at the start of a stage, still do the spawn loop of multiple bots to put them in play
-	private void UpdateRespawnText() {
-		if (robotCount < maxRobots && robotCount < HUDManager.instance.robotsRemaining && HUDManager.instance.levelTimeRemaining > Mathf.RoundToInt(globalSpawnDelay)) {
-			if (Time.time > nextRobotSpawnTime) {
-				if (!spawningRobots) {
-					robotsToSpawnThisCycle = HUDManager.instance.robotsRemaining - robotCount;
-					robotsAddedThisCycle = 0;
-					spawningRobots = true;
-
-					foreach (RobotDoor door in allDoors) {
-						door.spawnEnabled = true;
-						door.TriggerDoorOpen ();
-					}
-				} else if (robotsAddedThisCycle >= robotsToSpawnThisCycle) {
-					bool allClosed = true;
-
-					foreach (RobotDoor door in allDoors) {
-						door.spawnEnabled = false;
-						if (!door.isClosed) {
-							allClosed = false;
-							break;
-						}
-					}
-
-					if (allClosed) {
-						nextRobotSpawnTime = Time.time + globalSpawnDelay;
-						spawningRobots = false;
-					}
-				}
-			}
-
-			int spawnTime = Mathf.RoundToInt (nextRobotSpawnTime - Time.time);
-			if (spawnTime <= 0) {
-				HideSpawnText ();
-			} else {
-				foreach (Text spawnText in spawnTexts)
-					spawnText.text = spawnTime.ToString ();
-			}
-		} else {
-			HideSpawnText ();
-		}
-	}
-
-	private void HideSpawnText() {
-		foreach (Text spawnText in spawnTexts)
-			spawnText.text = "";
+	private void SpawnInitialRobots() {
+		pendingRobots = initialMaxRobots;
+		foreach (RobotDoor door in allDoors)
+			door.TriggerDoorOpen ();
 	}
 
 	private void CheckIfLevelOver() {
-		if (HUDManager.instance.allRobotsFired || HUDManager.instance.isLevelTimeUp) {
+		if ((HUDManager.instance.allRobotsFired && HUDManager.instance.boxesRemaining <= 0) || HUDManager.instance.isLevelTimeUp) {
 			levelEnded = true;
 			AccountForSurvivingRobots ();
 			StartCoroutine(allDoors [0].SpawnSlimeBot ());
@@ -135,12 +81,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public void InitLevel() {
-		// each RobotDoor has its own spawn text
-		spawnTexts.Clear();
-		GameObject[] spawnTextObjs = GameObject.FindGameObjectsWithTag ("SpawnText");
-		foreach (GameObject spawnTextObj in spawnTextObjs)
-			spawnTexts.Add(spawnTextObj.GetComponent<Text>());
-
+		grid = GameObject.FindObjectOfType<Grid> ();
 		boxHolder = new GameObject ("Boxes").transform;
 		robotHolder = new GameObject ("Robots").transform;
 		allBoxes = new List<Box>();
@@ -168,20 +109,28 @@ public class GameManager : MonoBehaviour {
 			hazardPoints.Add (pits[i].transform);
 
 		Cursor.visible = false;
-		spawningRobots = false;
 		levelEnded = false;
-		nextRobotSpawnTime = Time.time;
 		HUDManager.instance.StartLevelTimer ();
+		SpawnInitialRobots ();
+	}
+		
+	// FIXME: this occasionally returns an extremely negative number, likely due to pendingRobots inaccuracies
+	public int robotBuildCost {
+		get {
+			return (robotCount > 0 ? (int)(15.0f * Mathf.Log10 ((float)(robotCount + pendingRobots)) + 1.0f) : 1);
+		}
 	}
 
 	public void ResetMaxRobots () {
 		maxRobots = initialMaxRobots;
 	}
 
-	public void IncreaseMaxRobots(int increaseBy) {
-		maxRobots += increaseBy;
+	public void IncrementMaxRobots() {
+		maxRobots++;
 		if (maxRobots >= RobotNames.Instance.maxAvailableNames)
 			maxRobots = RobotNames.Instance.maxAvailableNames - 1;
+		else
+			pendingRobots++;
 	}
 
 	public void KillAllRobots() {
@@ -208,11 +157,19 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
+	public Transform boxParent {
+		get { 
+			return boxHolder;
+		}
+	}
+
 	public void AddRobot(Robot newRobot) {
 		newRobot.transform.SetParent (robotHolder);
 		newRobot.SetShadowParent (robotHolder);
 		allRobots.Add (newRobot);
-		robotsAddedThisCycle++;
+		pendingRobots--;
+		if (pendingRobots < 0)
+			pendingRobots = 0;
 	}
 
 	public void Remove(Throwable item) {
@@ -357,5 +314,27 @@ public class GameManager : MonoBehaviour {
 			robot = allRobots [index].transform;
 
 		return robot;
+	}
+
+	// FIXME(~): assumes the resulting node can be pathed to
+	public Vector3 GetRandomWorldPointTarget(Robot robot) {
+		GridNode node = null;
+		Vector3 nodePos = Vector3.zero;
+		float rangeSqr = 0.0f;
+		int row = -1;
+		int col = -1;
+		int numTries = 0;
+		do {
+			row = Random.Range (0, grid.GridRows);
+			col = Random.Range (0, grid.GridCols);
+			node = grid.NodeFromRowCol(row, col);
+			nodePos = new Vector3 (node.worldPosition.x, node.worldPosition.y);
+			rangeSqr = (nodePos - robot.transform.position).sqrMagnitude;
+			numTries++;
+		} while (!node.walkable && (rangeSqr < acceptableSearchRangeSqr) && numTries < grid.MaxSize);
+
+		if (numTries >= grid.MaxSize)
+			return Vector3.zero;
+		return nodePos;
 	}
 }

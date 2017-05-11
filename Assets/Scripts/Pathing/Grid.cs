@@ -156,6 +156,11 @@ public class Grid : MonoBehaviour {
 		return grid [row, col];
 	}
 
+	// assumes valid row and col values are passed in
+	public GridNode NodeFromRowCol(int row, int col) {
+		return grid [row, col];
+	}
+
 	// Debug Drawing
 	void OnDrawGizmos() {
 		Gizmos.DrawWireCube (transform.position, new Vector3 (gridWorldSize.x, gridWorldSize.y, 1.0f));

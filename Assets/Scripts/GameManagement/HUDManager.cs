@@ -17,6 +17,8 @@ public class HUDManager : MonoBehaviour {
 	[HideInInspector]
 	public int 					boxesThisLevel = 0;
 	[HideInInspector]
+	public int					boxesRemaining = 0;
+	[HideInInspector]
 	public bool 				playSprinklerSystem = false;
 	[HideInInspector]
 	public bool 				resetSprinklerCooldown = false;
@@ -113,7 +115,7 @@ public class HUDManager : MonoBehaviour {
 		if (!GameManager.instance.levelEnded)
 			lastTimeRemainingValue = levelTimeRemaining;
 		
-		boxesText.text = "Boxes Orbited: " + boxesCollected.ToString();
+		boxesText.text = "Boxes Left: " + boxesRemaining.ToString();
 		robotsText.text = "Robots Left: " + GameManager.instance.robotCount.ToString();
 		timeText.text = "Time: " + (GameManager.instance.levelEnded ? lastTimeRemainingValue : levelTimeRemaining).ToString();
 		UpdatetGlobalEmotionInterface ();
@@ -171,9 +173,14 @@ public class HUDManager : MonoBehaviour {
 		ResetLevelStats ();
 	}
 
+	public void SpendBoxes(int points) {
+		boxesRemaining -= points;
+	}
+
 	public void CollectBox(int points) {
 		boxesCollected += points;
 		boxesThisLevel += points;
+		boxesRemaining += points;
 	}
 
 	public void ExtinguishFire() {
@@ -194,6 +201,7 @@ public class HUDManager : MonoBehaviour {
 	public void ResetGameStats() {
 		firesPutOut = 0;
 		boxesCollected = 0;
+		boxesRemaining = 0;
 		robotsBuilt = 0;
 		robotsFired = 0;
 	}

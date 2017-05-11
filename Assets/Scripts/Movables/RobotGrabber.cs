@@ -14,6 +14,8 @@ public class RobotGrabber : MonoBehaviour {
 	public AnimationCurve 		beamLifeCurve;
 	public AnimationCurve 		beamAngleCurve;
 
+	public float				topWallYPosition = 6.0f;
+
 	private Robot 				grabbedRobot;
 	private Collider2D			grabbedRobotCollider;
     private DistanceJoint2D 	joint;
@@ -57,7 +59,7 @@ public class RobotGrabber : MonoBehaviour {
 	
 		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
 
-		spriteRenderer.enabled = worldPosition.y < 7.0f || grabbedRobot != null;
+		spriteRenderer.enabled = worldPosition.y < topWallYPosition || grabbedRobot != null;
 
 		#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
 
@@ -78,7 +80,7 @@ public class RobotGrabber : MonoBehaviour {
 		}
 
 		// FIXME: magic number specific to the current y-position of the HUD interface
-		Cursor.visible = worldPosition.y > 7.0f || !updateGrabberPosition;
+		Cursor.visible = worldPosition.y > topWallYPosition || !updateGrabberPosition;
 
 		// first click LOCKS the robot on the ground (ie NOT HOVER via Robot.grabbed bool)
 		// SET RobotGrabber SPRITE position DIRECTLY over grabbedRobot, and enable the cursor to manipulate the SLIDER, or draw a PATH
@@ -92,7 +94,7 @@ public class RobotGrabber : MonoBehaviour {
 		// if the user RELEASES the mouse, UNLOCK the robot to follow the new path, and start MOVING the RobotGrabber SPRITE again as normal
 
 		// input press
-		if (Input.GetMouseButtonDown (0) && worldPosition.y < 7.0f) {		// BUGFIX: for clicking sprinkler button above a door and accidentally grabbing a robot
+		if (Input.GetMouseButtonDown (0) && worldPosition.y < topWallYPosition) {		// BUGFIX: for clicking sprinkler button above a door and accidentally grabbing a robot
 			if (joint == null) {
 
 				// find the closest robot within the given radius of the click, if any
@@ -180,6 +182,8 @@ public class RobotGrabber : MonoBehaviour {
 	private void UpdateBeamParticles () {
 		if (grabbedRobot != null && !beamParticles.isPlaying)
 			beamParticles.Play ();
+		else if (grabbedRobot == null)
+			beamParticles.Stop ();
 
 		// align the beam to the joint the robot is dangling from
 		if (joint != null && beamParticles.isPlaying) {
