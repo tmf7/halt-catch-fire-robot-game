@@ -205,7 +205,7 @@ public class RobotGrabber : MonoBehaviour {
 		}
 	}
 
-	private void ReleaseRobot () {
+	public void ReleaseRobot () {
 		beamParticles.Stop ();
 		beamParticles.Clear ();
 		Destroy (joint);

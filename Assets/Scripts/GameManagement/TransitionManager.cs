@@ -194,7 +194,7 @@ public class TransitionManager : MonoBehaviour {
 			scoreString = "LEVEL PERFORMANCE:";
 			scoreString +=  "\nBOXES ORBITED: " + HUDManager.instance.boxesThisLevel;
 			scoreString += "\t\t\t\t\tFIRES EXTINGUISHED: " + HUDManager.instance.firesPutOutThisLevel;
-			scoreString += "\nBUILT ROBOTS: " + HUDManager.instance.robotsBuiltThisLevel + " ";
+			scoreString += "\nBUILT ROBOTS: " + HUDManager.instance.robotsBuiltThisLevel + "   ";
 			scoreString += "\t\t\t\t\tTERMINATED ROBOTS: " + HUDManager.instance.robotsFiredThisLevel;
 		}
 		StartCoroutine (AnimateText (scoreText, scoreString));

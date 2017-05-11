@@ -106,7 +106,7 @@ public class Robot : Throwable {
 	private CircleCollider2D 	circleCollider;
 	private Animator			animator;
 	private ParticleSystem		shockParticles;
-	private IEnumerator			freakoutCoroutine = null;
+	public IEnumerator			freakoutCoroutine = null;
 	private float 				displayEmotionTime;
 
 	void Start() {
@@ -326,7 +326,7 @@ public class Robot : Throwable {
 													: GameManager.instance.greenWaveGradient;				
 				break;
 			case RobotStates.STATE_HOMICIDAL:
-				stateSpeedMultiplier = 1.25f;
+				stateSpeedMultiplier = 1.5f;
 				spriteRenderer.color = Color.red;
 				currentSpeech.sprite = homicidalSpeechSprite;
 				line.colorGradient = lockedByPlayer ? line.colorGradient 

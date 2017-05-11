@@ -128,6 +128,14 @@ public abstract class Throwable : MonoBehaviour {
 	public bool fellInPit {
 		get { 
 			return currentPitfallScale < 1.0f;
+		} 
+		set { 
+			if (value) {
+				StartCoroutine ("FallingDownPit");
+			} else {
+				StopCoroutine ("FallingDownPit");
+				currentPitfallScale = 1.0f;
+			}
 		}
 	}
 
@@ -255,7 +263,7 @@ public abstract class Throwable : MonoBehaviour {
 
 	void OnTriggerEnter2D(Collider2D hitTrigger) {
 		if (hitTrigger.tag == "Pit" && !fellInPit)
-			StartCoroutine ("FallingDownPit");
+			fellInPit = true;
 
 		// tell the carrier to drop this
 		if (isBeingCarried && whoIsCarrying.CheckHitTarget(hitTrigger.tag))

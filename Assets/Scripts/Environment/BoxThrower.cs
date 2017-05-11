@@ -5,9 +5,9 @@ using Random = UnityEngine.Random;
 
 public class BoxThrower : MonoBehaviour {
 
-	public Box 			boxPrefab;
-	public TimedBox		timedBoxPrefab;
-	public SlowBox		slowBoxPrefab;
+	public GameObject	boxPrefab;
+	public GameObject	timedBoxPrefab;
+	public GameObject	slowBoxPrefab;
 	public float 		throwDelay;
 	public Range 		slowBoxChanceRange = new Range (0.8f, 0.9f);
 	public Range 		timedBoxChanceRange = new Range (0.9f, 1.0f);
@@ -26,16 +26,17 @@ public class BoxThrower : MonoBehaviour {
 		if (throwOn && (Time.time > nextThrowTime || Time.timeSinceLevelLoad < throwDelay)) {
 			nextThrowTime = Time.time + throwDelay;
 
-			Box thrownBox = null;
+			GameObject boxObject = null;
 			float diceRoll = Random.Range (0.0f, 1.0f);
 
 			if (diceRoll > slowBoxChanceRange.minimum && diceRoll <= slowBoxChanceRange.maximum)
-				thrownBox = Instantiate<SlowBox> (slowBoxPrefab, transform.position, Quaternion.identity);
+				boxObject = Instantiate<GameObject> (slowBoxPrefab, transform.position, Quaternion.identity);
 			else if (diceRoll > timedBoxChanceRange.minimum && diceRoll <= timedBoxChanceRange.maximum)
-				thrownBox = Instantiate<TimedBox> (timedBoxPrefab, transform.position, Quaternion.identity);
+				boxObject = Instantiate<GameObject> (timedBoxPrefab, transform.position, Quaternion.identity);
 			else
-				thrownBox = Instantiate<Box> (boxPrefab, transform.position, Quaternion.identity);
-			
+				boxObject = Instantiate<GameObject> (boxPrefab, transform.position, Quaternion.identity);
+
+			Box thrownBox = boxObject.GetComponent<Box> ();
 			GameManager.instance.AddBox (thrownBox);
 			thrownBox.RandomThrow ();
 		}

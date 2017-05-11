@@ -11,15 +11,58 @@ public class Box : Throwable {
 	[HideInInspector]
 	public bool 			hasExited = false;
 
+	public enum BoxTypes {
+		BOXTYPE_NORMAL,
+		BOXTYPE_TIMED,
+		BOXTYPE_SLOW
+	};
+
 	private TrailRenderer	trail;
+	private BoxTypes		boxType;
+	private int				worth;
+
+	private static int		normalBoxWorth = 1;
+	private static int		timeBoxWorth = 3;
+	private static int		slowBoxWorth = 5;
 
 	void Start () {
 		trail = GetComponent<TrailRenderer> ();
 		trail.enabled = false;
+		DetectBoxType ();
 	}
 
 	void Update () {
 		UpdateShadow ();
+	}
+		
+	private void DetectBoxType () {
+		TimedBox timeType = GetComponent<TimedBox> ();
+		SlowBox slowType = GetComponent<SlowBox> ();
+		if (timeType != null)
+			SetBoxType (BoxTypes.BOXTYPE_TIMED);
+		else if (slowType != null)
+			SetBoxType (BoxTypes.BOXTYPE_SLOW);
+		else
+			SetBoxType (BoxTypes.BOXTYPE_NORMAL);
+	}
+
+	private void SetBoxType (BoxTypes type) {
+		boxType = type;
+		switch (type) {
+			case BoxTypes.BOXTYPE_NORMAL:
+				worth = normalBoxWorth;
+				break;
+			case BoxTypes.BOXTYPE_TIMED:
+				worth = timeBoxWorth;
+				break;
+			case BoxTypes.BOXTYPE_SLOW:
+				worth = slowBoxWorth;
+				break;
+			default:
+				type = BoxTypes.BOXTYPE_NORMAL;
+				worth = normalBoxWorth;
+				break;
+		}
 	}
 
 	protected override void OnLanding () {
@@ -44,8 +87,12 @@ public class Box : Throwable {
 			hasExited = true;
 	}
 
+	public BoxTypes GetBoxType() {
+		return boxType;
+	}
+
 	public void ExitBox() {
-		HUDManager.instance.CollectBox ();
+		HUDManager.instance.CollectBox (worth);
 		GetComponent<BoxCollider2D> ().enabled = false;
 		SetHeight (2.0f * deadlyHeight);
 		rb2D.velocity = new Vector2( 0.0f, exitSpeed);

@@ -68,6 +68,11 @@ public class GameManager : MonoBehaviour {
 	}
 
 	// regulate robot spawn rate
+	// FIXME: just insta-spawn a SINGLE robot if the player has clicked the door button and can afford it
+	// run the spawn cycle, and only then allow another click for another robot
+	// place multiple doors per level so its not such a bottleneck
+	// TODO: make maxRobots 60 by default... or maybe still do the IncreaseMaxRobots logic....
+	// FIXME: however, at the start of a stage, still do the spawn loop of multiple bots to put them in play
 	private void UpdateRespawnText() {
 		if (robotCount < maxRobots && robotCount < HUDManager.instance.robotsRemaining && HUDManager.instance.levelTimeRemaining > Mathf.RoundToInt(globalSpawnDelay)) {
 			if (Time.time > nextRobotSpawnTime) {
@@ -175,8 +180,8 @@ public class GameManager : MonoBehaviour {
 
 	public void IncreaseMaxRobots(int increaseBy) {
 		maxRobots += increaseBy;
-		if (maxRobots > RobotNames.Instance.maxAvailableNames)
-			maxRobots = RobotNames.Instance.maxAvailableNames;
+		if (maxRobots >= RobotNames.Instance.maxAvailableNames)
+			maxRobots = RobotNames.Instance.maxAvailableNames - 1;
 	}
 
 	public void KillAllRobots() {

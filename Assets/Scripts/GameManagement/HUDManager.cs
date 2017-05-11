@@ -6,9 +6,7 @@ using UnityEngine.UI;
 public class HUDManager : MonoBehaviour {
 
 	public static HUDManager	instance = null;
-//	public  float				difficulty = 0;
 	public int					levelDuration = 30;
-	public int 					robotsEarnedToAdd = 2;
 
 	[HideInInspector]
 	public int 					robotsFiredThisLevel = 0;
@@ -33,7 +31,6 @@ public class HUDManager : MonoBehaviour {
 	private int 				robotsFired = 0;
 	private int 				robotsBuilt = 0;
 	private int 				firesPutOut = 0;
-	private int 				robotIncreaseThreshold = 10;
 	private bool				emotionHandleHeld = false;
 
 	private ImageSwapButton 	pauseButton;
@@ -174,12 +171,9 @@ public class HUDManager : MonoBehaviour {
 		ResetLevelStats ();
 	}
 
-	public void CollectBox() {
-		boxesCollected++;
-		boxesThisLevel++;
-		if (boxesCollected % robotIncreaseThreshold == 0) {
-			GameManager.instance.IncreaseMaxRobots (robotsEarnedToAdd);
-		}
+	public void CollectBox(int points) {
+		boxesCollected += points;
+		boxesThisLevel += points;
 	}
 
 	public void ExtinguishFire() {
