@@ -10,7 +10,7 @@ public class OneShotParticles : MonoBehaviour {
 
 	private AudioSource source;
 
-	// FIXME: this works for more than particle systems
+	// FIXME(~): this works for more than particle systems
 	void Awake () {
 		source = GetComponent<AudioSource> ();
 		int randomIndex = Random.Range (0, loopParticleSounds.Length);

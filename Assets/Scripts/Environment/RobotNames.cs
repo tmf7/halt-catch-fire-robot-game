@@ -91,7 +91,7 @@ public class RobotNames {
 			}
 		}
 		survivorNamesUsed++;
-		HUDManager.instance.BuildRobot ();
+		HUDManager.instance.BuildRobot ();		// FIXME(~): unable to invoke this after the SlimeBot appears (fixed by preventing spawns after levelEnded = true)
 		return GetUnusedName ();
 	}
 

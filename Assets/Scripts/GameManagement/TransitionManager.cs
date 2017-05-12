@@ -45,7 +45,6 @@ public class TransitionManager : MonoBehaviour {
 		transitionImage = transitionCanvas.GetComponentInChildren<Image> ();
 
 		// the string shadow and the string itself
-		// FIXME: there's probably a better way to give text drop shadows (eg: special fonts)
 		GameObject[] storyTextObjects = GameObject.FindGameObjectsWithTag ("StoryText");
 		storyText[0] = storyTextObjects[0].GetComponent<Text>();
 		storyText[1] = storyTextObjects[1].GetComponent<Text>();
@@ -173,7 +172,7 @@ public class TransitionManager : MonoBehaviour {
 		obituariesText[1].text = masterObituary;
 		obituariesScrollRect.gameObject.SetActive (true);
 
-		// FIXME: the scrollSpeed cant be too slow or it doesn't scroll at all
+		// FIXME(~): the scrollSpeed cant be too slow or it doesn't scroll at all
 		float totalScrollTime = visibleTimePerObituary * obituaries.Count ;
 		float obituaryScrollSpeed = 1.0f / totalScrollTime;
 
@@ -187,15 +186,15 @@ public class TransitionManager : MonoBehaviour {
 	public void DisplayScoreText() {
 		string scoreString = "DEFAULT SCORE STRING";
 		if (levelTextToDisplay == 7) {
-			scoreString = "TOTAL BOXES ORBITED: " + HUDManager.instance.totalBoxesCollected;
+			scoreString = "TOTAL BOXES LAUNCHED: " + HUDManager.instance.totalBoxesCollected;
 			scoreString += "\nTOTAL FIRES EXTINGUISHED: " + HUDManager.instance.totalFiresPutOut;
 			scoreString += "\nTOTAL ROBOTS BUILT: " + HUDManager.instance.totalRobotsBuilt;
 		} else {
 			scoreString = "LEVEL PERFORMANCE:";
-			scoreString +=  "\nBOXES ORBITED: " + HUDManager.instance.boxesThisLevel;
+			scoreString +=  "\nBOXES LAUNCHED: " + HUDManager.instance.boxesThisLevel;
 			scoreString += "\t\t\t\t\tFIRES EXTINGUISHED: " + HUDManager.instance.firesPutOutThisLevel;
 			scoreString += "\nBUILT ROBOTS: " + HUDManager.instance.robotsBuiltThisLevel + "   ";
-			scoreString += "\t\t\t\t\tTERMINATED ROBOTS: " + HUDManager.instance.robotsFiredThisLevel;
+			scoreString += "\t\t\t\t\t\tTERMINATED ROBOTS: " + HUDManager.instance.robotsFiredThisLevel;
 		}
 		StartCoroutine (AnimateText (scoreText, scoreString));
 	}
@@ -241,6 +240,8 @@ public class TransitionManager : MonoBehaviour {
 	}
 
 	public void DisableTransitionManager() {
+		isDialogueBoxAnimating = false;
+		dialogueBoxAnimator.Play ("NoDialogBox", 0, 0.0f);
 		StopAllCoroutines ();
 		inGameTextCanvas.enabled = false;
 		gameObject.SetActive (false);

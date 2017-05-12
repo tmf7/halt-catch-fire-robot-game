@@ -31,12 +31,14 @@ public class Robot : Throwable {
 	public float 				slowdownDistance = 2.0f;
 	public float 				grabHeight = 10.0f;
 	public float				robotScreamTolerance = 16.0f;
-	public float				emotionalDistressRate = 0.1f;		// TODO: tie this directly to a difficulty slider on the pause menu
+	public float				emotionalDistressRate = 0.1f;
 	public float				freakoutThreshold = 0.8f;
 	public float 				freakoutShakeDuration = 0.5f;
 	public float				emotionalStability = 0.0f;
 	public float 				displayEmotionDelay = 2.0f;
 
+	[HideInInspector]
+	public GameObject			dummyTarget;						// in the event of more robots than available targets
 	[HideInInspector]
 	public float 				health = 100;
 	[HideInInspector]
@@ -63,6 +65,25 @@ public class Robot : Throwable {
 	}
 
 	[HideInInspector]
+	public static bool isHalted {
+		get { 
+			return haltAndCommand == true;
+		}
+	}
+
+	[HideInInspector]
+	public static float deltaTimeHalted {
+		get { 
+			if (isHalted) {
+				float delta = Time.time - haltTimeStamp;
+				haltTimeStamp = Time.time;				// FIXME: this messes up multiple queries
+				return delta;
+			}
+			return 0.0f;
+		}
+	}
+
+	[HideInInspector]
 	public RobotNames.MethodOfDeath howDied = RobotNames.MethodOfDeath.SURVIVED;
 		
 	public enum RobotStates {
@@ -74,7 +95,6 @@ public class Robot : Throwable {
 	private bool isDelivering = false;
 
 	// pathing
-	private GameObject			dummyTarget;				// in the event of more robots than available targets
 	private LineRenderer 		line;
 	private Dictionary<int, Vector3[]> 	subPaths;
 	private List<GridNode> 		drawnPath;
@@ -97,6 +117,8 @@ public class Robot : Throwable {
 	private static int 			pathSmoothingInterval = 3;
 	private static float		minDrawnPathLength = 2.0f;
 	private static float 		maxDrawnPathLength = 30.0f;
+	private static float		haltTimeStamp = 0.0f;
+	private static bool			haltAndCommand = false;
 
 	// state machine
 	private float				stateSpeedMultiplier = 1.0f;
@@ -232,6 +254,13 @@ public class Robot : Throwable {
 		}
 	}
 
+	// HUDManager's instance CHILD button HaltAndCommandButton invokes this
+	public static void ToggleHaltAndCommand () {
+		haltAndCommand = !haltAndCommand;
+		if (isHalted)
+			haltTimeStamp = Time.time;
+	}
+
 	public RobotStates GetState() {
 		return currentState;
 	}
@@ -249,7 +278,9 @@ public class Robot : Throwable {
 	public void UpdateEmotionalState() {
 		if (emotionalStability < 1.0f) {
 			currentState = RobotStates.STATE_FINDBOX;
-			emotionalStability += emotionalDistressRate * Time.deltaTime;
+
+			if (!haltAndCommand)
+				emotionalStability += emotionalDistressRate * Time.deltaTime;
 
 			if (emotionalStability > freakoutThreshold)
 				StartCoroutine (Freakout());
@@ -344,22 +375,10 @@ public class Robot : Throwable {
 	}
 
 	void SearchForTarget() {
-		if (!grounded)
-			return;
-			
-		// TODO: add a FREEZE-TIME (not pause) condition here
-		// that stops the robots as if the level had ended
-		// EXCEPT the robots keep their current visible path, and can have paths drawn/nudged
-		// and UpdateCarriedItem properly (w/o moving) (they do spawn the robot beam during levelEnded if dropped on a box)
-		if (isBeingCarried || fellInPit || drawnPath.Count > 0 || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
+		if (!grounded || isBeingCarried || fellInPit || drawnPath.Count > 0 || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
 			StopMoving ();
 			return;
 		}
-
-		// FIXME: there is a time between when the last subPath is processed and invokes OnPathFound (causing waitingForPathRequestResults = false)
-		// where lockedByPlayer is certainly false because that's when the subPaths start getting processed
-		// SOLUTION: leave lockedByPlayer true (causing StopMoving()) until InitPath, NO other things depend on it all over that currently work
-
 
 		CheckIfTargetLost ();
 			
@@ -436,7 +455,7 @@ public class Robot : Throwable {
 	}
 
 	private void RemoveCutoffSubPaths() {
-		for (int i = lowestFailedSubPathIndex; i <= subPaths.Count; i++) {		// FIXME(?): lowestFailedSubPathIndex MAY not be resetting properly, and results in killed drawnPaths
+		for (int i = lowestFailedSubPathIndex; i <= subPaths.Count; i++) {
 			if (subPaths.ContainsKey (i))
 				subPaths.Remove (i);
 		}
@@ -461,7 +480,7 @@ public class Robot : Throwable {
 	}
 
 	public void ClearDrawnPath() {
-		PathRequestManager.KillPathRequests(name);				// FIXME(?): sometimes a robot gameObject gets destroyed, but this function is still called (by RobotGrabber)
+		PathRequestManager.KillPathRequests(name);
 		lowestFailedSubPathIndex = int.MaxValue;
 		currentDrawnPathLength = 0.0f;
 		oldDrawnPathCount = 0;
@@ -549,7 +568,8 @@ public class Robot : Throwable {
 		else
 			spriteRenderer.flipX = false;	
 
-		transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * stateSpeedMultiplier * percentSpeed * Time.deltaTime);
+		if (!haltAndCommand)
+			transform.position = Vector3.MoveTowards (transform.position, currentWaypoint, speed * stateSpeedMultiplier * percentSpeed * Time.deltaTime);
 	}
 
 	void CheckWaypointProximity () {
@@ -698,7 +718,7 @@ public class Robot : Throwable {
 				else if (dot > 0.0f)
 					dot = 1.0f;
 
-				// FIXME(?): robots headed dead-into a flat wall will get stuck there (but only the player can setup such a scenario and can correct it themselves)
+				// FIXME(~): robots headed dead-into a flat wall will get stuck there (but the player can correct it)
 				rb2D.AddForceAtPosition (-500.0f * contact.separation * dot * rightTangent, contact.point, ForceMode2D.Force);
 			}
 			CheckWaypointProximity ();
@@ -735,7 +755,7 @@ public class Robot : Throwable {
 
 	protected override void OnLanding () {
 		base.OnLanding ();
-		if (!fellInPit)		// bugfix for the landing sound overwriting status change sounds
+		if (!fellInPit)		// BUGFIX: for the landing sound overwriting status change sounds
 			PlayRandomSoundFx (landingSounds);
 	}
 }

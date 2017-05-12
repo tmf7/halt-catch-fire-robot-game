@@ -114,7 +114,6 @@ public class GameManager : MonoBehaviour {
 		SpawnInitialRobots ();
 	}
 		
-	// FIXME: this occasionally returns an extremely negative number, likely due to pendingRobots inaccuracies
 	public int robotBuildCost {
 		get {
 			return (robotCount > 0 ? (int)(15.0f * Mathf.Log10 ((float)(robotCount + pendingRobots)) + 1.0f) : 1);
@@ -131,6 +130,7 @@ public class GameManager : MonoBehaviour {
 			maxRobots = RobotNames.Instance.maxAvailableNames - 1;
 		else
 			pendingRobots++;
+
 	}
 
 	public void KillAllRobots() {

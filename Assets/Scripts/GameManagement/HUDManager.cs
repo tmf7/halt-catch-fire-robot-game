@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class HUDManager : MonoBehaviour {
 
 	public static HUDManager	instance = null;
-	public int					levelDuration = 30;
+	public float				levelDuration = 30;
 
 	[HideInInspector]
 	public int 					robotsFiredThisLevel = 0;
@@ -36,6 +36,7 @@ public class HUDManager : MonoBehaviour {
 	private bool				emotionHandleHeld = false;
 
 	private ImageSwapButton 	pauseButton;
+	private Animator			haltButtonAnimator;
 	private Slider 				globalEmotionSlider;
 	private Button 				globalEmotionButton;
 	private Image				globalEmotionImage;
@@ -44,6 +45,15 @@ public class HUDManager : MonoBehaviour {
 	public bool isLevelTimeUp {
 		get { 
 			return Time.time > levelEndTime;
+		}
+	}
+
+	// FIXME: timestamp when the Robot.ToggleHaltAndCommand is pressed
+	// and increment levelEndTime AND levelDuration by the difference between Time.time and the timestamp
+	// ONCE PER FRAME, not once per query
+	public int levelTimeRemaining {
+		get { 
+			return isLevelTimeUp ? 0 : Mathf.RoundToInt(levelDuration - Time.timeSinceLevelLoad);
 		}
 	}
 
@@ -59,11 +69,6 @@ public class HUDManager : MonoBehaviour {
 		}																	
 	}														
 		
-	public int levelTimeRemaining {
-		get { 
-			return isLevelTimeUp ? 0 : levelDuration - Mathf.RoundToInt(Time.timeSinceLevelLoad);
-		}
-	}
 
 	public int totalBoxesCollected {
 		get { 
@@ -103,6 +108,7 @@ public class HUDManager : MonoBehaviour {
 		robotsText = GameObject.Find ("RobotsText").GetComponent<Text>();
 		timeText = GameObject.Find ("TimeText").GetComponent<Text>();
 		pauseButton = GameObject.Find ("PauseButton").GetComponentInChildren<ImageSwapButton> ();
+		haltButtonAnimator = GameObject.Find ("HaltButton").GetComponent<Animator> ();
 		globalEmotionSlider = GameObject.Find ("EmotionSlider").GetComponent<Slider> ();
 		globalEmotionButton = GameObject.Find ("EmotionButton").GetComponent<Button> ();
 		globalEmotionText = globalEmotionButton.GetComponentsInChildren<Text> ();
@@ -112,6 +118,11 @@ public class HUDManager : MonoBehaviour {
 	}
 		
 	void Update() {
+		if (Robot.isHalted) {
+			levelEndTime += Robot.deltaTimeHalted;
+			levelDuration += Robot.deltaTimeHalted;
+		}
+
 		if (!GameManager.instance.levelEnded)
 			lastTimeRemainingValue = levelTimeRemaining;
 		
@@ -166,6 +177,14 @@ public class HUDManager : MonoBehaviour {
 
 	public void TogglePauseButtonImage() {
 		pauseButton.ToggleImage ();
+	}
+
+	public void ToggleHaltButton () {
+		Robot.ToggleHaltAndCommand ();
+		if (Robot.isHalted)
+			instance.haltButtonAnimator.SetTrigger ("StartDance");
+		else
+			instance.haltButtonAnimator.SetTrigger ("StopDance");
 	}
 
 	public void StartLevelTimer() {

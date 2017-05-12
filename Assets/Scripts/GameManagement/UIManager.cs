@@ -126,23 +126,26 @@ public class UIManager : MonoBehaviour {
 		instance.StartCoroutine (instance.FadeToStoryCoroutine ());
 	}
 
+	// FIXME: is this the culprit of robotsBuiltThisLevel not updating properly???
+	// HUDManager.instance.BuildRobot() doesn't issue a print statement, despite the robot WITH A NAME actually spawning in the door
+	// while the SlimeBot is wandering around
 	public IEnumerator FadeToStoryCoroutine () {
-		GameManager.instance.enabled = false;
 
 		yield return instance.StartCoroutine (instance.FadeToBlack ());
 
-		DisableCurrentScene ();
 		Cursor.visible = true;
-		RobotGrabber.instance.gameObject.SetActive (false);
-		HUDManager.instance.gameObject.SetActive (false);
 		TransitionManager.instance.gameObject.SetActive (true);
 		TransitionManager.instance.StartIntermission (storyToTell);
 		SoundManager.instance.PlayIntermissionMusic ();
+		RobotGrabber.instance.gameObject.SetActive (false);
+		HUDManager.instance.gameObject.SetActive (false);
+		DisableCurrentScene ();
+		GameManager.instance.enabled = false;
 
 		yield return instance.StartCoroutine (instance.FadeToClear ());
 	}
 
-	// HACK: prevents scene from continuing to process while intermission plays overtop before the next scene loads
+	// FIXME(~): hack to prevent scene from continuing to process while intermission plays overtop before the next scene loads
 	public void DisableCurrentScene() {
 		GameObject[] allSceneObjects = SceneManager.GetActiveScene ().GetRootGameObjects ();
 		foreach (GameObject item in allSceneObjects) {

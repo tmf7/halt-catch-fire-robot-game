@@ -45,8 +45,11 @@ public class Crusher : MonoBehaviour {
 	private void TriggerRetract() {
 		animator.SetTrigger ("RetractCrusher");
 	}
-
+		
 	void OnCollisionStay2D(Collision2D collision) {
+		if (Robot.isHalted)
+			return;
+		
 		Robot hitRobot = collision.collider.GetComponent<Robot> ();
 		if (hitRobot != null) {
 			hitRobot.howDied = RobotNames.MethodOfDeath.DEATH_BY_CRUSHER;

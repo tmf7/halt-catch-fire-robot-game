@@ -17,7 +17,7 @@ public class RobotDoor : MonoBehaviour {
 
 	private AudioSource source;
 	private Animator	animator;
-	private Canvas spawnCanvas;
+	private Canvas 		spawnCanvas;
 	private Text[] 		robotCostText;
 	private bool		spawnSlimeBot = false;
 
@@ -35,6 +35,8 @@ public class RobotDoor : MonoBehaviour {
 			robotCostText [0].text = buildCost;
 			robotCostText [1].text = buildCost;
 		}
+
+		animator.enabled = !Robot.isHalted;
 	}
 
 	public IEnumerator SpawnSlimeBot() {
@@ -52,6 +54,9 @@ public class RobotDoor : MonoBehaviour {
 	IEnumerator SpawnRobots() {
 		if (!spawnSlimeBot) {
 			while (spawnEnabled && (GameManager.instance.robotCount < GameManager.instance.maxRobots) && (GameManager.instance.robotCount < HUDManager.instance.robotsRemaining)) {
+				if (Robot.isHalted)
+					continue;
+
 				Robot spawnedRobot = Instantiate<Robot> (robotPrefab, animator.transform.position, Quaternion.identity);
 				GameManager.instance.AddRobot (spawnedRobot);
 				yield return new WaitForSeconds (spawnDelay);
@@ -66,7 +71,7 @@ public class RobotDoor : MonoBehaviour {
 	// button attached to this gameObject invokes this
 	public void SpawnOneRobot() {
 		int buildCost = GameManager.instance.robotBuildCost;
-		if (HUDManager.instance.boxesRemaining >= buildCost) {
+		if (HUDManager.instance.boxesRemaining >= buildCost && !GameManager.instance.levelEnded) {
 			HUDManager.instance.SpendBoxes (buildCost);
 			GameManager.instance.IncrementMaxRobots ();
 			TriggerDoorOpen ();

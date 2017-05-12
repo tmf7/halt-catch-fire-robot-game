@@ -5,27 +5,27 @@ using UnityEngine;
 public class CrusherSwitch : MonoBehaviour {
 
 	public AudioClip 	switchClickSound;
+	public float 		startPercent = 0.0f;
 
 	private AudioSource source;
 	private Animator 	crusherAnimator;
-	private bool 		wasPlaying = false;
+	private Animator	switchAnimator;
 
 	void Awake() {
 		source = GetComponent<AudioSource> ();
 		crusherAnimator = transform.parent.GetComponent<Animator> ();
+		switchAnimator = GetComponent<Animator> ();
+		switchAnimator.Play ("SwitchOn", 0, startPercent);
+	}
+
+	void Update () {
+		switchAnimator.enabled = !Robot.isHalted;
+		crusherAnimator.enabled = !Robot.isHalted;
 	}
 
 	private void PlayClickSound() {
 		source.clip = switchClickSound;
 		source.Play ();
-	}
-		
-	void Update() {
-		if (source.isPlaying) {
-			wasPlaying = true;
-		} else if (wasPlaying) {
-			crusherAnimator.SetTrigger ("SmashCrusher");
-			wasPlaying = false;
-		}
+		crusherAnimator.SetTrigger ("SmashCrusher");
 	}
 }

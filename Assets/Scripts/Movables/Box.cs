@@ -5,7 +5,7 @@ using UnityEngine;
 public class Box : Throwable {
 
 	public AudioClip[]		exitSounds;
-	public float 			exitSpeed = 20.0f;
+	public float 			exitSpeed = 50.0f;
 	public float 			exitDelay = 2.0f;
 
 	[HideInInspector]

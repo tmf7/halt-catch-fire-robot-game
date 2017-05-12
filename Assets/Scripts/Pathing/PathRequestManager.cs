@@ -41,12 +41,11 @@ public class PathRequestManager : MonoBehaviour {
 	}
 
 	public static void KillPathRequests (string owner, int startIndex = 0) {
-//		print ("(" + owner + ") PATHS REQ. ABOVE (" + startIndex + ") KILLED");
 		int maxRemovals = instance.PathRequestsSubmitted (owner);
 		for (int index = startIndex; index < maxRemovals; index++) {
 			string tryKey = owner + index.ToString ();
 			instance.pathRequestDict.Remove (tryKey);
-			instance.DecrementRequestsRemaining (owner);					// FIXME: this affects the registered path count
+			instance.DecrementRequestsRemaining (owner);
 		}
 	}
 

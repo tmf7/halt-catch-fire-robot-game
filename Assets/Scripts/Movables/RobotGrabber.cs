@@ -79,7 +79,7 @@ public class RobotGrabber : MonoBehaviour {
 				transform.position = grabbedRobot.transform.position + Vector3.up * joint.distance;
 		}
 
-		// FIXME: magic number specific to the current y-position of the HUD interface
+		// FIXME(~): magic number specific to the current y-position of the HUD interface
 		Cursor.visible = worldPosition.y > topWallYPosition || !updateGrabberPosition;
 
 		// first click LOCKS the robot on the ground (ie NOT HOVER via Robot.grabbed bool)
@@ -189,7 +189,7 @@ public class RobotGrabber : MonoBehaviour {
 		if (joint != null && beamParticles.isPlaying) {
 			dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
 			float mag = dropForce.magnitude;
-			float lerpFactor = Mathf.InverseLerp(1.0f, 16.0f, dropForce.magnitude);	// FIXME: magic beam stretching numbers determined emperically
+			float lerpFactor = Mathf.InverseLerp(1.0f, 16.0f, dropForce.magnitude);	// FIXME(~): magic beam stretching numbers determined emperically
 			float lifetime = beamLifeCurve.Evaluate (lerpFactor);
 			float beamAngle = beamAngleCurve.Evaluate (lerpFactor);
 

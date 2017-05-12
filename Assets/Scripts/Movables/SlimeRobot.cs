@@ -24,14 +24,14 @@ public class SlimeRobot : MonoBehaviour {
 			yield return null;
 		}
 
-		if (HUDManager.instance.allRobotsFired)
+		if (HUDManager.instance.allRobotsFired && HUDManager.instance.boxesRemaining <= 0)
 			UIManager.instance.FadeToGameOver ();
 		else
 			UIManager.instance.FadeToStory ();
 	}
 
 	public void OnCollisionEnter2D (Collision2D collision) {
-		if (collision != null)
+		if (collision != null && collision.rigidbody != null)
 			collision.rigidbody.AddForceAtPosition ( -pushForce * collision.contacts[0].normal, collision.contacts [0].point, ForceMode2D.Impulse);
 	}
 }
