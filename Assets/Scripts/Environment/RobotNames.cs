@@ -85,13 +85,13 @@ public class RobotNames {
 	public string TryGetSurvivorName () {
 		int skipNameCount = 0;
 		foreach (KeyValuePair<string, Name> pair in robotNames) {
-			if (pair.Value.used && survivorNamesUsed <= skipNameCount++) {
+			if (pair.Value.used && !pair.Value.died && survivorNamesUsed <= skipNameCount++) {
 				survivorNamesUsed++;
 				return pair.Value.name;
 			}
 		}
 		survivorNamesUsed++;
-		HUDManager.instance.BuildRobot ();		// FIXME(~): unable to invoke this after the SlimeBot appears (fixed by preventing spawns after levelEnded = true)
+		HUDManager.instance.BuildRobot ();
 		return GetUnusedName ();
 	}
 
@@ -107,7 +107,7 @@ public class RobotNames {
 
 		if (!used) {
 			robotNames [tryName] = new Name (tryName, true);
-			return robotNames [tryName].name;
+			return tryName;
 		} else {	// the list is running low, stop trying randomly, just find an unused one
 			foreach (KeyValuePair<string, Name> pair in robotNames) {
 				if (!pair.Value.used) {
@@ -116,7 +116,7 @@ public class RobotNames {
 				}
 			}
 		}
-		return "Ghost";		// GameOver should occur before this happens (Ghost has no Name properties for the obituaries and will cause game breaking exceptions)
+		return "Ghost";		// FIXME(~): GameOver should occur before this happens (Ghost has no Name properties for the obituaries and will cause game breaking exceptions)
 	}
 
 	public int maxAvailableNames {

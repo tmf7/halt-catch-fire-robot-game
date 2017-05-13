@@ -14,7 +14,7 @@ public class RobotGrabber : MonoBehaviour {
 	public AnimationCurve 		beamLifeCurve;
 	public AnimationCurve 		beamAngleCurve;
 
-	public float				topWallYPosition = 6.0f;
+	public float				topWallYPosition = 6.0f;		// FIXME(~): empirically determined magic number
 
 	private Robot 				grabbedRobot;
 	private Collider2D			grabbedRobotCollider;
@@ -24,6 +24,7 @@ public class RobotGrabber : MonoBehaviour {
 	private ParticleSystem		beamParticles;
 	private Quaternion 			originalBeamRotation;
 	private Vector3				dropForce;
+	private Vector3 			inputWorldPosition;
 	private bool				secondClickOnRobot = false;
 
 	public Robot currentGrabbedRobot {
@@ -50,16 +51,16 @@ public class RobotGrabber : MonoBehaviour {
 		originalBeamRotation = beamParticles.transform.rotation;
 	}
 
+	// FIXME(~): doesn't quite obey single-responsibility principle
     void Update() {
-        Vector3 mousePos = Input.mousePosition;
-        Vector3 worldPosition = Camera.main.ScreenToWorldPoint(mousePos);
-		worldPosition.z = 0.0f;
+		inputWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		inputWorldPosition.z = 0.0f;
 
 		UpdateBeamParticles ();
 	
 		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
 
-		spriteRenderer.enabled = worldPosition.y < topWallYPosition || grabbedRobot != null;
+		spriteRenderer.enabled = inputWorldPosition.y < topWallYPosition || grabbedRobot != null;
 
 		#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
 
@@ -74,13 +75,12 @@ public class RobotGrabber : MonoBehaviour {
 		bool updateGrabberPosition = (grabbedRobot == null || secondClickOnRobot);
 		if (!Cursor.visible) {
 			if (updateGrabberPosition)
-				transform.position = worldPosition;		
+				transform.position = inputWorldPosition;		
 			else
 				transform.position = grabbedRobot.transform.position + Vector3.up * joint.distance;
 		}
 
-		// FIXME(~): magic number specific to the current y-position of the HUD interface
-		Cursor.visible = worldPosition.y > topWallYPosition || !updateGrabberPosition;
+		Cursor.visible = inputWorldPosition.y > topWallYPosition || !updateGrabberPosition;
 
 		// first click LOCKS the robot on the ground (ie NOT HOVER via Robot.grabbed bool)
 		// SET RobotGrabber SPRITE position DIRECTLY over grabbedRobot, and enable the cursor to manipulate the SLIDER, or draw a PATH
@@ -94,18 +94,18 @@ public class RobotGrabber : MonoBehaviour {
 		// if the user RELEASES the mouse, UNLOCK the robot to follow the new path, and start MOVING the RobotGrabber SPRITE again as normal
 
 		// input press
-		if (Input.GetMouseButtonDown (0) && worldPosition.y < topWallYPosition) {		// BUGFIX: for clicking sprinkler button above a door and accidentally grabbing a robot
+		if (Input.GetMouseButtonDown (0) && inputWorldPosition.y < topWallYPosition) {		// BUGFIX: for clicking sprinkler button above a door and accidentally grabbing a robot
 			if (joint == null) {
 
 				// find the closest robot within the given radius of the click, if any
 				grabbedRobot = null;
 				int closestHitIndex = -1;
-				Collider2D[] hits = Physics2D.OverlapCircleAll (worldPosition, grabRadius, grabbleMask);
+				Collider2D[] hits = Physics2D.OverlapCircleAll (inputWorldPosition, grabRadius, grabbleMask);
 				float closestRobotRangeSqr = float.MaxValue;
 
 				for (int i = 0; i < hits.Length; i++) {
 					if (hits [i].tag == "Robot") {
-						float rangeSqr = (hits [i].transform.position - worldPosition).sqrMagnitude;
+						float rangeSqr = (hits [i].transform.position - inputWorldPosition).sqrMagnitude;
 						if (rangeSqr < closestRobotRangeSqr) {
 							closestRobotRangeSqr = rangeSqr;
 							closestHitIndex = i;
@@ -135,9 +135,8 @@ public class RobotGrabber : MonoBehaviour {
 				joint.anchor = Vector2.up * grabbedRobotCollider.bounds.extents.y;												
 				joint.connectedAnchor = new Vector2 (grabbedRobot.transform.position.x, grabbedRobot.transform.position.y) + (Vector2.up * joint.distance) + joint.anchor;
 
-
 			} else {
-				Collider2D hit = Physics2D.OverlapCircle (worldPosition, grabRadius, grabbedRobotMask);
+				Collider2D hit = Physics2D.OverlapCircle (inputWorldPosition, grabRadius, grabbedRobotMask);
 				secondClickOnRobot = hit == grabbedRobotCollider;
 			}
 		}
@@ -147,9 +146,9 @@ public class RobotGrabber : MonoBehaviour {
 			if (secondClickOnRobot) {
 				// allow the robot to swing on the hinge and spin in flight
 				grabbedRobotCollider.attachedRigidbody.constraints = RigidbodyConstraints2D.None;
-				joint.connectedAnchor = worldPosition;
+				joint.connectedAnchor = inputWorldPosition;
 			} else if (grabbedRobot.lockedByPlayer) {
-				grabbedRobot.TryAddPathPoint (worldPosition);
+				grabbedRobot.TryAddPathPoint (inputWorldPosition);
 			}
 		}
 			
@@ -169,7 +168,6 @@ public class RobotGrabber : MonoBehaviour {
 
 			if (secondClickOnRobot) {
 				grabbedRobot.gameObject.layer = (int)Mathf.Log (grabbleMask.value, 2.0f);
-//				Vector3 dropForce = new Vector3(joint.connectedAnchor.x, joint.connectedAnchor.y) - grabbedRobot.transform.TransformPoint(new Vector3(joint.anchor.x, joint.anchor.y));
 				if (dropForce.sqrMagnitude <= 2.0f * (joint.distance * joint.distance))
 					dropForce = Vector3.zero;
 					

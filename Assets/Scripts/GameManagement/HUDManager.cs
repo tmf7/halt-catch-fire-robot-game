@@ -11,9 +11,9 @@ public class HUDManager : MonoBehaviour {
 	[HideInInspector]
 	public int 					robotsFiredThisLevel = 0;
 	[HideInInspector]
-	public int 					robotsBuiltThisLevel = 0;
-	[HideInInspector]
 	public int 					firesPutOutThisLevel = 0;
+	[HideInInspector]
+	public int 					robotsBuiltThisLevel = 0;
 	[HideInInspector]
 	public int 					boxesThisLevel = 0;
 	[HideInInspector]
@@ -22,6 +22,8 @@ public class HUDManager : MonoBehaviour {
 	public bool 				playSprinklerSystem = false;
 	[HideInInspector]
 	public bool 				resetSprinklerCooldown = false;
+	[HideInInspector]
+	public float				swapEmotionInterfaceXPosThreshold = 13.0f;		// FIXME(~): empirically determined magic number
 
 	// player stats
 	private Text 				boxesText;
@@ -29,14 +31,18 @@ public class HUDManager : MonoBehaviour {
 	private Text 				timeText;
 	private float				levelEndTime;
 	private float				lastTimeRemainingValue;
+	private float 				defaultLevelDuration;
 	private int 				boxesCollected = 0;
 	private int 				robotsFired = 0;
-	private int 				robotsBuilt = 0;
 	private int 				firesPutOut = 0;
+	private int 				robotsBuilt = 0;
 	private bool				emotionHandleHeld = false;
 
+	// HUD buttons, etc
 	private ImageSwapButton 	pauseButton;
+	private Button 				haltButton;
 	private Animator			haltButtonAnimator;
+	private Image				haltImage;
 	private Slider 				globalEmotionSlider;
 	private Button 				globalEmotionButton;
 	private Image				globalEmotionImage;
@@ -48,9 +54,6 @@ public class HUDManager : MonoBehaviour {
 		}
 	}
 
-	// FIXME: timestamp when the Robot.ToggleHaltAndCommand is pressed
-	// and increment levelEndTime AND levelDuration by the difference between Time.time and the timestamp
-	// ONCE PER FRAME, not once per query
 	public int levelTimeRemaining {
 		get { 
 			return isLevelTimeUp ? 0 : Mathf.RoundToInt(levelDuration - Time.timeSinceLevelLoad);
@@ -84,7 +87,13 @@ public class HUDManager : MonoBehaviour {
 
 	public int totalRobotsBuilt {
 		get { 
-			return robotsBuilt;
+			return robotsBuilt; // RobotNames.Instance.totalRobotsBuilt;
+		}
+	}
+
+	public float emotionUIXPosition {
+		get { 
+			return globalEmotionSlider.transform.position.x;
 		}
 	}
 
@@ -108,23 +117,30 @@ public class HUDManager : MonoBehaviour {
 		robotsText = GameObject.Find ("RobotsText").GetComponent<Text>();
 		timeText = GameObject.Find ("TimeText").GetComponent<Text>();
 		pauseButton = GameObject.Find ("PauseButton").GetComponentInChildren<ImageSwapButton> ();
-		haltButtonAnimator = GameObject.Find ("HaltButton").GetComponent<Animator> ();
+		haltButton = GameObject.Find ("HaltButton").GetComponent<Button> ();
+		haltButtonAnimator = haltButton.GetComponent<Animator> ();
+		haltImage = GameObject.Find ("HaltImage").GetComponent<Image> ();
 		globalEmotionSlider = GameObject.Find ("EmotionSlider").GetComponent<Slider> ();
 		globalEmotionButton = GameObject.Find ("EmotionButton").GetComponent<Button> ();
 		globalEmotionText = globalEmotionButton.GetComponentsInChildren<Text> ();
 		globalEmotionImage = GameObject.Find ("EmotionImage").GetComponent<Image> ();
 		globalEmotionImage.enabled = false;
 		UpdatetGlobalEmotionInterface ();
+		defaultLevelDuration = levelDuration;
 	}
 		
 	void Update() {
 		if (Robot.isHalted) {
-			levelEndTime += Robot.deltaTimeHalted;
-			levelDuration += Robot.deltaTimeHalted;
+			levelEndTime += Time.deltaTime;
+			levelDuration += Time.deltaTime;
 		}
 
-		if (!GameManager.instance.levelEnded)
+		if (!GameManager.instance.levelEnded) {
 			lastTimeRemainingValue = levelTimeRemaining;
+			EnableHaltButton ();
+		} else {
+			DisableHaltButton ();
+		}
 		
 		boxesText.text = "Boxes Left: " + boxesRemaining.ToString();
 		robotsText.text = "Robots Left: " + GameManager.instance.robotCount.ToString();
@@ -132,12 +148,28 @@ public class HUDManager : MonoBehaviour {
 		UpdatetGlobalEmotionInterface ();
 	}
 
-	public void UpdatetGlobalEmotionInterface() {
+	private void UpdatetGlobalEmotionInterface() {
 		Robot robot = RobotGrabber.instance.currentGrabbedRobot;
 		globalEmotionSlider.gameObject.SetActive (robot != null);
 		globalEmotionButton.gameObject.SetActive (robot != null);
 		if (!globalEmotionSlider.gameObject.activeSelf)
 			return;
+
+		// dont overlap the grabbed robot
+		float relevantXPos = robot.hasDrawnPath ? Camera.main.ScreenToWorldPoint(Input.mousePosition).x : robot.transform.position.x;
+		if (relevantXPos > swapEmotionInterfaceXPosThreshold && globalEmotionSlider.transform.position.x > 0.0f) {
+			Vector3 rightPos = globalEmotionSlider.transform.position;
+			globalEmotionSlider.transform.position = new Vector3 (-rightPos.x, rightPos.y, rightPos.z);
+
+			rightPos = globalEmotionButton.transform.position;
+			globalEmotionButton.transform.position = new Vector3 (-rightPos.x, rightPos.y, rightPos.z);
+		} else if (relevantXPos <= swapEmotionInterfaceXPosThreshold && globalEmotionSlider.transform.position.x < 0.0f) {
+			Vector3 leftPos = globalEmotionSlider.transform.position;
+			globalEmotionSlider.transform.position = new Vector3 (-leftPos.x, leftPos.y, leftPos.z);
+
+			leftPos = globalEmotionButton.transform.position;
+			globalEmotionButton.transform.position = new Vector3 (-leftPos.x, leftPos.y, leftPos.z);
+		}
 
 		globalEmotionText [0].text = robot.name;
 		globalEmotionText [1].text = robot.name;
@@ -187,9 +219,19 @@ public class HUDManager : MonoBehaviour {
 			instance.haltButtonAnimator.SetTrigger ("StopDance");
 	}
 
+	public void DisableHaltButton () {
+		haltImage.enabled = false;
+		haltButton.interactable = false;
+	}
+
+	public void EnableHaltButton () {
+		haltImage.enabled = true;
+		haltButton.interactable = true;
+	}
+
 	public void StartLevelTimer() {
-		levelEndTime = Time.time + levelDuration;
 		ResetLevelStats ();
+		levelEndTime = Time.time + levelDuration;
 	}
 
 	public void SpendBoxes(int points) {
@@ -207,28 +249,29 @@ public class HUDManager : MonoBehaviour {
 		firesPutOutThisLevel++;
 	}
 
-	public void FireRobot() {
-		robotsFired++;
-		robotsFiredThisLevel++;
-	}
-
 	public void BuildRobot() {
 		robotsBuilt++;
 		robotsBuiltThisLevel++;
+	}
+
+	public void FireRobot() {
+		robotsFired++;
+		robotsFiredThisLevel++;
 	}
 
 	public void ResetGameStats() {
 		firesPutOut = 0;
 		boxesCollected = 0;
 		boxesRemaining = 0;
-		robotsBuilt = 0;
 		robotsFired = 0;
+		robotsBuilt = 0;
 	}
 
 	public void ResetLevelStats() {
+		levelDuration = defaultLevelDuration;
 		firesPutOutThisLevel = 0;
 		robotsFiredThisLevel = 0;
-		robotsBuiltThisLevel = 0;
 		boxesThisLevel = 0;
+		robotsBuiltThisLevel = 0;
 	}
 }

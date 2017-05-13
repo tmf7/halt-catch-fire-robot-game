@@ -9,6 +9,7 @@ public class OneShotParticles : MonoBehaviour {
 	public AudioClip[] loopParticleSounds;
 
 	private AudioSource source;
+	private float destroyTime;
 
 	// FIXME(~): this works for more than particle systems
 	void Awake () {
@@ -18,6 +19,14 @@ public class OneShotParticles : MonoBehaviour {
 		source.pitch = pitch;
 		source.clip = loopParticleSounds [randomIndex];
 		source.Play ();
-		Destroy (gameObject, particleDuration);
+		destroyTime = Time.time + particleDuration;
+	}
+
+	void Update () {
+		if (Robot.isHalted)
+			destroyTime += Time.deltaTime;
+
+		if (Time.time > destroyTime)
+			Destroy (gameObject);
 	}
 }

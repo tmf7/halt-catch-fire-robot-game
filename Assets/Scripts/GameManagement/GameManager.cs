@@ -61,7 +61,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private void SpawnInitialRobots() {
-		pendingRobots = initialMaxRobots;
+		pendingRobots = HUDManager.instance.robotsRemaining;
 		foreach (RobotDoor door in allDoors)
 			door.TriggerDoorOpen ();
 	}
@@ -189,7 +189,6 @@ public class GameManager : MonoBehaviour {
 		foreach (Transform hazard in hazardPoints) {
 			Collider2D testHit = hazard.GetComponent<Collider2D> ();
 			if (collider2D.IsTouching (testHit)) {
-				print ("HIT HAZARD");
 				return testHit;
 			}
 		}
@@ -200,7 +199,6 @@ public class GameManager : MonoBehaviour {
 		foreach (Robot robot in allRobots) {
 			Collider2D testHit = robot.GetComponent<Collider2D> ();
 			if (collider2D.IsTouching (testHit)) {
-				print ("HIT ROBOT");
 				return testHit;
 			}
 		}

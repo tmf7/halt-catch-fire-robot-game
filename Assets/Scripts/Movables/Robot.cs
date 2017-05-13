@@ -65,21 +65,16 @@ public class Robot : Throwable {
 	}
 
 	[HideInInspector]
-	public static bool isHalted {
-		get { 
-			return haltAndCommand == true;
+	public bool hasDrawnPath {
+		get {
+			return drawnPath.Count > 0;
 		}
 	}
 
 	[HideInInspector]
-	public static float deltaTimeHalted {
+	public static bool isHalted {
 		get { 
-			if (isHalted) {
-				float delta = Time.time - haltTimeStamp;
-				haltTimeStamp = Time.time;				// FIXME: this messes up multiple queries
-				return delta;
-			}
-			return 0.0f;
+			return haltAndCommand == true;
 		}
 	}
 
@@ -117,7 +112,6 @@ public class Robot : Throwable {
 	private static int 			pathSmoothingInterval = 3;
 	private static float		minDrawnPathLength = 2.0f;
 	private static float 		maxDrawnPathLength = 30.0f;
-	private static float		haltTimeStamp = 0.0f;
 	private static bool			haltAndCommand = false;
 
 	// state machine
@@ -169,6 +163,9 @@ public class Robot : Throwable {
 	}
 
 	void Update() {
+		if (Robot.isHalted)
+			spawnTime += Time.deltaTime;
+
 		waitingForPathRequestResults = PathRequestManager.PathRequestsRemaining (name) > 0;
 		UpdateEmotionalState ();
 		UpdatePathLine ();
@@ -257,8 +254,6 @@ public class Robot : Throwable {
 	// HUDManager's instance CHILD button HaltAndCommandButton invokes this
 	public static void ToggleHaltAndCommand () {
 		haltAndCommand = !haltAndCommand;
-		if (isHalted)
-			haltTimeStamp = Time.time;
 	}
 
 	public RobotStates GetState() {
@@ -375,7 +370,7 @@ public class Robot : Throwable {
 	}
 
 	void SearchForTarget() {
-		if (!grounded || isBeingCarried || fellInPit || drawnPath.Count > 0 || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded) {
+		if (!grounded || isBeingCarried || fellInPit || hasDrawnPath || !grid.NodeFromWorldPoint(transform.position).walkable || GameManager.instance.levelEnded || freakoutCoroutine != null) {
 			StopMoving ();
 			return;
 		}
@@ -534,7 +529,7 @@ public class Robot : Throwable {
 	}
 
 	void FollowPath() {
-		UpdatePath (path == null && drawnPath.Count == 0);
+		UpdatePath (path == null && !hasDrawnPath);
 		if (path == null || path.Length == 0)
 			return;
 
@@ -587,7 +582,7 @@ public class Robot : Throwable {
 	}
 
 	private void UpdatePathLine() {
-		line.enabled = ((lockedByPlayer || waitingForPathRequestResults) && drawnPath.Count > 0) || (path != null && path.Length > 0);
+		line.enabled = ((lockedByPlayer || waitingForPathRequestResults) && hasDrawnPath) || (path != null && path.Length > 0);
 		if (!line.enabled)
 			return;
 

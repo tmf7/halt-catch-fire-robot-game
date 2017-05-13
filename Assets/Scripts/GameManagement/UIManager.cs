@@ -126,9 +126,6 @@ public class UIManager : MonoBehaviour {
 		instance.StartCoroutine (instance.FadeToStoryCoroutine ());
 	}
 
-	// FIXME: is this the culprit of robotsBuiltThisLevel not updating properly???
-	// HUDManager.instance.BuildRobot() doesn't issue a print statement, despite the robot WITH A NAME actually spawning in the door
-	// while the SlimeBot is wandering around
 	public IEnumerator FadeToStoryCoroutine () {
 
 		yield return instance.StartCoroutine (instance.FadeToBlack ());
@@ -204,6 +201,8 @@ public class UIManager : MonoBehaviour {
 	private void InitScene() {
 		if (Time.timeScale == 0.0f)
 			TogglePause();
+		if (Robot.isHalted)
+			HUDManager.instance.ToggleHaltButton ();
 		
 		if (!isSceneMainMenu) {
 			GameManager.instance.enabled = true;

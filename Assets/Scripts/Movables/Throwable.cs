@@ -260,6 +260,7 @@ public abstract class Throwable : MonoBehaviour {
 		Destroy(shadowController);
 		Destroy(dropShadow);
 		Destroy(gameObject);
+		Destroy (this);
 	}
 
 	void OnTriggerEnter2D(Collider2D hitTrigger) {

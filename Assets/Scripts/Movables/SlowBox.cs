@@ -17,12 +17,6 @@ public class SlowBox : MonoBehaviour {
 	}
 	
 	void Update () {
-		// check who the carrier is, if the carrier isn't suicidal
-		// then start looping the freakout animation for a set duration
-		// if that duration passes without being dropped/carried by suicidal again
-		// explode with point effector (and electrical explosion animation spawn)
-		// delivering this box is worth 50
-
 		Robot carrier = box.GetCarrier ();
 		if (!freakingOut && carrier != null && carrier.currentState != Robot.RobotStates.STATE_SUICIDAL) {
 			electroExplodeTime = Time.time + freakoutDuration;
@@ -30,9 +24,14 @@ public class SlowBox : MonoBehaviour {
 			animator.SetTrigger ("Freakout");
 		}
 
-		if (freakingOut && (carrier == null || carrier.currentState == Robot.RobotStates.STATE_SUICIDAL)) {
-			freakingOut = false;
-			animator.SetTrigger ("Calmdown");
+		if (freakingOut) {
+			if (carrier == null || carrier.currentState == Robot.RobotStates.STATE_SUICIDAL) {
+				freakingOut = false;
+				animator.SetTrigger ("Calmdown");
+			}
+
+			if (Robot.isHalted)
+				electroExplodeTime += Time.deltaTime;
 		}
 
 		if (freakingOut && Time.time > electroExplodeTime)

@@ -186,15 +186,15 @@ public class TransitionManager : MonoBehaviour {
 	public void DisplayScoreText() {
 		string scoreString = "DEFAULT SCORE STRING";
 		if (levelTextToDisplay == 7) {
-			scoreString = "TOTAL BOXES LAUNCHED: " + HUDManager.instance.totalBoxesCollected;
-			scoreString += "\nTOTAL FIRES EXTINGUISHED: " + HUDManager.instance.totalFiresPutOut;
-			scoreString += "\nTOTAL ROBOTS BUILT: " + HUDManager.instance.totalRobotsBuilt;
+			scoreString = "TOTAL BOXES LAUNCHED: " + HUDManager.instance.totalBoxesCollected.ToString();
+			scoreString += "\nTOTAL FIRES EXTINGUISHED: " + HUDManager.instance.totalFiresPutOut.ToString();
+			scoreString += "\nTOTAL ROBOTS BUILT: " + HUDManager.instance.totalRobotsBuilt.ToString();
 		} else {
 			scoreString = "LEVEL PERFORMANCE:";
-			scoreString +=  "\nBOXES LAUNCHED: " + HUDManager.instance.boxesThisLevel;
-			scoreString += "\t\t\t\t\tFIRES EXTINGUISHED: " + HUDManager.instance.firesPutOutThisLevel;
-			scoreString += "\nBUILT ROBOTS: " + HUDManager.instance.robotsBuiltThisLevel + "   ";
-			scoreString += "\t\t\t\t\t\tTERMINATED ROBOTS: " + HUDManager.instance.robotsFiredThisLevel;
+			scoreString +=  "\nBOXES LAUNCHED: " + HUDManager.instance.boxesThisLevel.ToString();
+			scoreString += "\t\t\t\t\tFIRES EXTINGUISHED: " + HUDManager.instance.firesPutOutThisLevel.ToString();
+			scoreString += "\nBUILT ROBOTS: " + HUDManager.instance.robotsBuiltThisLevel.ToString() + "   ";
+			scoreString += "\t\t\t\t\t\tTERMINATED ROBOTS: " + HUDManager.instance.robotsFiredThisLevel.ToString();
 		}
 		StartCoroutine (AnimateText (scoreText, scoreString));
 	}

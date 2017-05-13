@@ -53,10 +53,15 @@ public class RobotDoor : MonoBehaviour {
 	// RobotDoorOpen animation event triggers this co-routine
 	IEnumerator SpawnRobots() {
 		if (!spawnSlimeBot) {
-			while (spawnEnabled && (GameManager.instance.robotCount < GameManager.instance.maxRobots) && (GameManager.instance.robotCount < HUDManager.instance.robotsRemaining)) {
-				if (Robot.isHalted)
-					continue;
+			while (Robot.isHalted)
+				yield return null;
 
+			while (spawnEnabled && (GameManager.instance.robotCount < GameManager.instance.maxRobots) && (GameManager.instance.robotCount < HUDManager.instance.robotsRemaining)) {
+				if (Robot.isHalted) {
+					yield return new WaitForSeconds (spawnDelay);
+					continue;
+				}
+				
 				Robot spawnedRobot = Instantiate<Robot> (robotPrefab, animator.transform.position, Quaternion.identity);
 				GameManager.instance.AddRobot (spawnedRobot);
 				yield return new WaitForSeconds (spawnDelay);
