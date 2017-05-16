@@ -144,14 +144,14 @@ public class UIManager : MonoBehaviour {
 
 		yield return instance.StartCoroutine (instance.FadeToBlack ());
 
-		Cursor.visible = true;
-		TransitionManager.instance.gameObject.SetActive (true);
-		TransitionManager.instance.StartIntermission (storyToTell);
-		SoundManager.instance.PlayIntermissionMusic ();
 		RobotGrabber.instance.gameObject.SetActive (false);
 		HUDManager.instance.gameObject.SetActive (false);
 		DisableCurrentScene ();
 		GameManager.instance.enabled = false;
+		Cursor.visible = true;
+		TransitionManager.instance.gameObject.SetActive (true);
+		TransitionManager.instance.StartIntermission (storyToTell);
+		SoundManager.instance.PlayIntermissionMusic ();
 
 		yield return instance.StartCoroutine (instance.FadeToClear ());
 	}

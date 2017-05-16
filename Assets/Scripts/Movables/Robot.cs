@@ -274,8 +274,10 @@ public class Robot : Throwable {
 		if (emotionalStability < 1.0f) {
 			currentState = RobotStates.STATE_FINDBOX;
 
-			if (!haltAndCommand)
-				emotionalStability += emotionalDistressRate * Time.deltaTime;
+			if (!haltAndCommand) {
+				float stabilityMod = (emotionalStability > freakoutThreshold ? 1.0f : (float)Random.Range (0, 2));
+				emotionalStability += emotionalDistressRate * Time.deltaTime * stabilityMod;
+			}
 
 			if (emotionalStability > freakoutThreshold)
 				StartCoroutine (Freakout());

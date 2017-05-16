@@ -58,12 +58,14 @@ public class RobotGrabber : MonoBehaviour {
 
 		UpdateBeamParticles ();
 	
-		#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
+		#if UNITY_STANDALONE || UNITY_WEBPLAYER
 
+		bool mobileCursorOverride = false;
 		spriteRenderer.enabled = inputWorldPosition.y < topWallYPosition || grabbedRobot != null;
 
 		#elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
 
+		bool mobileCursorOverride = true;
 		spriteRenderer.enabled = grabbedRobot != null;
 		if (grabbedRobot != null)
 			glowParticles.Play ();
@@ -73,7 +75,7 @@ public class RobotGrabber : MonoBehaviour {
 		#endif
 
 		bool updateGrabberPosition = (grabbedRobot == null || secondClickOnRobot);
-		if (!Cursor.visible) {
+		if (!Cursor.visible || mobileCursorOverride) {
 			if (updateGrabberPosition)
 				transform.position = inputWorldPosition;		
 			else

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class TimedBox : MonoBehaviour {
 
-	public float 		implosionDelay = 10.0f;
+	public float 		implosionDelay = 5.0f;
 	public float		midLifeFlashScale = 2.0f;
 	public float		lateLifeFlashScale = 5.0f;
 
