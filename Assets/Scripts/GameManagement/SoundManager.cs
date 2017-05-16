@@ -8,6 +8,8 @@ public class SoundManager : MonoBehaviour {
 	public AudioSource musicSource;
 	public AudioSource globalSFxSource;
 
+	public AudioClip congratsSound;
+	public AudioClip wriggleSound;
 	public AudioClip selectSound;
 	public AudioClip clickSound;
 	public AudioClip levelEndSound;
@@ -26,12 +28,24 @@ public class SoundManager : MonoBehaviour {
 	private float savedMusicVolume = 1.0f;
 
 	void Awake () {
-		if (instance == null)
+		if (instance == null) {
 			instance = this;
-		else if (instance != null)
-			Destroy (gameObject);
+			DontDestroyOnLoad(gameObject);
+		} else if (instance != this) {
+			Destroy (gameObject);	
+		}
+	}
 
-		DontDestroyOnLoad (gameObject);
+	// used for highscore name entry
+	public void PlayRobotWriggleSound () {
+		instance.globalSFxSource.clip = wriggleSound;
+		instance.globalSFxSource.Play ();
+	}
+
+	// used for new highscores
+	public void PlayCongratsSound () {
+		instance.globalSFxSource.clip = congratsSound;
+		instance.globalSFxSource.Play ();
 	}
 
 	public void PlaySelectSound() {

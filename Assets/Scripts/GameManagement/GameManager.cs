@@ -46,13 +46,13 @@ public class GameManager : MonoBehaviour {
 	}
 
 	void Awake() {
-        if (instance == null)
-            instance = this;
-        else if (instance != this)
-            Destroy(gameObject);	
-
-		DontDestroyOnLoad(gameObject);
-		initialMaxRobots = maxRobots;
+		if (instance == null) {
+			instance = this;
+			DontDestroyOnLoad(gameObject);
+			initialMaxRobots = maxRobots;
+		} else if (instance != this) {
+			Destroy (gameObject);	
+		}
 	}
 
 	void Update() {

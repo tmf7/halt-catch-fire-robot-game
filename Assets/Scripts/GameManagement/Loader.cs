@@ -10,6 +10,7 @@ public class Loader : MonoBehaviour	{
 	public GameObject hudManagerPrefab;
 	public GameObject robotGrabberPrefab;
 	public GameObject transitionManagerPrefab;
+	public GameObject highScoreManagerPrefab;
 
 	void Awake () {
 
@@ -33,5 +34,8 @@ public class Loader : MonoBehaviour	{
 
 		if (UIManager.instance == null)
 			Instantiate (UIManagerPrefab);
+
+		if (HighScoreManager.instance == null)
+			Instantiate (highScoreManagerPrefab);
 	}
 }

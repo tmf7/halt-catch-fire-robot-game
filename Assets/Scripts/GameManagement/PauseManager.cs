@@ -9,11 +9,11 @@ public class PauseManager : MonoBehaviour {
 	public static PauseManager 	instance = null;
 
 	void Awake() {
-		if (instance == null)
+		if (instance == null) {
 			instance = this;
-		else if (instance != this)
-			Destroy(gameObject);	
-
-		DontDestroyOnLoad(gameObject);
+			DontDestroyOnLoad(gameObject);
+		} else if (instance != this) {
+			Destroy (gameObject);	
+		}
 	}
 }

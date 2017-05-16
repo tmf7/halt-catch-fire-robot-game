@@ -29,12 +29,12 @@ public class TransitionManager : MonoBehaviour {
 	private bool					isDialogueBoxAnimating = false;
 
 	void Awake() {
-		if (instance == null)
+		if (instance == null) {
 			instance = this;
-		else if (instance != this)
-			Destroy(gameObject);	
-
-		DontDestroyOnLoad(gameObject);
+			DontDestroyOnLoad(gameObject);
+		} else if (instance != this) {
+			Destroy (gameObject);	
+		}
 	}
 
 	void Start () {
