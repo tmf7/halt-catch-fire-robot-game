@@ -33,6 +33,13 @@ public class RobotGrabber : MonoBehaviour {
 		}
 	}
 
+	// FIXME(~): calling this with a null grabbedRobot is meaningless
+	public bool isRobotBeingDragged {
+		get { 
+			return secondClickOnRobot;
+		}
+	}
+
 	void Awake() {
 		if (instance == null) {
 			instance = this;
@@ -75,12 +82,8 @@ public class RobotGrabber : MonoBehaviour {
 		#endif
 
 		bool updateGrabberPosition = (grabbedRobot == null || secondClickOnRobot);
-		if (!Cursor.visible || mobileCursorOverride) {
-			if (updateGrabberPosition)
-				transform.position = inputWorldPosition;		
-			else
-				transform.position = grabbedRobot.transform.position + Vector3.up * joint.distance;
-		}
+		if ((!Cursor.visible || mobileCursorOverride) && updateGrabberPosition)
+			transform.position = inputWorldPosition;		
 
 		Cursor.visible = inputWorldPosition.y > topWallYPosition || !updateGrabberPosition;
 
@@ -96,51 +99,9 @@ public class RobotGrabber : MonoBehaviour {
 		// if the user RELEASES the mouse, UNLOCK the robot to follow the new path, and start MOVING the RobotGrabber SPRITE again as normal
 
 		// input press
-		if (Input.GetMouseButtonDown (0) && inputWorldPosition.y < topWallYPosition) {		// BUGFIX: for clicking sprinkler button above a door and accidentally grabbing a robot
-			if (joint == null) {
-
-				// find the closest robot within the given radius of the click, if any
-				grabbedRobot = null;
-				int closestHitIndex = -1;
-				Collider2D[] hits = Physics2D.OverlapCircleAll (inputWorldPosition, grabRadius, grabbleMask);
-				float closestRobotRangeSqr = float.MaxValue;
-
-				for (int i = 0; i < hits.Length; i++) {
-					if (hits [i].tag == "Robot") {
-						float rangeSqr = (hits [i].transform.position - inputWorldPosition).sqrMagnitude;
-						if (rangeSqr < closestRobotRangeSqr) {
-							closestRobotRangeSqr = rangeSqr;
-							closestHitIndex = i;
-						}
-					}
-				}
-
-				if (closestHitIndex == -1)
-					return;
-
-				grabbedRobotCollider = hits [closestHitIndex];
-				grabbedRobot = grabbedRobotCollider.GetComponent<Robot> ();
-				grabbedRobot.lockedByPlayer = true;
-				grabbedRobot.ClearDrawnPath ();
-				grabbedRobot.SetTargeter (null);
-				grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
-
-				// create a joint on the robot sprite
-				joint = grabbedRobotCollider.gameObject.AddComponent<DistanceJoint2D> ();
-				joint.autoConfigureConnectedAnchor = false;
-				joint.autoConfigureDistance = false;
-				joint.enableCollision = true;
-				joint.distance = jointDistance;
-
-				// put the joint in robot local space slightly above its head
-				// and align both parts of the joint initially
-				joint.anchor = Vector2.up * grabbedRobotCollider.bounds.extents.y;												
-				joint.connectedAnchor = new Vector2 (grabbedRobot.transform.position.x, grabbedRobot.transform.position.y) + (Vector2.up * joint.distance) + joint.anchor;
-
-			} else {
-				Collider2D hit = Physics2D.OverlapCircle (inputWorldPosition, grabRadius, grabbedRobotMask);
-				secondClickOnRobot = hit == grabbedRobotCollider;
-			}
+		// BUGFIX: for clicking sprinkler button above a door and accidentally grabbing a robot
+		if (Input.GetMouseButtonDown (0) && inputWorldPosition.y < topWallYPosition) {
+			TryGrabRobot();
 		}
 
 		// input drag
@@ -209,6 +170,71 @@ public class RobotGrabber : MonoBehaviour {
 		}
 	}
 
+	private Collider2D GetClosestRobot() {
+		int closestHitIndex = -1;
+		Collider2D[] hits = Physics2D.OverlapCircleAll (inputWorldPosition, grabRadius, grabbleMask);
+		float closestRobotRangeSqr = float.MaxValue;
+
+		for (int i = 0; i < hits.Length; i++) {
+			if (hits [i].tag == "Robot") {
+				float rangeSqr = (hits [i].transform.position - inputWorldPosition).sqrMagnitude;
+				if (rangeSqr < closestRobotRangeSqr) {
+					closestRobotRangeSqr = rangeSqr;
+					closestHitIndex = i;
+				}
+			}
+		}
+
+		if (closestHitIndex == -1)
+			return null;
+
+		return hits [closestHitIndex];
+	}
+
+	private void TryGrabRobot () {
+		if (grabbedRobot == null) {
+			grabbedRobotCollider = GetClosestRobot ();
+		} else {
+
+			if (grabbedRobot.EmotionButtonContainsScreenPoint (Input.mousePosition))
+				return;
+
+			Collider2D hit = Physics2D.OverlapCircle (inputWorldPosition, grabRadius, grabbedRobotMask);
+			secondClickOnRobot = (hit == grabbedRobotCollider);
+
+			if (!secondClickOnRobot) {
+				dropForce = Vector3.zero;
+				grabbedRobot.dropForce = Vector3.zero;
+				ReleaseRobot ();
+				grabbedRobotCollider = GetClosestRobot ();
+			}
+		}
+
+		if (!secondClickOnRobot && grabbedRobotCollider != null)
+			InitGrabbedRobot ();
+	}
+
+	private void InitGrabbedRobot () {
+		grabbedRobot = grabbedRobotCollider.GetComponent<Robot> ();
+		grabbedRobot.lockedByPlayer = true;
+		grabbedRobot.ClearDrawnPath ();
+		grabbedRobot.SetTargeter (null);
+		grabbedRobot.PlaySingleSoundFx (grabbedRobot.playerGrabbedSound);
+
+		// create a joint on the robot sprite
+		joint = grabbedRobotCollider.gameObject.AddComponent<DistanceJoint2D> ();
+		joint.autoConfigureConnectedAnchor = false;
+		joint.autoConfigureDistance = false;
+		joint.enableCollision = true;
+		joint.distance = jointDistance;
+
+		// put the joint in robot local space slightly above its head
+		// and align both parts of the joint initially
+		joint.anchor = Vector2.up * grabbedRobotCollider.bounds.extents.y;												
+		joint.connectedAnchor = new Vector2 (grabbedRobot.transform.position.x, grabbedRobot.transform.position.y) + (Vector2.up * joint.distance) + joint.anchor;
+		transform.position = grabbedRobot.transform.position + Vector3.up * joint.distance;
+	}
+		
 	public void ReleaseRobot () {
 		beamParticles.Stop ();
 		beamParticles.Clear ();

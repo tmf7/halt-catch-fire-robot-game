@@ -23,6 +23,8 @@ public class HighScoreManager : MonoBehaviour {
     public static HighScoreManager 		instance = null;
 	public float						repeatWait = 0.5f;
 	public float						repeatDelay = 0.1f;
+	public float 						blinkWait = 0.2f;
+	public float 						blinkDelay = 1.0f;
 	public int							maxHighScores = 5;
 	public int 							upButtonHeld = -1;
 	public int							downButtonHeld = -1;
@@ -36,8 +38,9 @@ public class HighScoreManager : MonoBehaviour {
 	private Text[]						inputNameText;
 	private char[]						inputName;
     private string 						masterHighScoreFile = "/HaltCatchFire_HighScores.dat";
-	private int							highScoreToReplace;
 	private float 						nextFireTime;
+	private float 						nextBlinkTime;
+	private int							highScoreToReplace;
    
     void Awake() {
 		if (instance == null) {
@@ -51,14 +54,32 @@ public class HighScoreManager : MonoBehaviour {
     }
 
 	void Update () {
-		if (upButtonHeld != -1 && Time.time > nextFireTime) {
-			IncrementLetter (upButtonHeld);
-			nextFireTime = Time.time + repeatDelay;
-		}
+		if (isNameInputVisible) {
+			if (upButtonHeld != -1 && Time.time > nextFireTime) {
+				IncrementLetter (upButtonHeld);
+				nextFireTime = Time.time + repeatDelay;
+			}
 
-		if (downButtonHeld != -1 && Time.time > nextFireTime) {
-			DecrementLetter (downButtonHeld);
-			nextFireTime = Time.time + repeatDelay;
+			if (downButtonHeld != -1 && Time.time > nextFireTime) {
+				DecrementLetter (downButtonHeld);
+				nextFireTime = Time.time + repeatDelay;
+			}
+
+			// FIXME: only disable for a short time, every longer interval
+			if (scoresText [highScoreToReplace].enabled && Time.time > nextBlinkTime) {
+				nextBlinkTime = Time.time + blinkWait;
+				scoresText [highScoreToReplace].enabled = false;
+				foreach (Text text in inputNameText)
+					text.enabled = false;
+			} else if (!scoresText [highScoreToReplace].enabled && Time.time > nextBlinkTime) {
+				nextBlinkTime = Time.time + blinkDelay;
+				scoresText [highScoreToReplace].enabled = true;
+				foreach (Text text in inputNameText)
+					text.enabled = true;
+			}
+		} else {
+			foreach (Text text in scoresText)
+				text.enabled = true;
 		}
 	}
 		
@@ -124,6 +145,9 @@ public class HighScoreManager : MonoBehaviour {
 		string placeHolder = "Y O U";
 		instance.highScores.names.Insert (instance.highScoreToReplace, placeHolder);
 		instance.highScores.names.RemoveRange (instance.maxHighScores, instance.highScores.names.Count - maxHighScores);
+		inputName [0] = 'Y';
+		inputName [1] = 'O';
+		inputName [2] = 'U';
 
 		isNameInputVisible = true;
 		MakeLetterEditable (0);
@@ -133,6 +157,7 @@ public class HighScoreManager : MonoBehaviour {
     }
 
 	// [0-8]: { 1up, 1, 1down, 2up, 2, 2down, 3up, 3, 3down }
+	// input index [0,2]
 	public void MakeLetterEditable (int index) {
 		switch (index) {
 		case 0:

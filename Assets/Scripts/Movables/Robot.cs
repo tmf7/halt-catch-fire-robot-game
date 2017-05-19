@@ -24,6 +24,7 @@ public class Robot : Throwable {
 	public Sprite 				onFireSpeechSprite;
 	public Sprite 				homicidalSpeechSprite;
 	public Sprite 				suidicalSpeechSprite;
+	public Sprite 				happySpeechSprite;
 	public Image				currentSpeech;
 
 	public Transform 			target;
@@ -124,8 +125,11 @@ public class Robot : Throwable {
 	private CircleCollider2D 	circleCollider;
 	private Animator			animator;
 	private ParticleSystem		shockParticles;
+	private ParticleSystem 		buttonGlow;
 	public IEnumerator			freakoutCoroutine = null;
 	private float 				displayEmotionTime;
+	private Button 				emotionButton;
+	private RectTransform		emotionButtonRect;
 
 	void Start() {
 		GameObject circleObj = Instantiate<GameObject> (observationCirclePrefab, transform.position, Quaternion.identity);
@@ -138,17 +142,15 @@ public class Robot : Throwable {
 		animator = GetComponent<Animator> ();
 		circleCollider = GetComponent<CircleCollider2D> ();
 
-		// Throwable has grabbed the first particle system child
-		// this needs the next one
+		// Throwable has grabbed the first two particle system children
+		// shockparticles is next, followed by buttonGlow
 		ParticleSystem[] allParticles = GetComponentsInChildren<ParticleSystem> ();
-		foreach (ParticleSystem system in allParticles) {
-			if (system.name == "ShockParticles") {
-				shockParticles = system;
-				break;
-			}
-		}
+		shockParticles = allParticles [2];
+		buttonGlow = allParticles [3];
 
 		// InfoCanvas initialization
+		emotionButton = GetComponentInChildren<Button>();
+		emotionButtonRect = emotionButton.GetComponent<RectTransform> ();
 		currentSpeech = GetComponentInChildren<Image> ();
 		currentSpeech.enabled = false;
 		Text[] robotNamePlate = GetComponentsInChildren<Text> ();
@@ -285,7 +287,7 @@ public class Robot : Throwable {
 
 		if (emotionalStability >= 1.0f && currentState == RobotStates.STATE_FINDBOX) {
 			emotionalStability = 1.0f;
-			ToggleCrazyEmotion ();
+			PickRandomCrazyEmotion ();
 		}
 	}
 
@@ -323,21 +325,35 @@ public class Robot : Throwable {
 		}
 		freakoutCoroutine = null;
 	}
-
+		
 	public void ToggleCrazyEmotion() {
 		StartCoroutine (Freakout ());
-		if (currentState == RobotStates.STATE_FINDBOX)
-			GoCrazy ();
-		else
-			currentState = (currentState == RobotStates.STATE_HOMICIDAL ? RobotStates.STATE_SUICIDAL : RobotStates.STATE_HOMICIDAL);
+		switch (currentState) {
+			case RobotStates.STATE_FINDBOX:
+				currentState = RobotStates.STATE_SUICIDAL;
+				emotionalStability = 1.0f;
+				break;
+			case RobotStates.STATE_SUICIDAL:
+				currentState = RobotStates.STATE_HOMICIDAL;
+				emotionalStability = 1.0f;
+				break;
+			case RobotStates.STATE_HOMICIDAL:
+				currentState = RobotStates.STATE_FINDBOX;
+				emotionalStability = 0.0f;
+				break;
+		}
 		PlaySingleSoundFx (breakdownZapSound);
 		displayEmotionTime = Time.time + displayEmotionDelay;
 		SetTarget (null);
 	}
 
-	private void GoCrazy () {
+	private void PickRandomCrazyEmotion () {
+		StartCoroutine (Freakout ());
 		float flipACoin = Random.Range (0, 2);
 		currentState = flipACoin == 0 ? RobotStates.STATE_HOMICIDAL : RobotStates.STATE_SUICIDAL;
+		PlaySingleSoundFx (breakdownZapSound);
+		displayEmotionTime = Time.time + displayEmotionDelay;
+		SetTarget (null);
 	}
 
 	private void UpdateVisuals() {
@@ -345,6 +361,7 @@ public class Robot : Throwable {
 			case RobotStates.STATE_FINDBOX:
 				stateSpeedMultiplier = 1.0f;
 				spriteRenderer.color = Color.white;
+				currentSpeech.sprite = happySpeechSprite;
 				line.colorGradient = lockedByPlayer ? line.colorGradient 
 													: GameManager.instance.blueWaveGradient;
 				break;
@@ -364,11 +381,30 @@ public class Robot : Throwable {
 				break;
 		}
 
-		if (onFire)
+		if (onFire && !grabbedByPlayer)
 			currentSpeech.sprite = onFireSpeechSprite;
 
-		currentSpeech.enabled = (currentState != RobotStates.STATE_FINDBOX && Time.time < displayEmotionTime) || onFire;
+		emotionButton.interactable = grabbedByPlayer && !RobotGrabber.instance.isRobotBeingDragged;
+		currentSpeech.enabled = (currentState != RobotStates.STATE_FINDBOX && Time.time < displayEmotionTime) || onFire || emotionButton.interactable;
+
+		if (emotionButton.interactable) {
+			emotionButtonRect.localScale = 1.5f * Vector3.one;
+			currentSpeech.transform.localScale = 1.5f * Vector3.one;
+			if (!buttonGlow.isPlaying)
+				buttonGlow.Play ();
+		} else {
+			emotionButtonRect.localScale = Vector3.one;
+			currentSpeech.transform.localScale = Vector3.one;
+			if (buttonGlow.isPlaying) {
+				buttonGlow.Stop ();
+				buttonGlow.Clear ();
+			}
+		}
 		observationCircle.UpdateVisuals (grounded && !fellInPit);
+	}
+
+	public bool EmotionButtonContainsScreenPoint(Vector3 screenPoint) {
+		return RectTransformUtility.RectangleContainsScreenPoint (emotionButtonRect, screenPoint, Camera.main);
 	}
 
 	void SearchForTarget() {
@@ -477,6 +513,8 @@ public class Robot : Throwable {
 	}
 
 	public void ClearDrawnPath() {
+		if (this == null || gameObject == null)		// BUGFIX: for odd null exception using gameObject.name here as a Robot gets destroyed
+			return;
 		PathRequestManager.KillPathRequests(name);
 		lowestFailedSubPathIndex = int.MaxValue;
 		currentDrawnPathLength = 0.0f;

@@ -43,10 +43,12 @@ public class HUDManager : MonoBehaviour {
 	private Button 				haltButton;
 	private Animator			haltButtonAnimator;
 	private Image				haltImage;
+/*
 	private Slider 				globalEmotionSlider;
 	private Button 				globalEmotionButton;
 	private Image				globalEmotionImage;
 	private Text[] 				globalEmotionText;
+*/
 
 	public bool isLevelTimeUp {
 		get { 
@@ -87,13 +89,7 @@ public class HUDManager : MonoBehaviour {
 
 	public int totalRobotsBuilt {
 		get { 
-			return robotsBuilt; // RobotNames.Instance.totalRobotsBuilt;
-		}
-	}
-
-	public float emotionUIXPosition {
-		get { 
-			return globalEmotionSlider.transform.position.x;
+			return robotsBuilt;
 		}
 	}
 
@@ -120,12 +116,14 @@ public class HUDManager : MonoBehaviour {
 		haltButton = GameObject.Find ("HaltButton").GetComponent<Button> ();
 		haltButtonAnimator = haltButton.GetComponent<Animator> ();
 		haltImage = GameObject.Find ("HaltImage").GetComponent<Image> ();
+/*
 		globalEmotionSlider = GameObject.Find ("EmotionSlider").GetComponent<Slider> ();
 		globalEmotionButton = GameObject.Find ("EmotionButton").GetComponent<Button> ();
 		globalEmotionText = globalEmotionButton.GetComponentsInChildren<Text> ();
 		globalEmotionImage = GameObject.Find ("EmotionImage").GetComponent<Image> ();
 		globalEmotionImage.enabled = false;
 		UpdatetGlobalEmotionInterface ();
+*/
 		defaultLevelDuration = levelDuration;
 	}
 		
@@ -145,13 +143,14 @@ public class HUDManager : MonoBehaviour {
 		boxesText.text = "Boxes Left: " + boxesRemaining.ToString();
 		robotsText.text = "Robots Left: " + GameManager.instance.robotCount.ToString();
 		timeText.text = "Time: " + (GameManager.instance.levelEnded ? lastTimeRemainingValue : levelTimeRemaining).ToString();
-		UpdatetGlobalEmotionInterface ();
+//		UpdatetGlobalEmotionInterface ();
 	}
-
+/*
 	private void UpdatetGlobalEmotionInterface() {
 		Robot robot = RobotGrabber.instance.currentGrabbedRobot;
-		globalEmotionSlider.gameObject.SetActive (robot != null);
-		globalEmotionButton.gameObject.SetActive (robot != null);
+		bool setActive = robot != null && robot.grabbedByPlayer && !RobotGrabber.instance.isRobotBeingDragged;
+		globalEmotionSlider.gameObject.SetActive (setActive);
+		globalEmotionButton.gameObject.SetActive (setActive);
 		if (!globalEmotionSlider.gameObject.activeSelf)
 			return;
 
@@ -183,7 +182,7 @@ public class HUDManager : MonoBehaviour {
 		globalEmotionImage.enabled = globalEmotionButton.interactable;
 		globalEmotionImage.sprite = robot.currentSpeech.sprite;
 	}
-		
+*/		
 	public void HoldEmotionHandle() {
 		instance.emotionHandleHeld = true;
 	}

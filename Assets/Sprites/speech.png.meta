@@ -1,12 +1,13 @@
 fileFormatVersion: 2
-guid: a480c295d49be1e4daacd8812a4ee853
-timeCreated: 1492503044
+guid: 493a4b436be76c8439408ed743790b12
+timeCreated: 1495199603
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
     21300000: speech_fire
     21300002: speech_suicide
-    21300004: speech_homicide
+    21300004: speech_homocide
+    21300006: speech_happy
   serializedVersion: 4
   mipmaps:
     mipMapMode: 0
@@ -30,7 +31,7 @@ TextureImporter:
   textureFormat: 1
   maxTextureSize: 2048
   textureSettings:
-    filterMode: 0
+    filterMode: 1
     aniso: -1
     mipBias: -1
     wrapMode: 1
@@ -101,14 +102,6 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
-  - buildTarget: WebGL
-    maxTextureSize: 2048
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
@@ -117,7 +110,7 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 2
-        y: 8
+        y: 40
         width: 28
         height: 23
       alignment: 0
@@ -130,7 +123,7 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 32
-        y: 8
+        y: 40
         width: 28
         height: 23
       alignment: 0
@@ -139,11 +132,24 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: speech_homicide
+      name: speech_homocide
       rect:
         serializedVersion: 2
-        x: 62
-        y: 8
+        x: 2
+        y: 13
+        width: 28
+        height: 23
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: speech_happy
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 13
         width: 28
         height: 23
       alignment: 0
