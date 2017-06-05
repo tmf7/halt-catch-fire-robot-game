@@ -387,13 +387,12 @@ public class Robot : Throwable {
 		emotionButton.interactable = grabbedByPlayer && !RobotGrabber.instance.isRobotBeingDragged;
 		currentSpeech.enabled = (currentState != RobotStates.STATE_FINDBOX && Time.time < displayEmotionTime) || onFire || emotionButton.interactable;
 
+		// FIXME(~): hardcoded magic number (1.5) determined emperically
 		if (emotionButton.interactable) {
-			emotionButtonRect.localScale = 1.5f * Vector3.one;
 			currentSpeech.transform.localScale = 1.5f * Vector3.one;
 			if (!buttonGlow.isPlaying)
 				buttonGlow.Play ();
 		} else {
-			emotionButtonRect.localScale = Vector3.one;
 			currentSpeech.transform.localScale = Vector3.one;
 			if (buttonGlow.isPlaying) {
 				buttonGlow.Stop ();

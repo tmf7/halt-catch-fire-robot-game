@@ -27,6 +27,15 @@ public class RobotNames {
 		}
 	}
 
+	// BUGFIX: for play that uses more than the stock 100 names
+	private void ResurrectNames() {
+		survivorNamesUsed = 0;
+		foreach (KeyValuePair<string, Name> name in robotNames) {
+			Name revivedRobot = name.Value;
+			robotNames [name.Key] = new Name (revivedRobot.name, false, false, revivedRobot.timeSurvived, revivedRobot.boxesDelivered);
+		}
+	}
+
 	public void ResetNames() {
 		survivorNamesUsed = 0;
 		robotNames.Clear ();
@@ -116,7 +125,10 @@ public class RobotNames {
 				}
 			}
 		}
-		return "Ghost";		// FIXME(~): GameOver should occur before this happens (Ghost has no Name properties for the obituaries and will cause game breaking exceptions)
+
+		// FIXME(~): should never reach these lines during normal play (average robots in 15 mins is about 60)
+		ResurrectNames ();
+		return GetUnusedName();
 	}
 
 	public int maxAvailableNames {
@@ -151,7 +163,7 @@ public class RobotNames {
 		DEATH_BY_BOMB
 	};
 
-	// 60 names
+	// 120 names
 	private string[] rawNames = {
 		"Bob",
 		"Ethan",
@@ -163,7 +175,7 @@ public class RobotNames {
 		"Quincy",
 		"Dilbert",
 		"Sarah",
-		"Kristen",
+		"Kristen",		// 10
 		"Blert",
 		"Nine",
 		"Fish",
@@ -173,7 +185,7 @@ public class RobotNames {
 		"Betty",
 		"Jack",
 		"K9",
-		"Ronald",
+		"Ronald",		// 20
 		"Jorsh",
 		"Tom",
 		"Brandon",
@@ -183,7 +195,7 @@ public class RobotNames {
 		"Kyle",
 		"Jarett",
 		"Nikolai",
-		"Sebastian",
+		"Sebastian",	// 30
 		"Ana",
 		"Devin",
 		"Bread",
@@ -193,7 +205,7 @@ public class RobotNames {
 		"Roboto",
 		"Lucy",
 		"Gladis",
-		"Mlem",
+		"Mlem",			// 40
 		"Rick",
 		"Maureen",
 		"Mike",
@@ -203,7 +215,7 @@ public class RobotNames {
 		"Keaton",
 		"Kathy",
 		"Mosh",
-		"Dobble",
+		"Dobble",		// 50
 		"Diskette",
 		"Disk",
 		"Morty",
@@ -212,7 +224,68 @@ public class RobotNames {
 		"Armondo",
 		"Emily",
 		"Zeek",
-		"Allons-y Alonso"
+		"Allons-y Alonso",
+		"Dwalin",		// 60
+		"Balin",
+		"Kili",
+		"Fili",
+		"Dori",
+		"Nori",
+		"Ori",
+		"Oin",
+		"Gloin",
+		"Bifur",
+		"Bofur",		// 70
+		"Bombur",
+		"Thorin",
+		"Bilbo",
+		"Spock",
+		"Kirk",
+		"Bones",
+		"Uhura",
+		"7 of 9",
+		"Borg",
+		"Cloud",		// 80
+		"Cid",
+		"Tifa",
+		"Aeris",
+		"Barret",
+		"Vincent",
+		"Cait Sith",
+		"Yuffie",
+		"Sephiroth",
+		"Chrono",
+		"Red XIII",		// 90
+		"Gainsborough",
+		"Lockhart",
+		"Kisaragi",
+		"Strife",
+		"Wallace",
+		"Valentine",
+		"Highwind",
+		"Marle",
+		"Lucca",
+		"Frog",			// 100
+		"Robo",
+		"Ayla",
+		"Magus",
+		"Lavos",
+		"Isaac",
+		"Schrodinger",
+		"Dalton",
+		"Heisenberg",
+		"Mendeleev",
+		"Ada Lovelace",// 110
+		"Marie Curie",
+		"Rosa Parks",
+		"George W. Carver",
+		"MLK Jr.",
+		"Harvey Milk",
+		"Frederick Douglass",
+		"Harriet",
+		"Tubman",
+		"Gosling",
+		"McGregor"		// 120
 	};
 
 	public class NameComparer: Comparer<Name> {
