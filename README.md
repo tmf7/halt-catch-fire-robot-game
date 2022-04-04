@@ -1,1 +1,1 @@
-# suicide-bot-game
+# halt-catch-fire-robot-game
